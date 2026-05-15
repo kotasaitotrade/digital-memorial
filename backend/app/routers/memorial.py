@@ -54,7 +54,10 @@ def update_memorial(memorial_id: int, data: MemorialUpdate, db: Session = Depend
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
-    for field, value in data.model_dump(exclude_none=True).items():
+    update_data = data.model_dump(exclude_none=True)
+    if "password" in update_data:
+        memorial.password_hash = get_password_hash(update_data.pop("password"))
+    for field, value in update_data.items():
         setattr(memorial, field, value)
     db.commit()
     db.refresh(memorial)
@@ -90,7 +93,11 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
 
     upload_dir = f"uploads/media/{memorial_id}"
     os.makedirs(upload_dir, exist_ok=True)
-    file_path = os.path.join(upload_dir, file.filename)
+
+    # ファイル名の重複を防ぐためUUIDプレフィックスを付与
+    import uuid
+    safe_name = f"{uuid.uuid4().hex}_{file.filename}"
+    file_path = os.path.join(upload_dir, safe_name)
     with open(file_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
@@ -100,3 +107,18 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
     db.commit()
     db.refresh(media)
     return media
+
+
+@router.delete("/memorials/{memorial_id}/media/{media_id}")
+def delete_media(memorial_id: int, media_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+    media = db.query(MemorialMedia).filter(MemorialMedia.id == media_id, MemorialMedia.memorial_id == memorial_id).first()
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    if os.path.exists(media.file_path):
+        os.remove(media.file_path)
+    db.delete(media)
+    db.commit()
+    return {"ok": True}

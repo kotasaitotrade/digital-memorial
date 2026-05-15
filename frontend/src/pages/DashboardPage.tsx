@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import QRModal from "../components/QRModal";
 import type { Memorial } from "../types";
@@ -12,16 +12,12 @@ export default function DashboardPage() {
   const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    axios
-      .get("/memorials", { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setMemorials(res.data));
+    api.get("/memorials").then((res) => setMemorials(res.data));
   }, []);
 
   const handleDelete = async (id: number) => {
     if (!confirm("この墓誌を削除しますか？")) return;
-    const token = localStorage.getItem("token");
-    await axios.delete(`/memorials/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+    await api.delete(`/memorials/${id}`);
     setMemorials((prev) => prev.filter((m) => m.id !== id));
   };
 
@@ -50,19 +46,32 @@ export default function DashboardPage() {
           <div style={styles.grid}>
             {memorials.map((m) => (
               <div key={m.id} style={styles.card}>
+                {m.media.length > 0 && (
+                  <img
+                    src={m.media[0].file_path}
+                    alt={m.name}
+                    style={styles.cardThumb}
+                  />
+                )}
                 <div style={styles.cardBody}>
                   <h3 style={styles.cardName}>{m.name}</h3>
                   {m.birth_date && m.death_date && (
                     <p style={styles.cardDates}>{m.birth_date} 〜 {m.death_date}</p>
                   )}
-                  {m.biography && <p style={styles.cardBio}>{m.biography.slice(0, 60)}...</p>}
+                  {m.biography && (
+                    <p style={styles.cardBio}>{m.biography.slice(0, 60)}{m.biography.length > 60 && "…"}</p>
+                  )}
+                  <p style={styles.cardMeta}>
+                    {m.is_public ? "公開" : "非公開（パスワード保護）"}
+                  </p>
                 </div>
                 <div style={styles.cardFooter}>
-                  <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={styles.viewBtn}>閲覧</a>
+                  <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={styles.btnView}>閲覧</a>
+                  <Link to={`/memorials/${m.id}/edit`} style={styles.btnEdit}>編集</Link>
                   {m.qr_code_path && (
-                    <button style={styles.qrBtn} onClick={() => setQrTarget(m)}>QRコード</button>
+                    <button style={styles.btnQr} onClick={() => setQrTarget(m)}>QR</button>
                   )}
-                  <button style={styles.deleteBtn} onClick={() => handleDelete(m.id)}>削除</button>
+                  <button style={styles.btnDelete} onClick={() => handleDelete(m.id)}>削除</button>
                 </div>
               </div>
             ))}
@@ -82,19 +91,22 @@ const styles: Record<string, React.CSSProperties> = {
   headerRight: { display: "flex", alignItems: "center", gap: "1rem" },
   userName: { fontSize: "0.9rem", color: "var(--color-text-muted)" },
   logoutBtn: { padding: "0.35rem 0.75rem", background: "transparent", border: "1px solid var(--color-border)", borderRadius: 4, fontSize: "0.85rem" },
-  main: { maxWidth: 900, margin: "0 auto", padding: "2rem" },
+  main: { maxWidth: 960, margin: "0 auto", padding: "2rem" },
   titleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" },
   pageTitle: { fontSize: "1.3rem", fontWeight: 700 },
   newBtn: { padding: "0.5rem 1rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.9rem" },
   empty: { textAlign: "center", padding: "4rem", color: "var(--color-text-muted)", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "1rem" },
-  card: { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, overflow: "hidden" },
-  cardBody: { padding: "1.25rem" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" },
+  card: { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" },
+  cardThumb: { width: "100%", height: 160, objectFit: "cover" },
+  cardBody: { padding: "1.25rem", flex: 1 },
   cardName: { fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.35rem" },
-  cardDates: { fontSize: "0.85rem", color: "var(--color-text-muted)", marginBottom: "0.5rem" },
-  cardBio: { fontSize: "0.85rem", color: "var(--color-text-muted)" },
-  cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--color-border)", display: "flex", gap: "0.5rem" },
-  viewBtn: { padding: "0.3rem 0.75rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.8rem" },
-  qrBtn: { padding: "0.3rem 0.75rem", background: "#6b7280", color: "#fff", borderRadius: 4, fontSize: "0.8rem", border: "none", cursor: "pointer" },
-  deleteBtn: { padding: "0.3rem 0.75rem", background: "transparent", border: "1px solid var(--color-error)", color: "var(--color-error)", borderRadius: 4, fontSize: "0.8rem" },
+  cardDates: { fontSize: "0.82rem", color: "var(--color-text-muted)", marginBottom: "0.4rem" },
+  cardBio: { fontSize: "0.82rem", color: "var(--color-text-muted)", marginBottom: "0.4rem" },
+  cardMeta: { fontSize: "0.75rem", color: "var(--color-text-muted)", marginTop: "0.5rem" },
+  cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--color-border)", display: "flex", gap: "0.5rem", flexWrap: "wrap" },
+  btnView: { padding: "0.3rem 0.75rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.8rem" },
+  btnEdit: { padding: "0.3rem 0.75rem", background: "#f0f0eb", color: "var(--color-text)", borderRadius: 4, fontSize: "0.8rem" },
+  btnQr: { padding: "0.3rem 0.75rem", background: "#6b7280", color: "#fff", borderRadius: 4, fontSize: "0.8rem", border: "none", cursor: "pointer" },
+  btnDelete: { padding: "0.3rem 0.75rem", background: "transparent", border: "1px solid var(--color-error)", color: "var(--color-error)", borderRadius: 4, fontSize: "0.8rem", cursor: "pointer" },
 };

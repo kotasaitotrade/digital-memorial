@@ -31,6 +31,7 @@ class MemorialUpdate(BaseModel):
     biography: Optional[str] = None
     message: Optional[str] = None
     is_public: Optional[bool] = None
+    password: Optional[str] = None
 
 
 class MemorialResponse(BaseModel):

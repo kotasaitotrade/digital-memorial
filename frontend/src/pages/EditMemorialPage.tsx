@@ -1,30 +1,46 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
 import api from "../lib/api";
 import MemorialForm, { type FormValues } from "../components/MemorialForm";
+import type { Memorial } from "../types";
 
-export default function MemorialFormPage() {
+export default function EditMemorialPage() {
+  const { id } = useParams<{ id: string }>();
+  const [memorial, setMemorial] = useState<Memorial | null>(null);
+
+  useEffect(() => {
+    api.get(`/memorials/${id}`).then((res) => setMemorial(res.data));
+  }, [id]);
+
   const handleSave = async (form: FormValues) => {
-    const payload = {
+    const payload: Record<string, unknown> = {
       name: form.name,
       birth_date: form.birth_date || undefined,
       death_date: form.death_date || undefined,
       biography: form.biography || undefined,
       message: form.message || undefined,
       is_public: form.is_public,
-      password: form.password || undefined,
     };
-    const res = await api.post("/memorials", payload);
+    if (form.password) payload.password = form.password;
+    const res = await api.put(`/memorials/${id}`, payload);
+    setMemorial(res.data);
     return res.data;
   };
+
+  if (!memorial) return <div style={{ textAlign: "center", padding: "4rem" }}>読み込み中...</div>;
 
   return (
     <div style={styles.page}>
       <header style={styles.header}>
         <Link to="/dashboard" style={styles.back}>← 戻る</Link>
-        <h1 style={styles.title}>新規墓誌作成</h1>
+        <h1 style={styles.title}>{memorial.name} の編集</h1>
       </header>
       <main style={styles.main}>
-        <MemorialForm onSave={handleSave} />
+        <MemorialForm
+          initial={memorial}
+          memorialId={memorial.id}
+          onSave={handleSave}
+        />
       </main>
     </div>
   );
