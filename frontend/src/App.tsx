@@ -5,6 +5,7 @@ import RegisterPage from "./pages/RegisterPage";
 import DashboardPage from "./pages/DashboardPage";
 import MemorialFormPage from "./pages/MemorialFormPage";
 import PublicMemorialPage from "./pages/PublicMemorialPage";
+import PrintQRPage from "./pages/PrintQRPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -31,6 +32,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <MemorialFormPage />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/memorials/:id/print-qr"
+        element={
+          <PrivateRoute>
+            <PrintQRPage />
           </PrivateRoute>
         }
       />

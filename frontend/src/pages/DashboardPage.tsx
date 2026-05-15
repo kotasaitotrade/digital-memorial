@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useAuth } from "../hooks/useAuth";
+import QRModal from "../components/QRModal";
 import type { Memorial } from "../types";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [memorials, setMemorials] = useState<Memorial[]>([]);
+  const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -58,7 +60,7 @@ export default function DashboardPage() {
                 <div style={styles.cardFooter}>
                   <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={styles.viewBtn}>閲覧</a>
                   {m.qr_code_path && (
-                    <a href={`/uploads/qr/${m.slug}.png`} download style={styles.qrBtn}>QR</a>
+                    <button style={styles.qrBtn} onClick={() => setQrTarget(m)}>QRコード</button>
                   )}
                   <button style={styles.deleteBtn} onClick={() => handleDelete(m.id)}>削除</button>
                 </div>
@@ -67,6 +69,8 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {qrTarget && <QRModal memorial={qrTarget} onClose={() => setQrTarget(null)} />}
     </div>
   );
 }
@@ -91,6 +95,6 @@ const styles: Record<string, React.CSSProperties> = {
   cardBio: { fontSize: "0.85rem", color: "var(--color-text-muted)" },
   cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--color-border)", display: "flex", gap: "0.5rem" },
   viewBtn: { padding: "0.3rem 0.75rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.8rem" },
-  qrBtn: { padding: "0.3rem 0.75rem", background: "#6b7280", color: "#fff", borderRadius: 4, fontSize: "0.8rem" },
+  qrBtn: { padding: "0.3rem 0.75rem", background: "#6b7280", color: "#fff", borderRadius: 4, fontSize: "0.8rem", border: "none", cursor: "pointer" },
   deleteBtn: { padding: "0.3rem 0.75rem", background: "transparent", border: "1px solid var(--color-error)", color: "var(--color-error)", borderRadius: 4, fontSize: "0.8rem" },
 };
