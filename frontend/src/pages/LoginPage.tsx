@@ -105,7 +105,6 @@ const s: Record<string, React.CSSProperties> = {
     background: "linear-gradient(160deg, var(--green-900) 0%, var(--green-700) 100%)",
     display: "flex", alignItems: "center", justifyContent: "center",
     padding: "3rem",
-    "@media (max-width: 768px)": { display: "none" },
   },
   leftInner: { maxWidth: 380, color: "var(--white)" },
   logo: { fontSize: "0.8rem", letterSpacing: "0.2em", color: "rgba(255,255,255,0.6)", marginBottom: "2rem", textTransform: "uppercase" },

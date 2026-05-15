@@ -18,7 +18,7 @@ export default function PublicMemorialPage() {
     setPwError(false);
     try {
       const params = pw ? { password: pw } : {};
-      const res = await axios.get(`/m/${slug}`, { params });
+      const res = await axios.get(`/api/m/${slug}`, { params });
       setMemorial(res.data);
       setNeedPassword(false);
     } catch (err: any) {

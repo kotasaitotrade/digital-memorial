@@ -15,7 +15,7 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await axios.post("/auth/register", { name, email, password });
+      await axios.post("/api/auth/register", { name, email, password });
       navigate("/login");
     } catch {
       setError("登録に失敗しました。このメールアドレスは既に使用されています。");

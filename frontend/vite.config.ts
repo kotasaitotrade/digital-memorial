@@ -5,9 +5,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      "/auth": "http://localhost:8000",
-      "/memorials": "http://localhost:8000",
-      "/m": "http://localhost:8000",
+      // すべてのAPIリクエストは /api プレフィックスで統一
+      "/api": "http://localhost:8000",
+      // アップロードファイルの静的配信
       "/uploads": "http://localhost:8000",
     },
   },
