@@ -35,26 +35,52 @@ export default function PublicMemorialPage() {
 
   useEffect(() => { fetchMemorial(); }, [slug]);
 
-  if (loading) return <div style={styles.center}><span style={styles.loadingText}>読み込み中...</span></div>;
-  if (notFound) return <div style={styles.center}><p>墓誌が見つかりません</p></div>;
+  // キーボードで lightbox を閉じる
+  useEffect(() => {
+    if (!lightbox) return;
+    const fn = (e: KeyboardEvent) => { if (e.key === "Escape") setLightbox(null); };
+    window.addEventListener("keydown", fn);
+    return () => window.removeEventListener("keydown", fn);
+  }, [lightbox]);
+
+  if (loading) {
+    return (
+      <div style={s.center}>
+        <div style={s.loadingDot} />
+      </div>
+    );
+  }
+
+  if (notFound) {
+    return (
+      <div style={s.center}>
+        <div style={s.notFound}>
+          <p style={s.notFoundIcon}>🕊️</p>
+          <h2 style={s.notFoundTitle}>墓誌が見つかりません</h2>
+          <p style={s.notFoundDesc}>URLをご確認ください</p>
+        </div>
+      </div>
+    );
+  }
 
   if (needPassword) {
     return (
-      <div style={styles.center}>
-        <div style={styles.pwCard}>
-          <div style={styles.pwIcon}>🔒</div>
-          <h2 style={styles.pwTitle}>パスワードが必要です</h2>
-          <p style={styles.pwDesc}>この墓誌はパスワードで保護されています</p>
+      <div style={s.center}>
+        <div style={s.pwCard}>
+          <div style={s.pwIcon}>🔒</div>
+          <h2 style={s.pwTitle}>パスワードが必要です</h2>
+          <p style={s.pwDesc}>この墓誌はパスワードで保護されています</p>
           <input
-            style={{ ...styles.pwInput, ...(pwError ? styles.pwInputError : {}) }}
+            style={{ ...s.pwInput, ...(pwError ? { borderColor: "var(--red)" } : {}) }}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="パスワードを入力"
             onKeyDown={(e) => e.key === "Enter" && fetchMemorial(password)}
+            autoFocus
           />
-          {pwError && <p style={styles.pwErrorMsg}>パスワードが正しくありません</p>}
-          <button style={styles.pwBtn} onClick={() => fetchMemorial(password)}>アクセスする</button>
+          {pwError && <p style={s.pwErrorMsg}>パスワードが正しくありません</p>}
+          <button style={s.pwBtn} onClick={() => fetchMemorial(password)}>アクセスする</button>
         </div>
       </div>
     );
@@ -66,39 +92,52 @@ export default function PublicMemorialPage() {
 
   return (
     <>
-      <div style={styles.page}>
+      <div style={s.page}>
         {/* ヒーロー */}
-        <div style={styles.hero}>
-          <div style={styles.heroInner}>
-            <p style={styles.heroLabel}>In Loving Memory</p>
-            <h1 style={styles.heroName}>{memorial.name}</h1>
+        <div style={s.hero}>
+          <div style={s.heroOverlay} />
+          <div style={s.heroContent}>
+            <p style={s.heroEyebrow}>In Loving Memory</p>
+            <h1 style={s.heroName}>{memorial.name}</h1>
             {(memorial.birth_date || memorial.death_date) && (
-              <p style={styles.heroDates}>
+              <p style={s.heroDates}>
                 {[memorial.birth_date, memorial.death_date].filter(Boolean).join(" 〜 ")}
               </p>
             )}
-            <div style={styles.heroDivider} />
+          </div>
+          <div style={s.heroBottom}>
+            <div style={s.heroLine} />
           </div>
         </div>
 
-        <div style={styles.container}>
+        <div style={s.container}>
+
           {/* 略歴 */}
           {memorial.biography && (
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>略歴</h2>
-              <p style={styles.bodyText}>{memorial.biography}</p>
+            <section style={s.section}>
+              <SectionTitle>略歴</SectionTitle>
+              <p style={s.bodyText}>{memorial.biography}</p>
             </section>
           )}
 
           {/* 写真ギャラリー */}
           {images.length > 0 && (
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>思い出</h2>
-              <div style={styles.gallery}>
+            <section style={s.section}>
+              <SectionTitle>思い出</SectionTitle>
+              <div style={{ ...s.gallery, ...(images.length === 1 ? s.gallerySingle : {}) }}>
                 {images.map((m) => (
-                  <div key={m.id} style={styles.galleryItem} onClick={() => setLightbox(m.file_path)}>
-                    <img src={m.file_path} alt={m.caption ?? ""} style={styles.galleryImg} />
-                    {m.caption && <p style={styles.galleryCaption}>{m.caption}</p>}
+                  <div
+                    key={m.id}
+                    style={s.galleryItem}
+                    onClick={() => setLightbox(m.file_path)}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <img src={m.file_path} alt={m.caption ?? ""} style={s.galleryImg} loading="lazy" />
+                    <div style={s.galleryOverlay}>
+                      <span style={s.galleryZoom}>🔍</span>
+                    </div>
+                    {m.caption && <p style={s.galleryCaption}>{m.caption}</p>}
                   </div>
                 ))}
               </div>
@@ -107,65 +146,92 @@ export default function PublicMemorialPage() {
 
           {/* メッセージ */}
           {memorial.message && (
-            <section style={styles.section}>
-              <h2 style={styles.sectionTitle}>ご家族より</h2>
-              <blockquote style={styles.blockquote}>{memorial.message}</blockquote>
+            <section style={s.section}>
+              <SectionTitle>ご家族より</SectionTitle>
+              <blockquote style={s.blockquote}>
+                <span style={s.quoteIcon}>"</span>
+                <p style={s.quoteText}>{memorial.message}</p>
+              </blockquote>
             </section>
           )}
         </div>
 
-        <footer style={styles.footer}>
-          <p style={styles.footerText}>Digital Memorial</p>
-          <p style={styles.footerSub}>故人の記憶を、永遠に</p>
+        <footer style={s.footer}>
+          <div style={s.footerLogo}>Digital Memorial</div>
+          <p style={s.footerTagline}>故人の記憶を、永遠に</p>
         </footer>
       </div>
 
       {/* ライトボックス */}
       {lightbox && (
-        <div style={styles.lightboxOverlay} onClick={() => setLightbox(null)}>
-          <img src={lightbox} alt="" style={styles.lightboxImg} />
+        <div style={s.lightboxOverlay} onClick={() => setLightbox(null)}>
+          <img src={lightbox} alt="" style={s.lightboxImg} />
+          <button style={s.lightboxClose} onClick={() => setLightbox(null)}>✕</button>
         </div>
       )}
     </>
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", background: "var(--color-bg)", fontFamily: "'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif" },
-  center: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" },
-  loadingText: { color: "var(--color-text-muted)" },
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h2 style={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.2em", color: "var(--gray-500)", textTransform: "uppercase" as const, marginBottom: "1.25rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>{children}<span style={{ flex: 1, height: 1, background: "var(--sand-300)" }} /></h2>;
+}
 
-  hero: { background: "linear-gradient(160deg, #2c3e2d 0%, #4a6741 100%)", color: "#fff", padding: "5rem 2rem 4rem" },
-  heroInner: { maxWidth: 680, margin: "0 auto", textAlign: "center" },
-  heroLabel: { fontSize: "0.78rem", letterSpacing: "0.25em", color: "rgba(255,255,255,0.65)", marginBottom: "1.25rem", textTransform: "uppercase" as const },
-  heroName: { fontSize: "clamp(2rem, 5vw, 3rem)", fontWeight: 700, marginBottom: "0.75rem", letterSpacing: "0.06em" },
-  heroDates: { fontSize: "1rem", color: "rgba(255,255,255,0.75)", marginBottom: "2rem" },
-  heroDivider: { width: 48, height: 2, background: "rgba(255,255,255,0.4)", margin: "0 auto" },
+const s: Record<string, React.CSSProperties> = {
+  page: { minHeight: "100vh", background: "var(--sand-100)", fontFamily: "var(--font-serif)" },
 
-  container: { maxWidth: 720, margin: "0 auto", padding: "3rem 2rem" },
-  section: { marginBottom: "3rem" },
-  sectionTitle: { fontSize: "0.75rem", fontWeight: 700, letterSpacing: "0.18em", color: "var(--color-text-muted)", textTransform: "uppercase" as const, marginBottom: "1.25rem", paddingBottom: "0.5rem", borderBottom: "1px solid var(--color-border)" },
-  bodyText: { fontSize: "1rem", lineHeight: 2.0, whiteSpace: "pre-wrap" as const, color: "var(--color-text)" },
-  blockquote: { borderLeft: "3px solid var(--color-primary)", paddingLeft: "1.25rem", fontSize: "1rem", lineHeight: 2.0, color: "var(--color-text)", fontStyle: "italic", whiteSpace: "pre-wrap" as const },
+  center: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--sand-100)" },
+  loadingDot: { width: 12, height: 12, borderRadius: "50%", background: "var(--green-700)", animation: "pulse 1.2s ease-in-out infinite" },
 
-  gallery: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.75rem" },
-  galleryItem: { cursor: "pointer", overflow: "hidden", borderRadius: 6 },
-  galleryImg: { width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", transition: "transform 0.2s", borderRadius: 6 },
-  galleryCaption: { fontSize: "0.75rem", color: "var(--color-text-muted)", marginTop: "0.3rem", textAlign: "center" },
+  notFound: { textAlign: "center" },
+  notFoundIcon: { fontSize: "3rem", marginBottom: "1rem" },
+  notFoundTitle: { fontFamily: "var(--font-serif)", fontSize: "1.3rem", fontWeight: 700, marginBottom: "0.5rem" },
+  notFoundDesc: { color: "var(--gray-500)", fontSize: "0.9rem" },
 
-  footer: { textAlign: "center", padding: "3rem 2rem", borderTop: "1px solid var(--color-border)" },
-  footerText: { fontSize: "0.9rem", fontWeight: 700, color: "var(--color-text-muted)" },
-  footerSub: { fontSize: "0.75rem", color: "var(--color-text-muted)", marginTop: "0.25rem" },
+  hero: {
+    position: "relative",
+    minHeight: "55vh",
+    background: "linear-gradient(160deg, var(--green-900) 0%, var(--green-800) 60%, var(--green-700) 100%)",
+    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+  },
+  heroOverlay: { position: "absolute", inset: 0, background: "radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.3) 100%)" },
+  heroContent: { position: "relative", textAlign: "center", color: "#fff", padding: "3rem 2rem 2rem" },
+  heroEyebrow: { fontSize: "0.72rem", letterSpacing: "0.3em", color: "rgba(255,255,255,0.55)", marginBottom: "1.5rem", textTransform: "uppercase" as const },
+  heroName: { fontFamily: "var(--font-serif)", fontSize: "clamp(2.5rem,6vw,4rem)", fontWeight: 300, letterSpacing: "0.08em", marginBottom: "1rem", lineHeight: 1.2 },
+  heroDates: { fontSize: "1rem", color: "rgba(255,255,255,0.65)", letterSpacing: "0.05em" },
+  heroBottom: { position: "relative", width: "100%", display: "flex", justifyContent: "center", paddingBottom: "2rem" },
+  heroLine: { width: 48, height: 2, background: "rgba(255,255,255,0.3)" },
 
-  pwCard: { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 12, padding: "2.5rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", maxWidth: 360, width: "90%" },
-  pwIcon: { fontSize: "2rem" },
-  pwTitle: { fontSize: "1.2rem", fontWeight: 700 },
-  pwDesc: { fontSize: "0.85rem", color: "var(--color-text-muted)" },
-  pwInput: { padding: "0.65rem 0.75rem", border: "1px solid var(--color-border)", borderRadius: 4, fontSize: "1rem", width: "100%" },
-  pwInputError: { borderColor: "var(--color-error)" },
-  pwErrorMsg: { fontSize: "0.8rem", color: "var(--color-error)" },
-  pwBtn: { padding: "0.7rem 2rem", background: "var(--color-primary)", color: "#fff", border: "none", borderRadius: 6, fontSize: "1rem", cursor: "pointer", width: "100%" },
+  container: { maxWidth: 760, margin: "0 auto", padding: "3.5rem 2rem 2rem" },
+  section: { marginBottom: "3.5rem" },
 
-  lightboxOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, cursor: "pointer" },
-  lightboxImg: { maxWidth: "90vw", maxHeight: "90vh", objectFit: "contain", borderRadius: 4 },
+  bodyText: { fontSize: "1rem", lineHeight: 2.1, whiteSpace: "pre-wrap" as const, color: "var(--gray-700)" },
+  blockquote: { background: "var(--white)", borderLeft: "3px solid var(--green-700)", borderRadius: "0 var(--radius-md) var(--radius-md) 0", padding: "1.5rem 1.75rem", boxShadow: "var(--shadow-sm)" },
+  quoteIcon: { display: "block", fontFamily: "Georgia", fontSize: "3rem", color: "var(--green-400)", lineHeight: 0.8, marginBottom: "0.75rem" },
+  quoteText: { fontSize: "1rem", lineHeight: 2.0, color: "var(--gray-700)", whiteSpace: "pre-wrap" as const },
+
+  gallery: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "0.75rem" },
+  gallerySingle: { gridTemplateColumns: "1fr", maxWidth: 480 },
+  galleryItem: { position: "relative", overflow: "hidden", borderRadius: "var(--radius-md)", cursor: "pointer", background: "var(--sand-200)" },
+  galleryImg: { width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", transition: "transform 0.3s ease" },
+  galleryOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s ease" },
+  galleryZoom: { fontSize: "1.5rem", opacity: 0, transition: "opacity 0.2s" },
+  galleryCaption: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.5rem", background: "linear-gradient(transparent, rgba(0,0,0,0.5))", fontSize: "0.75rem", color: "#fff", textAlign: "center" },
+
+  footer: { textAlign: "center", padding: "3rem 2rem 4rem", borderTop: "1px solid var(--sand-300)", marginTop: "1rem" },
+  footerLogo: { fontFamily: "var(--font-serif)", fontSize: "1rem", fontWeight: 700, color: "var(--green-900)", marginBottom: "0.3rem" },
+  footerTagline: { fontSize: "0.78rem", color: "var(--gray-500)", letterSpacing: "0.05em" },
+
+  pwCard: { background: "var(--white)", borderRadius: "var(--radius-lg)", boxShadow: "var(--shadow-lg)", padding: "2.5rem 2rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem", maxWidth: 380, width: "90%" },
+  pwIcon: { fontSize: "2.5rem" },
+  pwTitle: { fontFamily: "var(--font-serif)", fontSize: "1.2rem", fontWeight: 700 },
+  pwDesc: { fontSize: "0.85rem", color: "var(--gray-500)" },
+  pwInput: { padding: "0.7rem 0.9rem", border: "1.5px solid var(--gray-300)", borderRadius: "var(--radius-sm)", fontSize: "1rem", width: "100%", outline: "none" },
+  pwErrorMsg: { fontSize: "0.8rem", color: "var(--red)" },
+  pwBtn: { padding: "0.75rem", background: "var(--green-800)", color: "#fff", border: "none", borderRadius: "var(--radius-sm)", fontSize: "1rem", cursor: "pointer", width: "100%", fontWeight: 500 },
+
+  lightboxOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.92)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2000, cursor: "pointer" },
+  lightboxImg: { maxWidth: "92vw", maxHeight: "92vh", objectFit: "contain", borderRadius: "var(--radius-sm)" },
+  lightboxClose: { position: "fixed", top: "1.25rem", right: "1.25rem", background: "rgba(255,255,255,0.15)", border: "none", color: "#fff", width: 36, height: 36, borderRadius: "50%", fontSize: "1rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
 };

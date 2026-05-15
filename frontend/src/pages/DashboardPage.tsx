@@ -22,58 +22,50 @@ export default function DashboardPage() {
   };
 
   return (
-    <div style={styles.page}>
-      <header style={styles.header}>
-        <h1 style={styles.logo}>Digital Memorial</h1>
-        <div style={styles.headerRight}>
-          <span style={styles.userName}>{user?.name}</span>
-          <button style={styles.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
+    <div style={s.page}>
+      {/* ヘッダー */}
+      <header style={s.header}>
+        <div style={s.headerInner}>
+          <div style={s.headerLeft}>
+            <span style={s.headerLogo}>Digital Memorial</span>
+          </div>
+          <div style={s.headerRight}>
+            <span style={s.headerUser}>{user?.name}</span>
+            <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>
+              ログアウト
+            </button>
+          </div>
         </div>
       </header>
 
-      <main style={styles.main}>
-        <div style={styles.titleRow}>
-          <h2 style={styles.pageTitle}>墓誌一覧</h2>
-          <Link to="/memorials/new" style={styles.newBtn}>+ 新規作成</Link>
+      <main style={s.main}>
+        {/* タイトル行 */}
+        <div style={s.titleRow}>
+          <div>
+            <h1 style={s.pageTitle}>墓誌一覧</h1>
+            <p style={s.pageSub}>{memorials.length}件の墓誌が登録されています</p>
+          </div>
+          <Link to="/memorials/new" style={s.newBtn}>
+            <span style={{ fontSize: "1.1rem", lineHeight: 1 }}>＋</span> 新規作成
+          </Link>
         </div>
 
         {memorials.length === 0 ? (
-          <div style={styles.empty}>
-            <p>まだ墓誌が登録されていません</p>
-            <Link to="/memorials/new" style={styles.newBtn}>最初の墓誌を作成する</Link>
+          <div style={s.empty}>
+            <div style={s.emptyIcon}>🕊️</div>
+            <h2 style={s.emptyTitle}>まだ墓誌が登録されていません</h2>
+            <p style={s.emptyDesc}>最初の墓誌を作成して、大切な方の記憶を残しましょう。</p>
+            <Link to="/memorials/new" style={s.newBtn}>墓誌を作成する</Link>
           </div>
         ) : (
-          <div style={styles.grid}>
+          <div style={s.grid}>
             {memorials.map((m) => (
-              <div key={m.id} style={styles.card}>
-                {m.media.length > 0 && (
-                  <img
-                    src={m.media[0].file_path}
-                    alt={m.name}
-                    style={styles.cardThumb}
-                  />
-                )}
-                <div style={styles.cardBody}>
-                  <h3 style={styles.cardName}>{m.name}</h3>
-                  {m.birth_date && m.death_date && (
-                    <p style={styles.cardDates}>{m.birth_date} 〜 {m.death_date}</p>
-                  )}
-                  {m.biography && (
-                    <p style={styles.cardBio}>{m.biography.slice(0, 60)}{m.biography.length > 60 && "…"}</p>
-                  )}
-                  <p style={styles.cardMeta}>
-                    {m.is_public ? "公開" : "非公開（パスワード保護）"}
-                  </p>
-                </div>
-                <div style={styles.cardFooter}>
-                  <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={styles.btnView}>閲覧</a>
-                  <Link to={`/memorials/${m.id}/edit`} style={styles.btnEdit}>編集</Link>
-                  {m.qr_code_path && (
-                    <button style={styles.btnQr} onClick={() => setQrTarget(m)}>QR</button>
-                  )}
-                  <button style={styles.btnDelete} onClick={() => handleDelete(m.id)}>削除</button>
-                </div>
-              </div>
+              <MemorialCard
+                key={m.id}
+                memorial={m}
+                onQR={() => setQrTarget(m)}
+                onDelete={() => handleDelete(m.id)}
+              />
             ))}
           </div>
         )}
@@ -84,29 +76,115 @@ export default function DashboardPage() {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
-  page: { minHeight: "100vh", background: "var(--color-bg)" },
-  header: { background: "var(--color-surface)", borderBottom: "1px solid var(--color-border)", padding: "1rem 2rem", display: "flex", justifyContent: "space-between", alignItems: "center" },
-  logo: { fontSize: "1.2rem", fontWeight: 700 },
+function MemorialCard({ memorial: m, onQR, onDelete }: { memorial: Memorial; onQR: () => void; onDelete: () => void }) {
+  const [hover, setHover] = useState(false);
+
+  return (
+    <div
+      style={{ ...s.card, ...(hover ? s.cardHover : {}) }}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      {/* サムネイル */}
+      <div style={s.cardThumbWrap}>
+        {m.media.length > 0 ? (
+          <img src={m.media[0].file_path} alt={m.name} style={s.cardThumb} />
+        ) : (
+          <div style={s.cardThumbFallback}>
+            <span style={s.cardThumbInitial}>{m.name[0]}</span>
+          </div>
+        )}
+        <div style={{ ...s.publicBadge, ...(m.is_public ? s.publicBadgeOpen : s.publicBadgeLocked) }}>
+          {m.is_public ? "公開" : "🔒 非公開"}
+        </div>
+      </div>
+
+      {/* 本文 */}
+      <div style={s.cardBody}>
+        <h3 style={s.cardName}>{m.name}</h3>
+        {m.birth_date && m.death_date && (
+          <p style={s.cardDates}>{m.birth_date} 〜 {m.death_date}</p>
+        )}
+        {m.biography && (
+          <p style={s.cardBio}>{m.biography.slice(0, 55)}{m.biography.length > 55 && "…"}</p>
+        )}
+      </div>
+
+      {/* フッター */}
+      <div style={s.cardFooter}>
+        <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={s.btnView}>
+          閲覧
+        </a>
+        <Link to={`/memorials/${m.id}/edit`} style={s.btnEdit}>編集</Link>
+        {m.qr_code_path && (
+          <button style={s.btnQr} onClick={onQR}>QRコード</button>
+        )}
+        <button style={s.btnDelete} onClick={onDelete}>削除</button>
+      </div>
+    </div>
+  );
+}
+
+const s: Record<string, React.CSSProperties> = {
+  page: { minHeight: "100vh", background: "var(--sand-100)" },
+
+  header: { background: "var(--white)", borderBottom: "1px solid var(--sand-300)", position: "sticky", top: 0, zIndex: 100 },
+  headerInner: { maxWidth: 1100, margin: "0 auto", padding: "0 2rem", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between" },
+  headerLeft: {},
+  headerLogo: { fontFamily: "var(--font-serif)", fontSize: "1.05rem", fontWeight: 700, color: "var(--green-900)", letterSpacing: "0.04em" },
   headerRight: { display: "flex", alignItems: "center", gap: "1rem" },
-  userName: { fontSize: "0.9rem", color: "var(--color-text-muted)" },
-  logoutBtn: { padding: "0.35rem 0.75rem", background: "transparent", border: "1px solid var(--color-border)", borderRadius: 4, fontSize: "0.85rem" },
-  main: { maxWidth: 960, margin: "0 auto", padding: "2rem" },
-  titleRow: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" },
-  pageTitle: { fontSize: "1.3rem", fontWeight: 700 },
-  newBtn: { padding: "0.5rem 1rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.9rem" },
-  empty: { textAlign: "center", padding: "4rem", color: "var(--color-text-muted)", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" },
-  card: { background: "var(--color-surface)", border: "1px solid var(--color-border)", borderRadius: 8, overflow: "hidden", display: "flex", flexDirection: "column" },
-  cardThumb: { width: "100%", height: 160, objectFit: "cover" },
-  cardBody: { padding: "1.25rem", flex: 1 },
-  cardName: { fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.35rem" },
-  cardDates: { fontSize: "0.82rem", color: "var(--color-text-muted)", marginBottom: "0.4rem" },
-  cardBio: { fontSize: "0.82rem", color: "var(--color-text-muted)", marginBottom: "0.4rem" },
-  cardMeta: { fontSize: "0.75rem", color: "var(--color-text-muted)", marginTop: "0.5rem" },
-  cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--color-border)", display: "flex", gap: "0.5rem", flexWrap: "wrap" },
-  btnView: { padding: "0.3rem 0.75rem", background: "var(--color-primary)", color: "#fff", borderRadius: 4, fontSize: "0.8rem" },
-  btnEdit: { padding: "0.3rem 0.75rem", background: "#f0f0eb", color: "var(--color-text)", borderRadius: 4, fontSize: "0.8rem" },
-  btnQr: { padding: "0.3rem 0.75rem", background: "#6b7280", color: "#fff", borderRadius: 4, fontSize: "0.8rem", border: "none", cursor: "pointer" },
-  btnDelete: { padding: "0.3rem 0.75rem", background: "transparent", border: "1px solid var(--color-error)", color: "var(--color-error)", borderRadius: 4, fontSize: "0.8rem", cursor: "pointer" },
+  headerUser: { fontSize: "0.85rem", color: "var(--gray-500)" },
+  logoutBtn: { padding: "0.35rem 0.85rem", background: "transparent", border: "1.5px solid var(--gray-300)", borderRadius: 6, fontSize: "0.82rem", color: "var(--gray-700)", transition: "all var(--transition)" },
+
+  main: { maxWidth: 1100, margin: "0 auto", padding: "2.5rem 2rem" },
+
+  titleRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" },
+  pageTitle: { fontFamily: "var(--font-serif)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.2rem" },
+  pageSub: { fontSize: "0.85rem", color: "var(--gray-500)" },
+
+  newBtn: {
+    display: "inline-flex", alignItems: "center", gap: "0.4rem",
+    padding: "0.6rem 1.25rem",
+    background: "var(--green-800)", color: "var(--white)",
+    borderRadius: "var(--radius-sm)", fontSize: "0.9rem", fontWeight: 500,
+    transition: "background var(--transition)",
+  },
+
+  empty: { textAlign: "center", padding: "5rem 2rem", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.75rem" },
+  emptyIcon: { fontSize: "3rem", marginBottom: "0.5rem" },
+  emptyTitle: { fontFamily: "var(--font-serif)", fontSize: "1.2rem", fontWeight: 700 },
+  emptyDesc: { fontSize: "0.9rem", color: "var(--gray-500)", marginBottom: "0.5rem" },
+
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1.25rem" },
+
+  card: {
+    background: "var(--white)",
+    borderRadius: "var(--radius-md)",
+    boxShadow: "var(--shadow-sm)",
+    overflow: "hidden",
+    display: "flex", flexDirection: "column",
+    transition: "box-shadow var(--transition), transform var(--transition)",
+  },
+  cardHover: { boxShadow: "var(--shadow-md)", transform: "translateY(-2px)" },
+
+  cardThumbWrap: { position: "relative", height: 180, background: "var(--sand-200)", overflow: "hidden" },
+  cardThumb: { width: "100%", height: "100%", objectFit: "cover" },
+  cardThumbFallback: { width: "100%", height: "100%", background: "linear-gradient(135deg, var(--green-900), var(--green-700))", display: "flex", alignItems: "center", justifyContent: "center" },
+  cardThumbInitial: { fontFamily: "var(--font-serif)", fontSize: "4rem", color: "rgba(255,255,255,0.6)", fontWeight: 300 },
+
+  publicBadge: { position: "absolute", top: 10, right: 10, padding: "0.2rem 0.6rem", borderRadius: 20, fontSize: "0.72rem", fontWeight: 500 },
+  publicBadgeOpen: { background: "rgba(45,106,79,0.9)", color: "#fff" },
+  publicBadgeLocked: { background: "rgba(0,0,0,0.55)", color: "#fff" },
+
+  cardBody: { padding: "1.1rem 1.25rem", flex: 1 },
+  cardName: { fontFamily: "var(--font-serif)", fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.3rem" },
+  cardDates: { fontSize: "0.78rem", color: "var(--gray-500)", marginBottom: "0.5rem" },
+  cardBio: { fontSize: "0.82rem", color: "var(--gray-500)", lineHeight: 1.6 },
+
+  cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--sand-200)", display: "flex", gap: "0.5rem", flexWrap: "wrap" },
+
+  btnView: { padding: "0.3rem 0.8rem", background: "var(--green-800)", color: "#fff", borderRadius: 6, fontSize: "0.78rem", fontWeight: 500 },
+  btnEdit: { padding: "0.3rem 0.8rem", background: "var(--sand-200)", color: "var(--gray-700)", borderRadius: 6, fontSize: "0.78rem" },
+  btnQr: { padding: "0.3rem 0.8rem", background: "var(--gray-100)", color: "var(--gray-700)", borderRadius: 6, fontSize: "0.78rem", border: "none", cursor: "pointer" },
+  btnDelete: { padding: "0.3rem 0.8rem", background: "transparent", border: "1px solid #FECACA", color: "var(--red)", borderRadius: 6, fontSize: "0.78rem", cursor: "pointer", marginLeft: "auto" },
 };

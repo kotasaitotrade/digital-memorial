@@ -5,38 +5,57 @@
 }
 
 :root {
-  --color-bg: #faf9f7;
-  --color-surface: #ffffff;
-  --color-text: #2c2c2c;
-  --color-text-muted: #6b6b6b;
-  --color-primary: #4a6741;
-  --color-primary-hover: #3a5331;
-  --color-border: #e0ddd8;
-  --color-error: #c0392b;
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+  --green-900: #1B4332;
+  --green-800: #2D6A4F;
+  --green-700: #40916C;
+  --green-400: #74C69D;
+  --green-100: #D8F3DC;
+  --green-50:  #F0FAF3;
+
+  --sand-100: #FAF7F2;
+  --sand-200: #F2EDE4;
+  --sand-300: #E8DFD0;
+
+  --gray-900: #111827;
+  --gray-700: #374151;
+  --gray-500: #6B7280;
+  --gray-300: #D1D5DB;
+  --gray-100: #F3F4F6;
+  --gray-50:  #F9FAFB;
+
+  --gold: #C9A84C;
+  --red:  #DC2626;
+  --white: #FFFFFF;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.05), 0 10px 24px rgba(0,0,0,0.07);
+  --shadow-lg: 0 10px 15px rgba(0,0,0,0.05), 0 20px 48px rgba(0,0,0,0.10);
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+
+  --font-serif: 'Noto Serif JP', 'Yu Mincho', 'Hiragino Mincho ProN', Georgia, serif;
+  --font-sans:  'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+
+  --transition: 0.18s ease;
 }
+
+html { font-size: 16px; }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  font-family: var(--font-sans);
+  background-color: var(--sand-100);
+  color: var(--gray-900);
   line-height: 1.7;
-  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
 }
 
-a {
-  color: var(--color-primary);
-  text-decoration: none;
-}
+a { color: var(--green-700); text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-a:hover {
-  text-decoration: underline;
-}
+button { cursor: pointer; font-family: inherit; }
+input, textarea, select { font-family: inherit; }
 
-button {
-  cursor: pointer;
-  font-family: inherit;
-}
-
-input, textarea {
-  font-family: inherit;
-}
+/* ── Utility ── */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
