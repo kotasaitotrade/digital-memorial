@@ -94,15 +94,18 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
     upload_dir = f"uploads/media/{memorial_id}"
     os.makedirs(upload_dir, exist_ok=True)
 
-    # ファイル名の重複を防ぐためUUIDプレフィックスを付与
     import uuid
     safe_name = f"{uuid.uuid4().hex}_{file.filename}"
-    file_path = os.path.join(upload_dir, safe_name)
-    with open(file_path, "wb") as f:
+    disk_path = os.path.join(upload_dir, safe_name)
+    with open(disk_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
+    # フルURLで保存（クロスオリジン・同一オリジン両対応）
+    from ..config import settings as _s
+    url_path = f"{_s.base_url}/uploads/media/{memorial_id}/{safe_name}"
+
     media_type = "image" if file.content_type.startswith("image") else "video"
-    media = MemorialMedia(memorial_id=memorial_id, file_path=file_path, media_type=media_type, caption=caption)
+    media = MemorialMedia(memorial_id=memorial_id, file_path=url_path, media_type=media_type, caption=caption)
     db.add(media)
     db.commit()
     db.refresh(media)
@@ -117,8 +120,11 @@ def delete_media(memorial_id: int, media_id: int, db: Session = Depends(get_db),
     media = db.query(MemorialMedia).filter(MemorialMedia.id == media_id, MemorialMedia.memorial_id == memorial_id).first()
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
-    if os.path.exists(media.file_path):
-        os.remove(media.file_path)
+    # URLからディスクパスを復元して削除
+    import urllib.parse
+    parsed_path = urllib.parse.urlparse(media.file_path).path.lstrip("/")
+    if os.path.exists(parsed_path):
+        os.remove(parsed_path)
     db.delete(media)
     db.commit()
     return {"ok": True}

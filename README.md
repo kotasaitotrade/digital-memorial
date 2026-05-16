@@ -1,4 +1,14 @@
-# Digital Memorial - デジタル墓誌
+---
+title: Digital Memorial
+emoji: 🕊️
+colorFrom: green
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
+# Digital Memorial — デジタル墓誌
 
 QRコードから故人の墓誌ページにアクセスできるWebアプリ。
 
@@ -14,7 +24,7 @@ QRコードから故人の墓誌ページにアクセスできるWebアプリ。
 - **Backend**: Python / FastAPI / SQLAlchemy / SQLite
 - **Frontend**: React / TypeScript / Vite
 
-## セットアップ
+## ローカル開発
 
 ### バックエンド
 
@@ -23,7 +33,6 @@ cd backend
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
