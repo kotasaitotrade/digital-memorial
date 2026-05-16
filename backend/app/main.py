@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 import os
 from .database import engine, Base
 from .routers import auth_router, memorial_router
+from .config import settings
 
 Base.metadata.create_all(bind=engine)
 
@@ -11,7 +12,7 @@ app = FastAPI(title="Digital Memorial API", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=settings.cors_origins.split(","),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

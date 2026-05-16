@@ -1,6 +1,7 @@
 import { useState, FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { API_BASE } from "../lib/config";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -15,7 +16,7 @@ export default function RegisterPage() {
     setError("");
     setLoading(true);
     try {
-      await axios.post("/api/auth/register", { name, email, password });
+      await axios.post(`${API_BASE}/api/auth/register`, { name, email, password });
       navigate("/login");
     } catch {
       setError("登録に失敗しました。このメールアドレスは既に使用されています。");

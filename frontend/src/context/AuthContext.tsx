@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import axios from "axios";
 import type { User } from "../types";
+import { API_BASE } from "../lib/config";
 
 interface AuthContextValue {
   user: User | null;
@@ -19,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("token");
     if (!token) { setLoading(false); return; }
     axios
-      .get("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } })
+      .get(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => setUser(res.data))
       .catch(() => localStorage.removeItem("token"))
       .finally(() => setLoading(false));
@@ -27,9 +28,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const params = new URLSearchParams({ username: email, password });
-    const res = await axios.post("/api/auth/login", params);
+    const res = await axios.post(`${API_BASE}/api/auth/login`, params);
     localStorage.setItem("token", res.data.access_token);
-    const me = await axios.get("/api/auth/me", {
+    const me = await axios.get(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${res.data.access_token}` },
     });
     setUser(me.data);

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import type { MemorialPublic } from "../types";
+import { API_BASE } from "../lib/config";
 
 export default function PublicMemorialPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -18,7 +19,7 @@ export default function PublicMemorialPage() {
     setPwError(false);
     try {
       const params = pw ? { password: pw } : {};
-      const res = await axios.get(`/api/m/${slug}`, { params });
+      const res = await axios.get(`${API_BASE}/api/m/${slug}`, { params });
       setMemorial(res.data);
       setNeedPassword(false);
     } catch (err: any) {
