@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, UniqueConstraint
 from sqlalchemy.orm import relationship as db_relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -165,9 +165,10 @@ class Pet(Base):
 class ChecklistCompletion(Base):
     """ユーザーごとの完了状態だけ保存。項目定義はコードで管理。"""
     __tablename__ = "checklist_completions"
+    __table_args__ = (UniqueConstraint("user_id", "task_key", name="uq_checklist_user_task"),)
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    task_key = Column(String, nullable=False)   # 例: "estate_heirs_confirmed"
+    task_key = Column(String, nullable=False)
     is_completed = Column(Boolean, default=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
