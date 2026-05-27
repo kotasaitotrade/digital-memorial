@@ -30,6 +30,39 @@ from ..config import settings
 router = APIRouter(tags=["shukatsu"])
 
 
+# ─── チェックリスト定義（コードで管理）─────────────────────
+
+CHECKLIST_ITEMS = [
+    # 相続
+    {"task_key": "estate_heirs_confirmed",   "category": "相続", "label": "相続人を確認した",                   "priority": "必須", "link": "/estate"},
+    {"task_key": "estate_assets_listed",     "category": "相続", "label": "財産・負債を一覧にした",             "priority": "必須", "link": "/estate"},
+    {"task_key": "estate_reserved_checked",  "category": "相続", "label": "遺留分を把握した",                   "priority": "必須", "link": "/estate"},
+    {"task_key": "estate_gifts_recorded",    "category": "相続", "label": "生前贈与の記録を残した",             "priority": "推奨", "link": "/ending-note"},
+    # 遺言
+    {"task_key": "will_considered",          "category": "遺言", "label": "遺言書を作成した（または検討した）", "priority": "必須", "link": "/estate"},
+    # 医療
+    {"task_key": "medical_prolonging_set",   "category": "医療", "label": "延命治療の希望を記録した",           "priority": "必須", "link": "/ending-note"},
+    {"task_key": "medical_doctor_recorded",  "category": "医療", "label": "かかりつけ医・処方薬を記録した",     "priority": "必須", "link": "/ending-note"},
+    {"task_key": "medical_organ_set",        "category": "医療", "label": "臓器提供の意思を記録した",           "priority": "推奨", "link": "/ending-note"},
+    # 葬儀
+    {"task_key": "funeral_style_set",        "category": "葬儀", "label": "葬儀の希望（形式・規模）を記録した", "priority": "必須", "link": "/ending-note"},
+    {"task_key": "funeral_photo_selected",   "category": "葬儀", "label": "遺影に使いたい写真を選んだ",         "priority": "推奨", "link": "/ending-note"},
+    # デジタル
+    {"task_key": "digital_subscriptions",    "category": "デジタル", "label": "サブスクリプション一覧を作成した", "priority": "推奨", "link": "/ending-note"},
+    {"task_key": "digital_sns_set",          "category": "デジタル", "label": "SNSアカウントの死後処理を決めた", "priority": "推奨", "link": "/ending-note"},
+    {"task_key": "digital_key_set",          "category": "デジタル", "label": "デジタル遺品鍵を設定した",         "priority": "必須", "link": "/digital-key"},
+    # 人間関係
+    {"task_key": "contacts_listed",          "category": "人間関係", "label": "緊急連絡先リストを作成した",       "priority": "必須", "link": "/ending-note"},
+    {"task_key": "bequest_listed",           "category": "人間関係", "label": "形見分けリストを作成した",         "priority": "推奨", "link": "/ending-note"},
+    # ペット
+    {"task_key": "pet_caretaker_set",        "category": "ペット", "label": "ペットの引き継ぎ先を決めた",        "priority": "任意", "link": "/ending-note"},
+    # 思い出
+    {"task_key": "family_message_written",   "category": "思い出", "label": "家族へのメッセージを書いた",        "priority": "推奨", "link": "/ending-note"},
+]
+
+VALID_TASK_KEYS = {item["task_key"] for item in CHECKLIST_ITEMS}
+
+
 # ═══════════════════════════════════════════════════════════
 # 相続計画
 # ═══════════════════════════════════════════════════════════
@@ -332,6 +365,9 @@ def delete_pet(item_id: int, db: Session = Depends(get_db), current_user: User =
 # チェックリスト
 # ═══════════════════════════════════════════════════════════
 
+VALID_TASK_KEYS = {item["task_key"] for item in CHECKLIST_ITEMS}
+
+
 @router.get("/checklist")
 def get_checklist(
     db: Session = Depends(get_db),
@@ -342,15 +378,22 @@ def get_checklist(
     ).all()
     completion_map = {c.task_key: c for c in completions}
 
-    result = []
+    items = []
+    completed_count = 0
     for item in CHECKLIST_ITEMS:
         c = completion_map.get(item["task_key"])
-        result.append({
+        is_done = c.is_completed if c else False
+        if is_done:
+            completed_count += 1
+        items.append({
             **item,
-            "is_completed": c.is_completed if c else False,
+            "is_completed": is_done,
             "completed_at": c.completed_at.isoformat() if (c and c.completed_at) else None,
         })
-    return result
+
+    total = len(items)
+    rate = round(completed_count / total * 100, 1) if total else 0.0
+    return {"items": items, "completion_rate": rate}
 
 
 @router.post("/checklist/toggle")
@@ -359,6 +402,9 @@ def toggle_checklist(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if data.task_key not in VALID_TASK_KEYS:
+        raise HTTPException(status_code=404, detail="Task key not found")
+
     completion = db.query(ChecklistCompletion).filter(
         ChecklistCompletion.user_id == current_user.id,
         ChecklistCompletion.task_key == data.task_key,
@@ -382,34 +428,3 @@ def _get_plan_or_404(db: Session, plan_id: int, user_id: int) -> EstatePlan:
     if not plan:
         raise HTTPException(status_code=404, detail="Estate plan not found")
     return plan
-
-
-# ─── チェックリスト定義（コードで管理）─────────────────────
-
-CHECKLIST_ITEMS = [
-    # 相続
-    {"task_key": "estate_heirs_confirmed",   "category": "相続", "label": "相続人を確認した",                   "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_assets_listed",     "category": "相続", "label": "財産・負債を一覧にした",             "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_reserved_checked",  "category": "相続", "label": "遺留分を把握した",                   "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_gifts_recorded",    "category": "相続", "label": "生前贈与の記録を残した",             "priority": "推奨", "link": "/ending-note"},
-    # 遺言
-    {"task_key": "will_considered",          "category": "遺言", "label": "遺言書を作成した（または検討した）", "priority": "必須", "link": "/estate"},
-    # 医療
-    {"task_key": "medical_prolonging_set",   "category": "医療", "label": "延命治療の希望を記録した",           "priority": "必須", "link": "/ending-note"},
-    {"task_key": "medical_doctor_recorded",  "category": "医療", "label": "かかりつけ医・処方薬を記録した",     "priority": "必須", "link": "/ending-note"},
-    {"task_key": "medical_organ_set",        "category": "医療", "label": "臓器提供の意思を記録した",           "priority": "推奨", "link": "/ending-note"},
-    # 葬儀
-    {"task_key": "funeral_style_set",        "category": "葬儀", "label": "葬儀の希望（形式・規模）を記録した", "priority": "必須", "link": "/ending-note"},
-    {"task_key": "funeral_photo_selected",   "category": "葬儀", "label": "遺影に使いたい写真を選んだ",         "priority": "推奨", "link": "/ending-note"},
-    # デジタル
-    {"task_key": "digital_subscriptions",    "category": "デジタル", "label": "サブスクリプション一覧を作成した", "priority": "推奨", "link": "/ending-note"},
-    {"task_key": "digital_sns_set",          "category": "デジタル", "label": "SNSアカウントの死後処理を決めた", "priority": "推奨", "link": "/ending-note"},
-    {"task_key": "digital_key_set",          "category": "デジタル", "label": "デジタル遺品鍵を設定した",         "priority": "必須", "link": "/digital-key"},
-    # 人間関係
-    {"task_key": "contacts_listed",          "category": "人間関係", "label": "緊急連絡先リストを作成した",       "priority": "必須", "link": "/ending-note"},
-    {"task_key": "bequest_listed",           "category": "人間関係", "label": "形見分けリストを作成した",         "priority": "推奨", "link": "/ending-note"},
-    # ペット
-    {"task_key": "pet_caretaker_set",        "category": "ペット", "label": "ペットの引き継ぎ先を決めた",        "priority": "任意", "link": "/ending-note"},
-    # 思い出
-    {"task_key": "family_message_written",   "category": "思い出", "label": "家族へのメッセージを書いた",        "priority": "推奨", "link": "/ending-note"},
-]

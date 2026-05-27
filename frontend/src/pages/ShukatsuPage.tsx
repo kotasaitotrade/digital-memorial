@@ -18,7 +18,10 @@ export default function ShukatsuPage() {
   const [activeCategory, setActiveCategory] = useState<string>("すべて");
 
   useEffect(() => {
-    api.get("/checklist").then((r) => setItems(r.data));
+    api.get("/checklist").then((r) => {
+      const data = r.data;
+      setItems(Array.isArray(data) ? data : (data.items ?? []));
+    });
   }, []);
 
   const toggle = async (task_key: string, current: boolean) => {

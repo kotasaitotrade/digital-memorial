@@ -53,12 +53,14 @@ def calculate_inheritance(family_members: List[Any], estate_value: int = 0) -> D
     # 代襲対象の子（死亡 or 欠格 or 廃除 → 孫が代襲）
     proxy_child_ids = {c.id for c in children if (not c.is_alive or c.is_disqualified)}
 
-    # 代襲孫：parent_member_id が proxy_child_ids に含まれる
-    active_grandchildren = [
-        g for g in grandchildren
-        if g.parent_member_id in proxy_child_ids and not g.is_disqualified
-    ]
+    # 代襲孫：parent_member_id が proxy_child_ids に含まれ、欠格でない
+    # グループ化（子1人→孫N人のグループ）
+    grandchild_groups: dict = {}  # child_id -> [grandchildren]
+    for g in grandchildren:
+        if g.parent_member_id in proxy_child_ids and not g.is_disqualified:
+            grandchild_groups.setdefault(g.parent_member_id, []).append(g)
 
+    active_grandchildren = [g for gc_list in grandchild_groups.values() for g in gc_list]
     first_order = active_children + active_grandchildren
 
     # ─── 第2順位：直系尊属（親が優先、親が全員死亡なら祖父母）──
@@ -70,10 +72,11 @@ def calculate_inheritance(family_members: List[Any], estate_value: int = 0) -> D
     # ─── 第3順位：兄弟姉妹 + 代襲甥姪 ──────────────────────
     active_siblings = [s for s in siblings if s.is_alive and not s.is_disqualified]
     proxy_sibling_ids = {s.id for s in siblings if (not s.is_alive or s.is_disqualified)}
-    active_nephews = [
-        n for n in nephews_nieces
-        if n.parent_member_id in proxy_sibling_ids and not n.is_disqualified
-    ]
+    nephew_groups: dict = {}  # sibling_id -> [nephews/nieces]
+    for n in nephews_nieces:
+        if n.parent_member_id in proxy_sibling_ids and not n.is_disqualified:
+            nephew_groups.setdefault(n.parent_member_id, []).append(n)
+    active_nephews = [n for n_list in nephew_groups.values() for n in n_list]
     third_order = active_siblings + active_nephews
 
     # ─── 実際の相続人を決定 ─────────────────────────────────
@@ -121,14 +124,18 @@ def calculate_inheritance(family_members: List[Any], estate_value: int = 0) -> D
             blood_total = Fraction(1, 4)
         shares[spouse.id] = spouse_share
 
-        # 血族相続人の間で均等割り（半血兄弟は全血の1/2）
-        _divide_blood_shares(shares, blood_heirs, blood_total)
+        # 血族相続人の間で均等割り（代襲・半血兄弟考慮）
+        _divide_blood_shares(shares, blood_heirs, blood_total,
+                             grandchild_groups=grandchild_groups if first_order else None,
+                             nephew_groups=nephew_groups if third_order else None)
 
     elif spouse and not blood_heirs:
         shares[spouse.id] = Fraction(1, 1)
     else:
         # 配偶者なし → 血族で全部均等
-        _divide_blood_shares(shares, blood_heirs, Fraction(1, 1))
+        _divide_blood_shares(shares, blood_heirs, Fraction(1, 1),
+                             grandchild_groups=grandchild_groups if first_order else None,
+                             nephew_groups=nephew_groups if third_order else None)
 
     # ─── 遺留分を計算 ────────────────────────────────────────
     # 遺留分権利者：配偶者、子（孫）、直系尊属のみ（兄弟姉妹・甥姪は対象外）
@@ -183,23 +190,55 @@ def _divide_blood_shares(
     shares: Dict[int, Fraction],
     blood_heirs: List[Any],
     total: Fraction,
+    grandchild_groups: dict | None = None,
+    nephew_groups: dict | None = None,
 ) -> None:
-    """血族相続人の間で total を均等割り（半血兄弟は全血の1/2）"""
+    """
+    血族相続人の間で total を均等割り
+    - 代襲相続：死亡した子（兄弟）の「単位分」を孫（甥姪）が等分する
+    - 半血兄弟：全血の1/2の重み
+    grandchild_groups: {死亡した子のid -> [代襲孫リスト]}
+    nephew_groups:     {死亡した兄弟のid -> [代襲甥姪リスト]}
+    """
     if not blood_heirs:
         return
 
-    has_half = any(getattr(h, "is_half_blood", False) for h in blood_heirs)
+    proxy_groups = grandchild_groups or nephew_groups or {}
 
-    if not has_half:
-        per_person = total / len(blood_heirs)
-        for h in blood_heirs:
-            shares[h.id] = per_person
-    else:
-        # 半血は全血の1/2 → 全血を「1」、半血を「0.5」として計算
-        unit_count = sum(
-            Fraction(1, 2) if getattr(h, "is_half_blood", False) else Fraction(1, 1)
-            for h in blood_heirs
-        )
-        for h in blood_heirs:
-            weight = Fraction(1, 2) if getattr(h, "is_half_blood", False) else Fraction(1, 1)
-            shares[h.id] = total * weight / unit_count
+    # ── 代表単位（proxy グループを含む）を構築 ──────────────
+    # 各単位は (weight, [heir_id, ...]) のタプル
+    # 生存している子は1単位、死亡した子はそのグループが1単位
+    #   ただし孫が存在する死亡子のみ単位としてカウント済み（事前にフィルタ済み）
+    # 代表 id セット（孫/甥姪は proxy_groups 経由）
+    proxy_ids = {hid for hid, gc_list in proxy_groups.items()}  # 死亡した子/兄弟のid
+    proxied_heir_ids = {g.id for gc_list in proxy_groups.values() for g in gc_list}
+
+    # 代表単位リスト
+    units: List[tuple] = []  # (weight: Fraction, heir_ids: list[int])
+    for h in blood_heirs:
+        if h.id in proxied_heir_ids:
+            # 孫/甥姪：後でグループとして追加するのでスキップ
+            continue
+        if h.id not in proxy_ids:
+            # 通常の生存相続人
+            w = Fraction(1, 2) if getattr(h, "is_half_blood", False) else Fraction(1, 1)
+            units.append((w, [h.id]))
+
+    # 代襲グループを単位として追加（グループ全体で1単位）
+    for parent_id, gc_list in proxy_groups.items():
+        if not gc_list:
+            continue
+        # 親の半血フラグを確認（グループの重みは元の親の重みに従う）
+        parent_obj = next((h for h in blood_heirs if h.id == parent_id), None)
+        w = Fraction(1, 2) if (parent_obj and getattr(parent_obj, "is_half_blood", False)) else Fraction(1, 1)
+        units.append((w, [g.id for g in gc_list]))
+
+    if not units:
+        return
+
+    total_weight = sum(w for w, _ in units)
+    for weight, heir_ids in units:
+        per_unit = total * weight / total_weight
+        per_person = per_unit / len(heir_ids)
+        for hid in heir_ids:
+            shares[hid] = per_person

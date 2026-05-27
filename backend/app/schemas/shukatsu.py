@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 
@@ -6,7 +6,7 @@ from datetime import datetime
 # ─── 相続計画 ────────────────────────────────────────────────
 
 class FamilyMemberCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1)
     relationship: str
     is_alive: bool = True
     is_adopted: bool = False
