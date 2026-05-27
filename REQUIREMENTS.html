@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Memorial 要件定義書</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+    font-family: 'Noto Sans JP', 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif;
+    font-size: 10pt;
+    line-height: 1.8;
+    color: #1a1a1a;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 15mm 20mm;
+}
+
+h1 {
+    font-size: 20pt;
+    color: #1a5c38;
+    border-bottom: 3px solid #1a5c38;
+    padding-bottom: 8px;
+    margin-top: 0;
+}
+
+h2 {
+    font-size: 14pt;
+    color: #1a5c38;
+    border-bottom: 2px solid #e0e0e0;
+    padding-bottom: 6px;
+    margin-top: 30px;
+}
+
+h3 {
+    font-size: 12pt;
+    color: #2d7a4f;
+    border-left: 4px solid #2d7a4f;
+    padding-left: 10px;
+    margin-top: 20px;
+}
+
+h4 {
+    font-size: 10pt;
+    color: #333;
+    margin-top: 15px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 9pt;
+}
+
+th {
+    background-color: #1a5c38;
+    color: white;
+    padding: 6px 8px;
+    text-align: left;
+}
+
+td {
+    padding: 5px 8px;
+    border: 1px solid #ddd;
+}
+
+tr:nth-child(even) td {
+    background-color: #f7f7f7;
+}
+
+code, pre {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8.5pt;
+    background-color: #f4f4f4;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+
+pre {
+    padding: 12px;
+    overflow-x: auto;
+    border-left: 3px solid #1a5c38;
+    line-height: 1.5;
+}
+
+pre code {
+    background: none;
+    padding: 0;
+}
+
+blockquote {
+    margin: 10px 0;
+    padding: 10px 15px;
+    background: #f0f7f4;
+    border-left: 4px solid #1a5c38;
+    color: #333;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 20px 0;
+}
+
+.cover {
+    text-align: center;
+    padding: 50mm 0 30mm;
+}
+
+@media print {
+    body { padding: 0; }
+    h2 { page-break-before: auto; }
+    table { page-break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<h1 id="digital-memorial">Digital Memorial — 要件定義書</h1>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>文書名</strong></td>
+<td>Digital Memorial サービス要件定義書</td>
+</tr>
+<tr>
+<td><strong>バージョン</strong></td>
+<td>1.0</td>
+</tr>
+<tr>
+<td><strong>作成日</strong></td>
+<td>2026年5月27日</td>
+</tr>
+<tr>
+<td><strong>対象読者</strong></td>
+<td>開発者・企画担当者</td>
+</tr>
+<tr>
+<td><strong>ステータス</strong></td>
+<td>ドラフト</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_1">改訂履歴</h2>
+<table>
+<thead>
+<tr>
+<th>バージョン</th>
+<th>日付</th>
+<th>変更内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1.0</td>
+<td>2026-05-27</td>
+<td>初版作成（墓誌機能 + 終活機能全体）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_2">目次</h2>
+<ol>
+<li><a href="#1-サービス概要">サービス概要</a></li>
+<li><a href="#2-ターゲットユーザー">ターゲットユーザー</a></li>
+<li><a href="#3-サービス全体像と利用フロー">サービス全体像と利用フロー</a></li>
+<li><a href="#4-機能要件">機能要件</a></li>
+<li>4.1 既存機能（墓誌・QRコード）</li>
+<li>4.2 相続の棚卸し機能</li>
+<li>4.3 終活チェックリスト</li>
+<li>4.4 エンディングノート</li>
+<li>4.5 デジタル遺品鍵</li>
+<li>4.6 リマインダー（メール通知）</li>
+<li>4.7 PWA対応</li>
+<li><a href="#5-非機能要件">非機能要件</a></li>
+<li><a href="#6-画面一覧">画面一覧</a></li>
+<li><a href="#7-データモデル概要">データモデル概要</a></li>
+<li><a href="#8-セキュリティ要件">セキュリティ要件</a></li>
+<li><a href="#9-技術スタック">技術スタック</a></li>
+<li><a href="#10-開発ロードマップ">開発ロードマップ</a></li>
+<li><a href="#11-用語集">用語集</a></li>
+<li><a href="#12-免責事項の方針">免責事項の方針</a></li>
+</ol>
+<hr />
+<h2 id="1">1. サービス概要</h2>
+<h3 id="11">1.1 サービス名</h3>
+<p><strong>Digital Memorial（デジタル墓誌）</strong></p>
+<h3 id="12">1.2 キャッチコピー</h3>
+<blockquote>
+<p>故人の記憶を、永遠に。そして、残された家族が困らないために。</p>
+</blockquote>
+<h3 id="13">1.3 サービスの目的</h3>
+<p>Digital Memorial は、以下の 2 つの課題を解決する Web サービスです。</p>
+<p><strong>課題 1：故人の記憶の保存と共有</strong>
+- 墓前に QR コードを設置し、スマートフォンで故人の略歴・写真・メッセージを閲覧できる</p>
+<p><strong>課題 2：生前の終活準備</strong>
+- 自分が亡くなった後に家族が困らないよう、相続・遺産・医療希望・連絡先などを事前に整理・記録できる
+- チェックリスト形式で準備の抜け漏れを防ぎ、完成度をスコアで可視化する</p>
+<h3 id="14-url">1.4 提供URL</h3>
+<table>
+<thead>
+<tr>
+<th>環境</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>本番（フロントエンド）</td>
+<td>https://digital-memorial.onrender.com</td>
+</tr>
+<tr>
+<td>本番（API）</td>
+<td>https://digital-memorial-api.onrender.com</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2">2. ターゲットユーザー</h2>
+<h3 id="21">2.1 ユーザー種別</h3>
+<table>
+<thead>
+<tr>
+<th>種別</th>
+<th>説明</th>
+<th>主な利用機能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>終活ユーザー（主軸）</strong></td>
+<td>自身の終活を進めたい 50〜70 代</td>
+<td>相続棚卸し・チェックリスト・エンディングノート</td>
+</tr>
+<tr>
+<td><strong>遺族ユーザー</strong></td>
+<td>故人の情報を登録・管理したい家族</td>
+<td>墓誌作成・QR コード</td>
+</tr>
+<tr>
+<td><strong>参拝者</strong></td>
+<td>QR コードから墓誌を閲覧したい人</td>
+<td>公開墓誌ページの閲覧</td>
+</tr>
+<tr>
+<td><strong>信頼者（受取人）</strong></td>
+<td>死後にデジタル遺品鍵でデータを受け取る家族</td>
+<td>デジタル遺品鍵・閲覧</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22">2.2 ペルソナ</h3>
+<p><strong>ペルソナ A：終活ユーザー</strong>
+- 年齢：62 歳・男性
+- 状況：定年退職を機に終活を意識し始めた
+- 課題：相続人が誰になるか・何を持っているかを整理したいが、紙だと管理しにくい
+- ゴール：子どもたちに迷惑をかけずに逝きたい</p>
+<p><strong>ペルソナ B：遺族ユーザー</strong>
+- 年齢：45 歳・女性
+- 状況：母親を亡くし、お墓に QR コードを設置したい
+- 課題：写真やエピソードを後世に残したい
+- ゴール：参拝者にスマホで母の人生を知ってもらいたい</p>
+<hr />
+<h2 id="3">3. サービス全体像と利用フロー</h2>
+<h3 id="31">3.1 サービスマップ</h3>
+<pre><code>Digital Memorial
+│
+├── 【墓誌機能】故人の記憶を残す
+│   ├── 墓誌ページの作成・編集
+│   ├── 写真・略歴・メッセージの登録
+│   ├── QR コードの自動生成・印刷
+│   └── 公開ページ（参拝者が閲覧）
+│
+└── 【終活機能】生前の準備を整える
+    ├── 終活チェックリスト（進捗管理）
+    ├── 相続の棚卸し
+    │   ├── 家族構成・法定相続人の特定
+    │   ├── 財産・負債の棚卸し
+    │   ├── 配分シミュレーション
+    │   └── 遺留分・争いリスク分析
+    ├── エンディングノート
+    │   ├── 医療・介護の希望
+    │   ├── 葬儀の希望
+    │   ├── 形見分けリスト
+    │   ├── デジタル資産・サブスクリプション
+    │   └── 緊急連絡先
+    ├── デジタル遺品鍵
+    │   ├── 信頼者（受取人）の指定
+    │   └── 死後のデータアクセス付与
+    └── リマインダー（メール通知）
+        ├── 年次見直し通知
+        └── 期限アラート
+</code></pre>
+<h3 id="32">3.2 終活ユーザーの利用フロー</h3>
+<pre><code>アカウント登録
+    ↓
+終活チェックリスト（ダッシュボード）
+    ↓ 優先度順に取り組む
+    ├─→ 相続の棚卸し
+    │       ↓ 家族構成入力 → 法定相続人確認 → 財産入力 → シミュレーション → リスク確認
+    │
+    ├─→ エンディングノート
+    │       ↓ 医療希望 → 葬儀希望 → 形見分け → デジタル資産 → 緊急連絡先
+    │
+    ├─→ デジタル遺品鍵
+    │       ↓ 信頼者を登録 → アクセス条件を設定
+    │
+    └─→ 準備スコアが 100% になったら完了
+            ↓
+        年次リマインダーで定期見直し
+</code></pre>
+<hr />
+<h2 id="4">4. 機能要件</h2>
+<hr />
+<h3 id="41-qr">4.1 既存機能（墓誌・QRコード）</h3>
+<h4 id="_3">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+<th>優先度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-101</td>
+<td>アカウント登録・ログイン</td>
+<td>メール・パスワードによる認証</td>
+<td>実装済み</td>
+</tr>
+<tr>
+<td>F-102</td>
+<td>墓誌の作成・編集・削除</td>
+<td>故人情報・写真・略歴・メッセージの管理</td>
+<td>実装済み</td>
+</tr>
+<tr>
+<td>F-103</td>
+<td>QR コードの自動生成</td>
+<td>墓誌作成時に公開 URL の QR コードを自動生成</td>
+<td>実装済み</td>
+</tr>
+<tr>
+<td>F-104</td>
+<td>QR コードのダウンロード・印刷</td>
+<td>PNG 形式でのダウンロード</td>
+<td>実装済み</td>
+</tr>
+<tr>
+<td>F-105</td>
+<td>公開墓誌ページ</td>
+<td>参拝者向けの閲覧専用ページ（写真ライトボックス付き）</td>
+<td>実装済み</td>
+</tr>
+<tr>
+<td>F-106</td>
+<td>パスワード保護</td>
+<td>特定のパスワードを知っている人のみ閲覧可能</td>
+<td>実装済み</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="42">4.2 相続の棚卸し機能</h3>
+<p>終活ユーザーが「誰が何を法的に主張できるか」を可視化し、遺産紛争を事前に防ぐための機能。</p>
+<h4 id="phase-1">Phase 1：家族構成・法定相続人の特定・法定相続分の計算</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-201</td>
+<td>相続計画の作成</td>
+<td>相続計画を新規作成（複数プラン対応）</td>
+</tr>
+<tr>
+<td>F-202</td>
+<td>家族構成の入力</td>
+<td>配偶者・子・親・兄弟姉妹・孫・甥姪を登録（続柄・存命・養子・半血・相続放棄・欠格を設定可能）</td>
+</tr>
+<tr>
+<td>F-203</td>
+<td>法定相続人の自動判定</td>
+<td>民法の順位規定に基づき相続人を自動判定</td>
+</tr>
+<tr>
+<td>F-204</td>
+<td>法定相続分の計算</td>
+<td>法定相続人ごとの取り分（分数・パーセント・根拠条文）を表示</td>
+</tr>
+<tr>
+<td>F-205</td>
+<td>相続人マップの表示</td>
+<td>家族構成をツリー図で可視化し、誰が相続人かを一目で確認</td>
+</tr>
+<tr>
+<td>F-206</td>
+<td>遺留分の計算・表示</td>
+<td>各権利者の遺留分（最低保証額）を計算・表示</td>
+</tr>
+</tbody>
+</table>
+<p><strong>法定相続分の計算ルール</strong></p>
+<table>
+<thead>
+<tr>
+<th>相続人の構成</th>
+<th>配偶者</th>
+<th>第1〜3順位</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>配偶者 ＋ 子（孫）</td>
+<td>1/2</td>
+<td>1/2 ÷ 人数（均等）</td>
+</tr>
+<tr>
+<td>配偶者 ＋ 直系尊属</td>
+<td>2/3</td>
+<td>1/3 ÷ 人数（均等）</td>
+</tr>
+<tr>
+<td>配偶者 ＋ 兄弟姉妹</td>
+<td>3/4</td>
+<td>1/4 ÷ 人数（均等）※半血は全血の 1/2</td>
+</tr>
+<tr>
+<td>配偶者のみ</td>
+<td>全部</td>
+<td>—</td>
+</tr>
+<tr>
+<td>子（孫）のみ</td>
+<td>—</td>
+<td>全部 ÷ 人数（均等）</td>
+</tr>
+<tr>
+<td>直系尊属のみ</td>
+<td>—</td>
+<td>全部 ÷ 人数（均等）</td>
+</tr>
+<tr>
+<td>兄弟姉妹のみ</td>
+<td>—</td>
+<td>全部 ÷ 人数（均等）※半血は全血の 1/2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>代襲相続のルール</strong></p>
+<table>
+<thead>
+<tr>
+<th>元の相続人</th>
+<th>代襲者</th>
+<th>放棄時の代襲</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>子（死亡・欠格・廃除）</td>
+<td>孫（直系卑属）</td>
+<td>なし（放棄は代襲を生まない）</td>
+</tr>
+<tr>
+<td>兄弟姉妹（死亡・欠格・廃除）</td>
+<td>甥・姪（1代のみ）</td>
+<td>なし</td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-2">Phase 2：財産の棚卸し・配分シミュレーション</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-211</td>
+<td>財産の入力・管理</td>
+<td>資産（不動産・預貯金・有価証券・生命保険・退職金・その他）と負債を登録</td>
+</tr>
+<tr>
+<td>F-212</td>
+<td>正味遺産額の計算</td>
+<td>資産合計 − 負債合計 = 正味遺産額を自動計算</td>
+</tr>
+<tr>
+<td>F-213</td>
+<td>相続税基礎控除の表示</td>
+<td>「3,000万円 ＋ 600万円 × 法定相続人数」を参考表示</td>
+</tr>
+<tr>
+<td>F-214</td>
+<td>法定相続分通りの配分表示</td>
+<td>正味遺産額を法定相続分で自動分配した結果を表示</td>
+</tr>
+<tr>
+<td>F-215</td>
+<td>カスタム配分シミュレーション</td>
+<td>スライダーで各人の取り分を変更し、遺留分との比較をリアルタイム表示</td>
+</tr>
+</tbody>
+</table>
+<p><strong>財産の種別</strong></p>
+<table>
+<thead>
+<tr>
+<th>種別</th>
+<th>内容</th>
+<th>備考</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>不動産</td>
+<td>自宅・土地・収益物件</td>
+<td>路線価または固定資産税評価額を目安</td>
+</tr>
+<tr>
+<td>預貯金</td>
+<td>銀行・郵便局口座</td>
+<td>—</td>
+</tr>
+<tr>
+<td>有価証券</td>
+<td>株式・投資信託・債券</td>
+<td>—</td>
+</tr>
+<tr>
+<td>生命保険金</td>
+<td>死亡保険金（受取人指定あり）</td>
+<td>みなし相続財産（原則として遺産分割対象外）</td>
+</tr>
+<tr>
+<td>退職金</td>
+<td>死亡退職金</td>
+<td>みなし相続財産</td>
+</tr>
+<tr>
+<td>その他資産</td>
+<td>骨董品・自動車・貴金属など</td>
+<td>—</td>
+</tr>
+<tr>
+<td>負債</td>
+<td>住宅ローン・カードローンなど</td>
+<td>マイナス計上</td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-3">Phase 3：遺留分・争いリスク分析</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-221</td>
+<td>遺留分の詳細表示</td>
+<td>権利者・遺留分の根拠・金額を一覧表示（兄弟姉妹は対象外）</td>
+</tr>
+<tr>
+<td>F-222</td>
+<td>遺留分侵害チェック</td>
+<td>カスタム配分で遺留分を侵害している場合に警告を表示</td>
+</tr>
+<tr>
+<td>F-223</td>
+<td>争いリスクのアドバイス表示</td>
+<td>特別受益・寄与分・遺留分侵害額請求のリスクをチェックリスト形式で表示</td>
+</tr>
+<tr>
+<td>F-224</td>
+<td>「専門家に相談」誘導</td>
+<td>弁護士・司法書士・税理士への相談を促すバナーを表示</td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-4">Phase 4：遺言書ドラフト（将来実装）</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-231</td>
+<td>遺言書ドラフトの生成</td>
+<td>Phase 1〜3 の情報から自筆証書遺言のドラフトを自動生成</td>
+</tr>
+<tr>
+<td>F-232</td>
+<td>PDF 出力</td>
+<td>ドラフトを PDF でダウンロード可能</td>
+</tr>
+<tr>
+<td>F-233</td>
+<td>法的手続きの案内</td>
+<td>自筆証書遺言の有効要件（日付・署名・押印）を案内</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="43">4.3 終活チェックリスト</h3>
+<p>終活準備の全体を俯瞰し、「何が完了して何が残っているか」を一目で把握できる機能。</p>
+<h4 id="_4">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-301</td>
+<td>チェックリストダッシュボード</td>
+<td>全終活タスクの完了状況を一覧表示</td>
+</tr>
+<tr>
+<td>F-302</td>
+<td>準備スコア表示</td>
+<td>完了タスク数 / 全タスク数をパーセントで表示（ゲージUI）</td>
+</tr>
+<tr>
+<td>F-303</td>
+<td>カテゴリ別フィルター</td>
+<td>「相続」「医療」「葬儀」などカテゴリ別に絞り込み</td>
+</tr>
+<tr>
+<td>F-304</td>
+<td>優先度ラベル</td>
+<td>各タスクに「必須」「推奨」「任意」のラベルを表示</td>
+</tr>
+<tr>
+<td>F-305</td>
+<td>タスクの完了マーク</td>
+<td>チェックすると完了状態になり、スコアに反映</td>
+</tr>
+<tr>
+<td>F-306</td>
+<td>各タスクへのショートカット</td>
+<td>チェック項目から対応する入力ページに直接遷移できる</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_5">デフォルトチェックリスト項目</h4>
+<table>
+<thead>
+<tr>
+<th>カテゴリ</th>
+<th>タスク</th>
+<th>優先度</th>
+<th>対応機能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>相続</td>
+<td>相続人を確認した</td>
+<td>必須</td>
+<td>相続棚卸し Phase 1</td>
+</tr>
+<tr>
+<td>相続</td>
+<td>財産・負債を一覧にした</td>
+<td>必須</td>
+<td>相続棚卸し Phase 2</td>
+</tr>
+<tr>
+<td>相続</td>
+<td>遺留分を把握した</td>
+<td>必須</td>
+<td>相続棚卸し Phase 3</td>
+</tr>
+<tr>
+<td>相続</td>
+<td>生前贈与の記録を残した</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>遺言</td>
+<td>遺言書を作成した（または検討した）</td>
+<td>必須</td>
+<td>相続棚卸し Phase 4</td>
+</tr>
+<tr>
+<td>医療</td>
+<td>延命治療の希望を記録した</td>
+<td>必須</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>医療</td>
+<td>かかりつけ医・処方薬を記録した</td>
+<td>必須</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>医療</td>
+<td>臓器提供の意思を記録した</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>葬儀</td>
+<td>葬儀の希望（形式・規模）を記録した</td>
+<td>必須</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>葬儀</td>
+<td>遺影に使いたい写真を選んだ</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>デジタル</td>
+<td>サブスクリプション一覧を作成した</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>デジタル</td>
+<td>SNS アカウントの死後処理を決めた</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>デジタル</td>
+<td>デジタル遺品鍵を設定した</td>
+<td>必須</td>
+<td>デジタル遺品鍵</td>
+</tr>
+<tr>
+<td>人間関係</td>
+<td>緊急連絡先リストを作成した</td>
+<td>必須</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>人間関係</td>
+<td>形見分けリストを作成した</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>ペット</td>
+<td>ペットの引き継ぎ先を決めた</td>
+<td>任意</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>思い出</td>
+<td>家族へのメッセージを書いた</td>
+<td>推奨</td>
+<td>エンディングノート</td>
+</tr>
+<tr>
+<td>墓誌</td>
+<td>故人の墓誌ページを作成した</td>
+<td>任意</td>
+<td>墓誌機能</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="44">4.4 エンディングノート</h3>
+<p>自分の意思・希望を記録し、死後に家族が迷わないようにするための機能。</p>
+<h4 id="_6">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-401</td>
+<td>医療・介護の希望</td>
+<td>延命治療の可否・臓器提供意思・介護の希望・かかりつけ医情報を記録</td>
+</tr>
+<tr>
+<td>F-402</td>
+<td>葬儀の希望</td>
+<td>形式（家族葬/一般葬/直葬）・宗教・希望の音楽・参列してほしい人リスト</td>
+</tr>
+<tr>
+<td>F-403</td>
+<td>遺影・葬儀用写真の指定</td>
+<td>「この写真を遺影に使って」と事前にピン留め（写真アップロード）</td>
+</tr>
+<tr>
+<td>F-404</td>
+<td>形見分けリスト</td>
+<td>物品と引き継ぎ先を紐付け（「この時計は長男に」）</td>
+</tr>
+<tr>
+<td>F-405</td>
+<td>デジタル資産の記録</td>
+<td>SNS アカウント・暗号資産・NFT の一覧と死後処理方法を記録</td>
+</tr>
+<tr>
+<td>F-406</td>
+<td>サブスクリプション一覧</td>
+<td>月額課金サービスの名称・解約方法・担当者向けメモを記録</td>
+</tr>
+<tr>
+<td>F-407</td>
+<td>緊急連絡先カード</td>
+<td>医師・弁護士・保険会社・家族などの連絡先を 1 ページにまとめる</td>
+</tr>
+<tr>
+<td>F-408</td>
+<td>生前贈与の記録</td>
+<td>いつ誰に何を贈ったかを記録（特別受益の証拠として活用）</td>
+</tr>
+<tr>
+<td>F-409</td>
+<td>家族へのメッセージ</td>
+<td>感謝・想い・伝えたいことを自由記述（非公開保存）</td>
+</tr>
+<tr>
+<td>F-410</td>
+<td>ペット情報</td>
+<td>ペットの名前・性格・医療情報・引き継ぎ先の記録</td>
+</tr>
+</tbody>
+</table>
+<h4 id="f-401">医療・介護の希望（F-401）の入力項目</h4>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>種別</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>延命治療</td>
+<td>選択（希望する / 希望しない / 家族に委ねる）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>心肺蘇生</td>
+<td>選択（希望する / 希望しない）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>胃ろう・経管栄養</td>
+<td>選択（希望する / 希望しない）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>臓器提供</td>
+<td>選択（提供する / 提供しない / 家族に委ねる）</td>
+<td>提供する臓器の選択も可</td>
+</tr>
+<tr>
+<td>介護の希望場所</td>
+<td>選択（自宅 / 施設 / 病院）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>かかりつけ医</td>
+<td>テキスト</td>
+<td>名前・病院名・電話番号</td>
+</tr>
+<tr>
+<td>服用中の薬</td>
+<td>テキスト</td>
+<td>薬の名前・用量・処方医</td>
+</tr>
+<tr>
+<td>備考</td>
+<td>テキスト</td>
+<td>自由記述</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="45">4.5 デジタル遺品鍵</h3>
+<p>死後に指定した信頼者（家族）が、ユーザーの終活データに安全にアクセスできる仕組み。</p>
+<h4 id="_7">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-501</td>
+<td>信頼者（受取人）の登録</td>
+<td>名前・メールアドレスを登録（最大 3 名）</td>
+</tr>
+<tr>
+<td>F-502</td>
+<td>アクセス範囲の設定</td>
+<td>信頼者ごとに「閲覧できる機能」を選択（例：相続情報のみ、全データ）</td>
+</tr>
+<tr>
+<td>F-503</td>
+<td>解除キーの発行</td>
+<td>信頼者に対してアクセス用の解除キー（ URL ＋トークン）をメール送信</td>
+</tr>
+<tr>
+<td>F-504</td>
+<td>アクセス条件の設定</td>
+<td>「信頼者 2 名以上が申請した場合に開錠」などの条件設定</td>
+</tr>
+<tr>
+<td>F-505</td>
+<td>死後アクセスのリクエスト</td>
+<td>信頼者が解除キーを使ってアクセスをリクエスト</td>
+</tr>
+<tr>
+<td>F-506</td>
+<td>アクセス承認・開錠</td>
+<td>条件を満たした場合にシステムが自動で信頼者にデータアクセスを許可</td>
+</tr>
+<tr>
+<td>F-507</td>
+<td>アクセスログの記録</td>
+<td>いつ誰がアクセスしたかを記録</td>
+</tr>
+<tr>
+<td>F-508</td>
+<td>信頼者へのプレビュー通知</td>
+<td>登録時に信頼者に「あなたが指定されました」メールを送信</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_8">アクセス条件の選択肢</h4>
+<table>
+<thead>
+<tr>
+<th>条件</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>信頼者 1 名が申請</td>
+<td>1 名の申請で即時開錠</td>
+</tr>
+<tr>
+<td>信頼者 2 名以上が申請</td>
+<td>複数名の合意で開錠（不正防止）</td>
+</tr>
+<tr>
+<td>登録者の死亡診断書アップロード後</td>
+<td>書類確認後に手動開錠（将来対応）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="f-5xx">セキュリティ要件（F-5xx 共通）</h4>
+<ul>
+<li>解除キーは一時的なトークン（有効期限あり）</li>
+<li>信頼者のメールアドレス認証が必須</li>
+<li>開錠後もアクセスは読み取り専用（編集・削除不可）</li>
+</ul>
+<hr />
+<h3 id="46">4.6 リマインダー（メール通知）</h3>
+<p>終活情報を定期的に見直す習慣を促し、情報の陳腐化を防ぐための機能。</p>
+<h4 id="_9">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-601</td>
+<td>年次見直しリマインダー</td>
+<td>毎年設定した月に「内容を見直しましょう」メールを送信</td>
+</tr>
+<tr>
+<td>F-602</td>
+<td>期限アラート</td>
+<td>遺言書確認・保険更新などの期限が近づいたらメール通知</td>
+</tr>
+<tr>
+<td>F-603</td>
+<td>未完了タスクのリマインダー</td>
+<td>チェックリストで未完了のタスクを定期的にメール通知</td>
+</tr>
+<tr>
+<td>F-604</td>
+<td>信頼者への定期確認メール</td>
+<td>登録した信頼者が現在も有効かを年に 1 度確認するメールを送信</td>
+</tr>
+<tr>
+<td>F-605</td>
+<td>通知設定の変更</td>
+<td>通知を受け取る月・頻度・メールアドレスをユーザーが変更可能</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_10">メール通知の実装方針</h4>
+<ul>
+<li>配信サービス：SendGrid（または AWS SES）</li>
+<li>送信タイミング：バッチ処理（毎日深夜 0 時に当日対象のメールを送信）</li>
+<li>配信停止：各メールに配信停止リンクを設置（CAN-SPAM / 特定電子メール法準拠）</li>
+</ul>
+<hr />
+<h3 id="47-pwa">4.7 PWA（プログレッシブウェブアプリ）対応</h3>
+<p>ネイティブアプリに近いユーザー体験を Web で実現する。</p>
+<h4 id="_11">機能一覧</h4>
+<table>
+<thead>
+<tr>
+<th>機能ID</th>
+<th>機能名</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F-701</td>
+<td>ホーム画面への追加</td>
+<td>スマートフォンのホーム画面にアイコンとして追加できる</td>
+</tr>
+<tr>
+<td>F-702</td>
+<td>オフラインキャッシュ</td>
+<td>一度閲覧したページをオフラインでも表示できる（Service Worker）</td>
+</tr>
+<tr>
+<td>F-703</td>
+<td>スプラッシュスクリーン</td>
+<td>アプリ起動時のローディング画面</td>
+</tr>
+<tr>
+<td>F-704</td>
+<td>Web Push 通知（Android）</td>
+<td>Android Chrome でのプッシュ通知（iOS は Safari 16.4 以上で対応）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5">5. 非機能要件</h2>
+<h3 id="51">5.1 パフォーマンス</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>要件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ページ初期表示</td>
+<td>3 秒以内（モバイル 4G 回線）</td>
+</tr>
+<tr>
+<td>API レスポンス</td>
+<td>500ms 以内（95 パーセンタイル）</td>
+</tr>
+<tr>
+<td>写真アップロード</td>
+<td>10MB 以下のファイルを 10 秒以内</td>
+</tr>
+</tbody>
+</table>
+<h3 id="52">5.2 可用性</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>要件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>稼働率</td>
+<td>99% 以上（月次）</td>
+</tr>
+<tr>
+<td>計画停止</td>
+<td>深夜 2〜4 時（メンテナンス枠）</td>
+</tr>
+<tr>
+<td>バックエンド起動</td>
+<td>Render 無料プランのスリープ対策として初回 60 秒以内に起動</td>
+</tr>
+</tbody>
+</table>
+<h3 id="53">5.3 スケーラビリティ</h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>要件</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>初期目標ユーザー数</td>
+<td>1,000 ユーザー</td>
+</tr>
+<tr>
+<td>中期目標ユーザー数</td>
+<td>10,000 ユーザー</td>
+</tr>
+<tr>
+<td>データベース移行</td>
+<td>ユーザー増加に応じて SQLite → PostgreSQL に移行</td>
+</tr>
+<tr>
+<td>ファイルストレージ移行</td>
+<td>ユーザー増加に応じてローカル → AWS S3 / Cloudflare R2 に移行</td>
+</tr>
+</tbody>
+</table>
+<h3 id="54">5.4 ブラウザ・デバイス対応</h3>
+<table>
+<thead>
+<tr>
+<th>環境</th>
+<th>対応状況</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>iOS Safari（16 以上）</td>
+<td>対応</td>
+</tr>
+<tr>
+<td>Android Chrome</td>
+<td>対応</td>
+</tr>
+<tr>
+<td>PC Chrome</td>
+<td>対応</td>
+</tr>
+<tr>
+<td>PC Firefox</td>
+<td>対応</td>
+</tr>
+<tr>
+<td>PC Edge</td>
+<td>対応</td>
+</tr>
+<tr>
+<td>Internet Explorer</td>
+<td>非対応</td>
+</tr>
+</tbody>
+</table>
+<h3 id="55">5.5 アクセシビリティ</h3>
+<ul>
+<li>フォントサイズは最小 14px（スマートフォン）</li>
+<li>コントラスト比は WCAG 2.1 AA 基準以上</li>
+<li>タップターゲットは最小 44×44px</li>
+</ul>
+<hr />
+<h2 id="6">6. 画面一覧</h2>
+<h3 id="61">6.1 認証系</h3>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>画面名</th>
+<th>URL</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-01</td>
+<td>ログイン</td>
+<td><code>/login</code></td>
+<td>メール・パスワードでログイン</td>
+</tr>
+<tr>
+<td>S-02</td>
+<td>新規登録</td>
+<td><code>/register</code></td>
+<td>アカウント新規作成</td>
+</tr>
+</tbody>
+</table>
+<h3 id="62">6.2 墓誌系（既存）</h3>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>画面名</th>
+<th>URL</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-11</td>
+<td>ダッシュボード</td>
+<td><code>/dashboard</code></td>
+<td>墓誌一覧・管理</td>
+</tr>
+<tr>
+<td>S-12</td>
+<td>墓誌作成・編集</td>
+<td><code>/memorials/new</code> <code>/memorials/:id/edit</code></td>
+<td>故人情報の作成・編集</td>
+</tr>
+<tr>
+<td>S-13</td>
+<td>QR コード印刷</td>
+<td><code>/memorials/:id/print-qr</code></td>
+<td>QR コードの表示・印刷</td>
+</tr>
+<tr>
+<td>S-14</td>
+<td>公開墓誌ページ</td>
+<td><code>/m/:slug</code></td>
+<td>参拝者向け閲覧ページ</td>
+</tr>
+<tr>
+<td>S-15</td>
+<td>パスワード入力</td>
+<td><code>/m/:slug</code></td>
+<td>保護ページのアクセス</td>
+</tr>
+</tbody>
+</table>
+<h3 id="63">6.3 終活系（新規）</h3>
+<table>
+<thead>
+<tr>
+<th>No.</th>
+<th>画面名</th>
+<th>URL</th>
+<th>フェーズ</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-21</td>
+<td>終活トップ</td>
+<td><code>/shukatsu</code></td>
+<td>Ph1</td>
+<td>チェックリストと準備スコアのダッシュボード</td>
+</tr>
+<tr>
+<td>S-22</td>
+<td>相続計画トップ</td>
+<td><code>/estate</code></td>
+<td>Ph1</td>
+<td>相続計画の一覧・新規作成</td>
+</tr>
+<tr>
+<td>S-23</td>
+<td>家族構成入力</td>
+<td><code>/estate/:id/family</code></td>
+<td>Ph1</td>
+<td>ウィザード形式の家族構成入力</td>
+</tr>
+<tr>
+<td>S-24</td>
+<td>相続人マップ・法定相続分</td>
+<td><code>/estate/:id/heirs</code></td>
+<td>Ph1</td>
+<td>法定相続人・相続分・遺留分の表示</td>
+</tr>
+<tr>
+<td>S-25</td>
+<td>財産の棚卸し</td>
+<td><code>/estate/:id/assets</code></td>
+<td>Ph2</td>
+<td>財産・負債の入力と合計表示</td>
+</tr>
+<tr>
+<td>S-26</td>
+<td>配分シミュレーション</td>
+<td><code>/estate/:id/simulation</code></td>
+<td>Ph2</td>
+<td>スライダーで配分を調整・確認</td>
+</tr>
+<tr>
+<td>S-27</td>
+<td>遺留分・リスク分析</td>
+<td><code>/estate/:id/risk</code></td>
+<td>Ph3</td>
+<td>遺留分・争いリスクのチェック</td>
+</tr>
+<tr>
+<td>S-28</td>
+<td>遺言書ドラフト</td>
+<td><code>/estate/:id/will-draft</code></td>
+<td>Ph4</td>
+<td>自動生成された遺言書ドラフト</td>
+</tr>
+<tr>
+<td>S-31</td>
+<td>エンディングノート</td>
+<td><code>/ending-note</code></td>
+<td>Ph1</td>
+<td>医療・葬儀・形見・デジタル資産・連絡先</td>
+</tr>
+<tr>
+<td>S-32</td>
+<td>デジタル遺品鍵</td>
+<td><code>/digital-key</code></td>
+<td>Ph2</td>
+<td>信頼者の登録・アクセス設定</td>
+</tr>
+<tr>
+<td>S-33</td>
+<td>リマインダー設定</td>
+<td><code>/settings/reminders</code></td>
+<td>Ph2</td>
+<td>通知頻度・メールアドレスの設定</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7">7. データモデル概要</h2>
+<h3 id="71-er">7.1 ER図（概要）</h3>
+<pre><code>User (ユーザー)
+ ├── Memorial (墓誌) [既存]
+ │    └── Photo (写真) [既存]
+ ├── EstatePlan (相続計画)
+ │    ├── FamilyMember (家族構成員)
+ │    └── Asset (財産)
+ ├── EndingNote (エンディングノート)
+ │    ├── MedicalWish (医療・介護希望)
+ │    ├── FuneralWish (葬儀希望)
+ │    ├── BequestItem (形見分けリスト)
+ │    ├── DigitalAsset (デジタル資産)
+ │    ├── Subscription (サブスクリプション)
+ │    ├── EmergencyContact (緊急連絡先)
+ │    └── Pet (ペット情報)
+ ├── ChecklistItem (チェックリスト)
+ ├── DigitalKey (デジタル遺品鍵)
+ │    └── TrustedPerson (信頼者)
+ └── ReminderSetting (リマインダー設定)
+</code></pre>
+<h3 id="72">7.2 主要テーブル定義</h3>
+<h4 id="estateplan">EstatePlan（相続計画）</h4>
+<table>
+<thead>
+<tr>
+<th>カラム</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>UUID</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>UUID</td>
+<td>作成者</td>
+</tr>
+<tr>
+<td>title</td>
+<td>String</td>
+<td>計画名</td>
+</tr>
+<tr>
+<td>created_at / updated_at</td>
+<td>DateTime</td>
+<td>日時</td>
+</tr>
+</tbody>
+</table>
+<h4 id="familymember">FamilyMember（家族構成員）</h4>
+<table>
+<thead>
+<tr>
+<th>カラム</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>UUID</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>estate_plan_id</td>
+<td>UUID</td>
+<td>所属する相続計画</td>
+</tr>
+<tr>
+<td>name</td>
+<td>String</td>
+<td>氏名</td>
+</tr>
+<tr>
+<td>relationship</td>
+<td>Enum</td>
+<td>続柄</td>
+</tr>
+<tr>
+<td>is_alive</td>
+<td>Boolean</td>
+<td>存命かどうか</td>
+</tr>
+<tr>
+<td>is_adopted</td>
+<td>Boolean</td>
+<td>養子かどうか</td>
+</tr>
+<tr>
+<td>is_half_blood</td>
+<td>Boolean</td>
+<td>半血兄弟姉妹かどうか</td>
+</tr>
+<tr>
+<td>has_renounced</td>
+<td>Boolean</td>
+<td>相続放棄したか</td>
+</tr>
+<tr>
+<td>is_disqualified</td>
+<td>Boolean</td>
+<td>相続欠格・廃除か</td>
+</tr>
+<tr>
+<td>parent_member_id</td>
+<td>UUID</td>
+<td>代襲相続の元となる親族</td>
+</tr>
+</tbody>
+</table>
+<h4 id="asset">Asset（財産）</h4>
+<table>
+<thead>
+<tr>
+<th>カラム</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>UUID</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>estate_plan_id</td>
+<td>UUID</td>
+<td>所属する相続計画</td>
+</tr>
+<tr>
+<td>asset_type</td>
+<td>Enum</td>
+<td>種別（不動産・預貯金など）</td>
+</tr>
+<tr>
+<td>name</td>
+<td>String</td>
+<td>財産名</td>
+</tr>
+<tr>
+<td>estimated_value</td>
+<td>Integer</td>
+<td>評価額（円、負債はマイナス）</td>
+</tr>
+<tr>
+<td>is_deemed_estate</td>
+<td>Boolean</td>
+<td>みなし相続財産か</td>
+</tr>
+</tbody>
+</table>
+<h4 id="digitalkey">DigitalKey（デジタル遺品鍵）</h4>
+<table>
+<thead>
+<tr>
+<th>カラム</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>UUID</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>UUID</td>
+<td>登録者</td>
+</tr>
+<tr>
+<td>unlock_condition</td>
+<td>Enum</td>
+<td>解除条件（1名申請/2名申請）</td>
+</tr>
+<tr>
+<td>is_unlocked</td>
+<td>Boolean</td>
+<td>開錠済みかどうか</td>
+</tr>
+</tbody>
+</table>
+<h4 id="trustedperson">TrustedPerson（信頼者）</h4>
+<table>
+<thead>
+<tr>
+<th>カラム</th>
+<th>型</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>UUID</td>
+<td>主キー</td>
+</tr>
+<tr>
+<td>digital_key_id</td>
+<td>UUID</td>
+<td>所属するデジタル遺品鍵</td>
+</tr>
+<tr>
+<td>name</td>
+<td>String</td>
+<td>信頼者の名前</td>
+</tr>
+<tr>
+<td>email</td>
+<td>String</td>
+<td>メールアドレス</td>
+</tr>
+<tr>
+<td>access_scope</td>
+<td>JSON</td>
+<td>アクセス可能な機能リスト</td>
+</tr>
+<tr>
+<td>access_token</td>
+<td>String</td>
+<td>解除キー（ハッシュ保存）</td>
+</tr>
+<tr>
+<td>has_requested</td>
+<td>Boolean</td>
+<td>申請済みかどうか</td>
+</tr>
+<tr>
+<td>email_verified</td>
+<td>Boolean</td>
+<td>メール認証済みかどうか</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8">8. セキュリティ要件</h2>
+<h3 id="81">8.1 認証・認可</h3>
+<table>
+<thead>
+<tr>
+<th>要件</th>
+<th>実装方針</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>パスワードのハッシュ化</td>
+<td>bcrypt（コスト係数 12 以上）</td>
+</tr>
+<tr>
+<td>セッション管理</td>
+<td>JWT（有効期限 30 分、リフレッシュトークンで自動延長）</td>
+</tr>
+<tr>
+<td>他ユーザーデータへのアクセス防止</td>
+<td>API 側で user_id を検証（フロントエンドに依存しない）</td>
+</tr>
+<tr>
+<td>HTTPS 強制</td>
+<td>全通信を HTTPS で暗号化</td>
+</tr>
+<tr>
+<td>CORS 設定</td>
+<td>許可ドメインを明示的に限定</td>
+</tr>
+</tbody>
+</table>
+<h3 id="82">8.2 データ保護</h3>
+<table>
+<thead>
+<tr>
+<th>要件</th>
+<th>実装方針</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>終活データの暗号化</td>
+<td>センシティブな項目（医療希望・遺言内容）はデータベース保存時に暗号化（検討）</td>
+</tr>
+<tr>
+<td>ファイル名の匿名化</td>
+<td>アップロードファイル名を UUID に変換</td>
+</tr>
+<tr>
+<td>アップロードファイルの検証</td>
+<td>MIME タイプと拡張子の一致を確認</td>
+</tr>
+<tr>
+<td>SQL インジェクション対策</td>
+<td>ORM（SQLAlchemy）を使用し、生 SQL を避ける</td>
+</tr>
+<tr>
+<td>XSS 対策</td>
+<td>React のデフォルト エスケープ + Content-Security-Policy ヘッダー</td>
+</tr>
+</tbody>
+</table>
+<h3 id="83">8.3 デジタル遺品鍵のセキュリティ</h3>
+<table>
+<thead>
+<tr>
+<th>要件</th>
+<th>実装方針</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>解除キーの保護</td>
+<td>トークンはハッシュ化してデータベースに保存</td>
+</tr>
+<tr>
+<td>トークンの有効期限</td>
+<td>発行から 72 時間（申請用）・開錠後は無期限閲覧可</td>
+</tr>
+<tr>
+<td>メール認証の強制</td>
+<td>信頼者は解除キー使用前にメール認証必須</td>
+</tr>
+<tr>
+<td>開錠後のアクセス制限</td>
+<td>読み取り専用（編集・削除・ダウンロード制限）</td>
+</tr>
+<tr>
+<td>アクセスログ</td>
+<td>全アクセスを IP・タイムスタンプとともに記録</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9">9. 技術スタック</h2>
+<h3 id="91">9.1 現在の構成</h3>
+<table>
+<thead>
+<tr>
+<th>レイヤー</th>
+<th>技術</th>
+<th>バージョン</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>フロントエンド</td>
+<td>React + TypeScript</td>
+<td>React 18</td>
+</tr>
+<tr>
+<td>ビルドツール</td>
+<td>Vite</td>
+<td>5 系</td>
+</tr>
+<tr>
+<td>バックエンド</td>
+<td>Python + FastAPI</td>
+<td>FastAPI 0.100+</td>
+</tr>
+<tr>
+<td>ORM</td>
+<td>SQLAlchemy</td>
+<td>2 系</td>
+</tr>
+<tr>
+<td>データベース</td>
+<td>SQLite（開発・初期本番）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ファイルストレージ</td>
+<td>サーバーローカル（初期）</td>
+<td>—</td>
+</tr>
+<tr>
+<td>ホスティング</td>
+<td>Render.com</td>
+<td>—</td>
+</tr>
+<tr>
+<td>コンテナ</td>
+<td>Docker</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="92">9.2 追加予定の技術</h3>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>技術候補</th>
+<th>採用フェーズ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>メール送信</td>
+<td>SendGrid または AWS SES</td>
+<td>Phase 2</td>
+</tr>
+<tr>
+<td>データベース移行先</td>
+<td>PostgreSQL（Render Managed DB）</td>
+<td>ユーザー増加時</td>
+</tr>
+<tr>
+<td>ファイルストレージ移行先</td>
+<td>AWS S3 または Cloudflare R2</td>
+<td>ユーザー増加時</td>
+</tr>
+<tr>
+<td>PWA</td>
+<td>Service Worker + Web App Manifest</td>
+<td>Phase 2</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10">10. 開発ロードマップ</h2>
+<h3 id="_12">優先度マトリクス</h3>
+<pre><code>インパクト高 ──────────────────────────────────────────
+            │  チェックリスト       デジタル遺品鍵
+            │  相続 Phase1          リマインダー
+            │  エンディングノート   相続 Phase2
+            │─────────────────────────────────────
+            │  相続 Phase3          遺言書ドラフト
+            │  PWA化                SNS投稿予約
+インパクト低 ──────────────────────────────────────────
+           実装しやすい            実装が大変
+</code></pre>
+<h3 id="_13">フェーズ別スケジュール</h3>
+<h4 id="phase-1_1">Phase 1（最優先）：終活の骨格を作る</h4>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>工数目安</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>終活チェックリスト・ダッシュボード</td>
+<td>3日</td>
+</tr>
+<tr>
+<td>エンディングノート（全セクション）</td>
+<td>5日</td>
+</tr>
+<tr>
+<td>相続棚卸し Phase 1（家族構成・相続人判定・相続分計算）</td>
+<td>5日</td>
+</tr>
+<tr>
+<td><strong>合計</strong></td>
+<td><strong>約 2 週間</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-2_1">Phase 2：実用性を高める</h4>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>工数目安</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>相続棚卸し Phase 2（財産入力・シミュレーション）</td>
+<td>4日</td>
+</tr>
+<tr>
+<td>デジタル遺品鍵（信頼者登録・開錠フロー）</td>
+<td>5日</td>
+</tr>
+<tr>
+<td>リマインダー（メール通知・設定画面）</td>
+<td>3日</td>
+</tr>
+<tr>
+<td>PWA 対応（Manifest・Service Worker）</td>
+<td>2日</td>
+</tr>
+<tr>
+<td><strong>合計</strong></td>
+<td><strong>約 2 週間</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-3_1">Phase 3：安心感を深める</h4>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>工数目安</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>相続棚卸し Phase 3（遺留分・リスク分析）</td>
+<td>3日</td>
+</tr>
+<tr>
+<td>準備スコアの高度化（アドバイス表示）</td>
+<td>2日</td>
+</tr>
+<tr>
+<td><strong>合計</strong></td>
+<td><strong>約 1 週間</strong></td>
+</tr>
+</tbody>
+</table>
+<h4 id="phase-4_1">Phase 4（将来）：差別化機能</h4>
+<table>
+<thead>
+<tr>
+<th>機能</th>
+<th>工数目安</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>遺言書ドラフト生成・PDF 出力</td>
+<td>5日</td>
+</tr>
+<tr>
+<td>追悼メッセージの予約送信</td>
+<td>4日</td>
+</tr>
+<tr>
+<td>ビデオメッセージの保管</td>
+<td>5日</td>
+</tr>
+<tr>
+<td><strong>合計</strong></td>
+<td><strong>約 2 週間</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11_1">11. 用語集</h2>
+<table>
+<thead>
+<tr>
+<th>用語</th>
+<th>説明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>終活</td>
+<td>人生の終わりに向けた事前準備活動（就活・婚活と同様の造語）</td>
+</tr>
+<tr>
+<td>法定相続人</td>
+<td>民法により相続権が認められた人（配偶者・子・直系尊属・兄弟姉妹）</td>
+</tr>
+<tr>
+<td>法定相続分</td>
+<td>民法が定める各相続人の取り分の割合</td>
+</tr>
+<tr>
+<td>代襲相続</td>
+<td>本来の相続人が死亡・欠格・廃除された場合に、その子が代わりに相続すること</td>
+</tr>
+<tr>
+<td>遺留分</td>
+<td>遺言書に関わらず法定相続人（兄弟姉妹を除く）が最低限受け取れる権利</td>
+</tr>
+<tr>
+<td>遺留分侵害額請求</td>
+<td>遺留分を侵害された相続人が、侵害額相当の金銭を請求できる権利</td>
+</tr>
+<tr>
+<td>みなし相続財産</td>
+<td>生命保険金・退職金など、相続財産ではないが相続税の対象となるもの</td>
+</tr>
+<tr>
+<td>特別受益</td>
+<td>生前に特定の相続人が受けた贈与（遺産の前払いとみなされる場合がある）</td>
+</tr>
+<tr>
+<td>寄与分</td>
+<td>故人の財産維持・増加に特別な貢献をした相続人が主張できる取り分の加算</td>
+</tr>
+<tr>
+<td>エンディングノート</td>
+<td>医療・葬儀・財産など、死後に家族が困らないよう事前に記録しておくノート</td>
+</tr>
+<tr>
+<td>デジタル遺品鍵</td>
+<td>死後に指定した信頼者がデジタルデータにアクセスするための仕組み</td>
+</tr>
+<tr>
+<td>PWA</td>
+<td>Progressive Web App。ネイティブアプリに近い体験を Web で実現する技術</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12_1">12. 免責事項の方針</h2>
+<ul>
+<li>本サービスの相続計算・遺留分計算・遺言書ドラフトは、一般的な民法の規定に基づく <strong>参考情報</strong> です</li>
+<li>個別の事情（特別受益・寄与分・遺産分割協議・国際相続など）によって異なる場合があります</li>
+<li>法的に有効な判断は <strong>弁護士・司法書士・税理士</strong> にご相談ください</li>
+<li>相続税の計算は概算であり、正確な申告には <strong>税理士</strong> への相談を推奨します</li>
+<li>本サービスは法的アドバイスを提供するものではありません</li>
+<li>上記の免責事項は、終活機能の全ページのフッターおよびリスク分析ページに常時表示します</li>
+</ul>
+<hr />
+<p><em>Digital Memorial 要件定義書 v1.0 — 2026年5月27日</em></p>
+</body>
+</html>
