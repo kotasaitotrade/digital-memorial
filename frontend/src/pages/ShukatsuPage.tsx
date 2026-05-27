@@ -13,7 +13,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 
 function StarRating({ stars }: { stars: number }) {
   return (
-    <span style={{ letterSpacing: 1, fontSize: "0.75rem" }}>
+    <span style={{ letterSpacing: 2, fontSize: "1rem" }}>
       {Array.from({ length: 5 }, (_, i) => (
         <span key={i} style={{ color: i < stars ? "#f59e0b" : "#d1d5db" }}>★</span>
       ))}
