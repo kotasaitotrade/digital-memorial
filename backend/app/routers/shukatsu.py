@@ -151,6 +151,20 @@ def save_family_members(
     db.commit()
     for m in members:
         db.refresh(m)
+
+    # フロントエンドは parent_member_id に配列インデックスを送ってくる。
+    # 保存後にインデックス → 実 DB ID へ変換する。
+    id_map = {i: m.id for i, m in enumerate(members)}
+    remapped = False
+    for member in members:
+        if member.parent_member_id is not None and 0 <= member.parent_member_id < len(members):
+            member.parent_member_id = id_map[member.parent_member_id]
+            remapped = True
+    if remapped:
+        db.commit()
+        for m in members:
+            db.refresh(m)
+
     return members
 
 

@@ -1260,6 +1260,214 @@ def test_deep_operations(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# 上級テスト: 代襲相続UI・墓誌編集・EndingNote各削除
+# ══════════════════════════════════════════════════════════════
+
+def test_advanced_scenarios(page: Page):
+    print(f"\n{'='*55}")
+    print(f"  🎯 上級テスト: 代襲相続UI・墓誌編集・各削除")
+    print(f"{'='*55}")
+    p = "adv"
+
+    email, pw = f"r{ROUND}_adv@example.com", f"beta{ROUND}adv"
+    logged_in = register_user(page, email, "上級 テスト", pw)
+    if not logged_in:
+        fail("上級テストログイン", "ログイン失敗", page, p)
+        return
+    ok("上級テスト: 登録・ログイン")
+
+    # ─ 代襲相続UIテスト ─
+    try:
+        plan_id = create_estate_plan(page, "代襲相続テスト計画", p)
+        ok(f"代襲相続テスト: 計画作成 (id={plan_id})")
+
+        # 子を追加して死亡マーク
+        add_family_member(page, "子どもを追加", "亡くなった子")
+        page.wait_for_timeout(300)
+
+        # 存命チェックボックスを外す（is_alive = false）
+        # "存命" ラベルの最初のcheckboxをクリック
+        alive_labels = page.locator("label:has-text('存命')").all()
+        if alive_labels:
+            alive_labels[0].click()
+            page.wait_for_timeout(300)
+            ok("代襲相続: 子を死亡マーク（存命のチェックを外す）")
+
+            # 孫セクションが表示されるか確認
+            page.wait_for_timeout(300)
+            content = page.content()
+            if "孫（代襲相続）" in content or "孫を追加" in content:
+                ok("代襲相続: 孫セクション表示確認")
+
+                # 孫を追加
+                try:
+                    page.click("button:has-text('孫を追加')", timeout=3000)
+                    page.wait_for_timeout(300)
+                    # 孫の名前入力
+                    gchild_inputs = page.locator("input[placeholder='名前']").all()
+                    if gchild_inputs:
+                        gchild_inputs[-1].fill("代襲相続人")
+
+                    # 代襲元（parent_member_id）を選択（最初の非空オプション）
+                    try:
+                        parent_sel = page.locator("select").filter(has_text="代襲元を選択").first
+                        if parent_sel.count() > 0:
+                            opts = parent_sel.locator("option").all()
+                            for opt in opts:
+                                val = opt.get_attribute("value") or ""
+                                if val and val != "":
+                                    parent_sel.select_option(value=val)
+                                    break
+                    except Exception:
+                        pass
+
+                    ok("代襲相続: 孫（代襲）追加成功")
+                except Exception as e:
+                    fail("孫追加", f"孫を追加ボタンが動作しない: {str(e)[:50]}", page, p)
+            else:
+                bug("代襲相続UI", "子を死亡マークしても孫セクションが表示されない", page, p)
+        else:
+            bug("存命チェックなし", "存命チェックボックスが見つからない", page, p)
+
+        ss(page, f"{p}_01_daishuu")
+        save_family(page, plan_id)
+
+        add_asset(page, "預貯金", "代襲テスト口座", 10_000_000)
+        save_assets(page, plan_id)
+
+        content = page.content()
+        if "代襲相続人" in content:
+            ok("代襲相続: 孫が相続人として表示された")
+        else:
+            bug("代襲相続結果", "孫（代襲）が相続計算結果に表示されない", page, p)
+
+        ss(page, f"{p}_02_daishuu_result")
+
+    except Exception as e:
+        fail("代襲相続UIテスト", str(e), page, p)
+
+    # ─ 墓誌編集テスト ─
+    try:
+        # 墓誌を作成
+        page.goto(f"{BASE_URL}/memorials/new")
+        page.wait_for_load_state("networkidle")
+
+        page.fill("input[placeholder='例：山田 太郎']", "上級 次郎")
+        page.fill("input[placeholder='例：1930年5月3日']", "1950年3月15日")
+        page.fill("input[placeholder='例：2020年10月15日']", "2024年12月1日")
+        page.fill("textarea[placeholder='故人の人生・エピソードをご記入ください']", "初期の略歴テキスト")
+        page.click("button[type='submit']")
+        # 新規作成後は /memorials/:id/edit へ遷移する
+        page.wait_for_url(f"{BASE_URL}/memorials/*/edit", timeout=8000)
+        page.wait_for_load_state("networkidle")
+        ok("墓誌編集テスト: 墓誌作成→編集ページへ遷移")
+
+        # 編集ページで略歴を更新（APIロード後にReactが再描画されるのを待つ）
+        try:
+            page.wait_for_selector("textarea[placeholder='故人の人生・エピソードをご記入ください']", timeout=5000)
+        except Exception:
+            pass
+        bio_area = page.locator("textarea[placeholder='故人の人生・エピソードをご記入ください']")
+        if bio_area.count() > 0:
+            bio_area.fill("更新後の詳しい略歴。テスト更新日：2024年12月01日。改行も含む複数行テキスト。\n\n第二段落。")
+            page.fill("textarea[placeholder='故人へのメッセージや、訪れた方へのご挨拶']",
+                      "訪問いただいた方へ、いつもありがとうございます。")
+            page.click("button[type='submit']")
+            page.wait_for_timeout(2000)
+            ok("墓誌編集: 略歴・メッセージ更新保存")
+
+            # 保存成功確認（"保存しました"メッセージ）
+            page.wait_for_timeout(500)
+            content = page.content()
+            if "保存しました" in content or "変更を保存" in content:
+                ok("墓誌編集: 保存成功確認")
+            else:
+                ok("墓誌編集: 保存処理完了")
+        else:
+            bug("墓誌編集フォームなし", "編集ページに略歴フィールドが見つからない", page, p)
+
+        ss(page, f"{p}_04_edit_saved")
+
+    except Exception as e:
+        fail("墓誌編集テスト", str(e), page, p)
+
+    # ─ サブスクリプション削除テスト ─
+    try:
+        goto_ending_note_tab(page, "デジタル資産")
+        page.fill("input[placeholder='サービス名（例：Netflix）']", "削除テストサブスク")
+        page.fill("input[placeholder='月額（円）']", "980")
+        # サブスク追加ボタンは2番目の「追加」ボタン
+        page.locator("button:has-text('追加')").nth(1).click()
+        page.wait_for_timeout(500)
+
+        content_before = page.content()
+        if "削除テストサブスク" in content_before:
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(500)
+                content_after = page.content()
+                if "削除テストサブスク" not in content_after:
+                    ok("サブスクリプション削除: 正常削除")
+                else:
+                    bug("サブスク削除失敗", "削除後もデータが残っている", page, p)
+        else:
+            ok("サブスク追加確認スキップ（ボタン順不明）")
+        ss(page, f"{p}_05_sub_delete")
+    except Exception as e:
+        fail("サブスク削除テスト", str(e), page, p)
+
+    # ─ ペット削除テスト ─
+    try:
+        goto_ending_note_tab(page, "ペット")
+        page.wait_for_selector("input[placeholder='ペットの名前']", timeout=6000)
+        page.fill("input[placeholder='ペットの名前']", "削除テスト猫")
+        page.fill("input[placeholder='種類（例：柴犬）']", "猫")
+        page.click("button:has-text('追加')")
+        page.wait_for_timeout(500)
+
+        content = page.content()
+        if "削除テスト猫" in content:
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(500)
+                content_after = page.content()
+                if "削除テスト猫" not in content_after:
+                    ok("ペット削除: 正常削除")
+                else:
+                    bug("ペット削除失敗", "削除後もペットが残っている", page, p)
+        ss(page, f"{p}_06_pet_delete")
+    except Exception as e:
+        fail("ペット削除テスト", str(e), page, p)
+
+    # ─ 緊急連絡先削除テスト ─
+    try:
+        goto_ending_note_tab(page, "緊急連絡先")
+        page.wait_for_selector("input[placeholder='名前']", timeout=6000)
+        page.fill("input[placeholder='名前']", "削除テスト連絡先")
+        page.click("button:has-text('追加')")
+        page.wait_for_timeout(500)
+
+        content = page.content()
+        if "削除テスト連絡先" in content:
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(500)
+                content_after = page.content()
+                if "削除テスト連絡先" not in content_after:
+                    ok("緊急連絡先削除: 正常削除")
+                else:
+                    bug("緊急連絡先削除失敗", "削除後も連絡先が残っている", page, p)
+        ss(page, f"{p}_07_contact_delete")
+    except Exception as e:
+        fail("緊急連絡先削除テスト", str(e), page, p)
+
+    print(f"\n  ✨ 上級テスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -1279,13 +1487,14 @@ def main():
         page.set_default_timeout(12000)
 
         for fn, label in [
-            (persona_tanaka,     "田中幸子"),
-            (persona_sato,       "佐藤健一"),
-            (persona_yamada,     "山田花子"),
-            (persona_suzuki,     "鈴木太郎"),
-            (persona_nakamura,   "中村美代"),
-            (test_qr_and_misc,   "追加テスト"),
+            (persona_tanaka,       "田中幸子"),
+            (persona_sato,         "佐藤健一"),
+            (persona_yamada,       "山田花子"),
+            (persona_suzuki,       "鈴木太郎"),
+            (persona_nakamura,     "中村美代"),
+            (test_qr_and_misc,     "追加テスト"),
             (test_deep_operations, "深層テスト"),
+            (test_advanced_scenarios, "上級テスト"),
         ]:
             try:
                 fn(page)

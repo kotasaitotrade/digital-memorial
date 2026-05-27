@@ -132,7 +132,19 @@ export function FamilyInputPage() {
 
   useEffect(() => {
     api.get(`/estate-plans/${planId}/family`).then((r) => {
-      if (r.data.length > 0) setMembers(r.data);
+      if (r.data.length > 0) {
+        // parent_member_id は DB ID で保存されているが、ドロップダウンは配列インデックスを使う。
+        // ロード時に DB ID → インデックスへ変換する。
+        const loaded: Partial<FamilyMember>[] = r.data;
+        const withIdx = loaded.map((m) => {
+          if (m.parent_member_id != null) {
+            const parentIdx = loaded.findIndex((p) => p.id === m.parent_member_id);
+            return { ...m, parent_member_id: parentIdx >= 0 ? parentIdx : undefined };
+          }
+          return m;
+        });
+        setMembers(withIdx);
+      }
     });
   }, [planId]);
 
@@ -477,7 +489,7 @@ function MemberRow({ m, idx, onUpdate, onRemove, showAdopted, showHalfBlood, par
         </label>
       )}
       {parentOptions && (
-        <select style={s.select} value={m.parent_member_id ?? ""} onChange={(e) => onUpdate(idx, "parent_member_id", Number(e.target.value) || undefined)}>
+        <select style={s.select} value={m.parent_member_id ?? ""} onChange={(e) => onUpdate(idx, "parent_member_id", e.target.value !== "" ? Number(e.target.value) : undefined)}>
           <option value="">代襲元を選択</option>
           {parentOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
