@@ -1,0 +1,16 @@
+{
+  "round": "22",
+  "timestamp": "2026-05-28T02:14:03.783878",
+  "pass": 113,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "sec",
+      "step": "パスワード保護墓誌作成",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='例：2024年1月1日']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r22_fail_1.png"
+    }
+  ]
+}
