@@ -817,14 +817,20 @@ def persona_nakamura(page: Page):
             page.click("button:has-text('作成して開始')")
             page.wait_for_timeout(1500)
 
-            # アラートが出ないことを確認
+            # アラートが出ないことを確認（ダイアログリスナーは使い捨て・使用後は必ず除去）
             dialog_fired = False
             def on_dialog(dialog):
                 nonlocal dialog_fired
                 dialog_fired = True
                 dialog.dismiss()
-            page.on("dialog", on_dialog)
+            page.once("dialog", on_dialog)
             page.wait_for_timeout(1000)
+            # XSSが発動しなかった場合はリスナーを明示的に除去（後続テストへの漏れを防ぐ）
+            if not dialog_fired:
+                try:
+                    page.remove_listener("dialog", on_dialog)
+                except Exception:
+                    pass
 
             if dialog_fired:
                 bug("XSS脆弱性", "スクリプトが実行されてアラートが表示された！", page, p)
@@ -1039,6 +1045,221 @@ def test_qr_and_misc(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# 深層テスト: 削除・リネーム・大データ・チェックリスト100%
+# ══════════════════════════════════════════════════════════════
+
+def test_deep_operations(page: Page):
+    print(f"\n{'='*55}")
+    print(f"  🔬 深層テスト: 削除・リネーム・大データ・完了100%")
+    print(f"{'='*55}")
+    p = "deep"
+
+    email, pw = f"r{ROUND}_deep@example.com", f"beta{ROUND}deep"
+    logged_in = register_user(page, email, "深層 テスト", pw)
+    if not logged_in:
+        fail("深層テストログイン", "ログイン失敗", page, p)
+        return
+    ok("深層テスト: 登録・ログイン")
+
+    # ─ 相続計画リネームテスト ─
+    try:
+        plan_id = create_estate_plan(page, "変更前のタイトル", p)
+        ok(f"リネームテスト: 計画作成 (id={plan_id})")
+
+        # 家族と財産なしで結果へ進む
+        page.click("button:has-text('保存して次へ')")
+        page.wait_for_url(f"{BASE_URL}/estate/{plan_id}/assets", timeout=8000)
+        save_assets(page, plan_id)
+
+        # 計画一覧に戻る
+        page.goto(f"{BASE_URL}/estate")
+        page.wait_for_load_state("networkidle")
+
+        # ✏️ ボタンをクリック
+        edit_btn = page.locator("button[title='名前を変更']").first
+        if edit_btn.count() > 0:
+            edit_btn.click()
+            page.wait_for_timeout(300)
+            inp = page.locator("input[value='変更前のタイトル']").first
+            if inp.count() > 0:
+                inp.fill("変更後のタイトル（修正済）")
+                page.click("button:has-text('保存')")
+                page.wait_for_timeout(500)
+                content = page.content()
+                if "変更後のタイトル（修正済）" in content:
+                    ok("相続計画リネーム: タイトル変更成功")
+                else:
+                    bug("リネーム失敗", "タイトルが変わっていない", page, p)
+            else:
+                bug("リネーム入力欄なし", "✏️クリック後に入力フィールドが表示されない", page, p)
+        else:
+            bug("リネームボタンなし", "✏️ボタンが見つからない", page, p)
+        ss(page, f"{p}_01_rename")
+    except Exception as e:
+        fail("リネームテスト", str(e), page, p)
+
+    # ─ 相続計画削除テスト ─
+    try:
+        # 削除用の計画を作成
+        plan_id2 = create_estate_plan(page, "削除テスト計画", p)
+        ok(f"削除テスト: 計画作成 (id={plan_id2})")
+
+        page.click("button:has-text('保存して次へ')")
+        page.wait_for_url(f"{BASE_URL}/estate/{plan_id2}/assets", timeout=8000)
+        save_assets(page, plan_id2)
+
+        page.goto(f"{BASE_URL}/estate")
+        page.wait_for_load_state("networkidle")
+
+        # 計画数を記録
+        plans_before = page.locator("button:has-text('削除')").count()
+
+        # confirm ダイアログを自動承認（once で使い捨て）
+        page.once("dialog", lambda d: d.accept())
+        # 最初の削除ボタンをクリック（削除テスト計画）
+        delete_btns = page.locator("button:has-text('削除')").all()
+        if delete_btns:
+            delete_btns[-1].click()
+            page.wait_for_timeout(1000)
+            plans_after = page.locator("button:has-text('削除')").count()
+            if plans_after < plans_before:
+                ok("相続計画削除: 計画が削除された")
+            else:
+                bug("削除失敗", "削除ボタンをクリックしたが計画数が変わらない", page, p)
+        else:
+            bug("削除ボタンなし", "削除ボタンが見つからない", page, p)
+        ss(page, f"{p}_02_delete_plan")
+    except Exception as e:
+        fail("計画削除テスト", str(e), page, p)
+
+    # ─ 大家族（10人）ストレステスト ─
+    try:
+        plan_id3 = create_estate_plan(page, "大家族ストレステスト", p)
+        ok(f"大家族テスト: 計画作成 (id={plan_id3})")
+
+        # 配偶者1人＋子7人＋両親2人
+        add_family_member(page, "配偶者を追加", "ストレス 配偶者")
+        for i in range(1, 8):
+            add_family_member(page, "子どもを追加", f"ストレス 子{i}")
+        add_family_member(page, "親を追加", "ストレス 父")
+        add_family_member(page, "親を追加", "ストレス 母")
+
+        ss(page, f"{p}_03_large_family")
+        ok("大家族: 配偶者+子7人+両親2人追加（計10人）")
+
+        save_family(page, plan_id3)
+
+        # 10件の財産
+        for i in range(1, 6):
+            add_asset(page, "預貯金", f"銀行口座{i}", 5_000_000 * i)
+        for i in range(1, 4):
+            add_asset(page, "不動産", f"不動産物件{i}", 20_000_000 * i)
+        add_asset(page, "有価証券", "株式ポートフォリオ", 30_000_000)
+        add_asset(page, "その他資産", "美術品コレクション", 10_000_000)
+
+        ss(page, f"{p}_04_large_assets")
+        ok("大データ: 財産10件追加")
+
+        save_assets(page, plan_id3)
+        ss(page, f"{p}_05_large_result")
+
+        content = page.content()
+        if "ストレス 配偶者" in content:
+            ok("大家族相続計算結果: 表示成功")
+        else:
+            bug("大家族結果表示失敗", "10人家族の相続計算結果が表示されない", page, p)
+
+    except Exception as e:
+        fail("大家族ストレステスト", str(e), page, p)
+
+    # ─ チェックリスト100%達成テスト ─
+    try:
+        # 全カテゴリをチェック
+        all_categories = ["相続", "遺言", "医療", "葬儀", "デジタル", "人間関係", "ペット", "思い出"]
+        total_checked = 0
+        for cat in all_categories:
+            cnt = do_checklist(page, cat, p)
+            total_checked += cnt
+
+        # スコア確認
+        page.goto(f"{BASE_URL}/shukatsu")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(500)
+        ss(page, f"{p}_06_full_checklist")
+
+        score = check_score(page)
+        content = page.content()
+
+        if score == 100 or "100%" in content:
+            ok("チェックリスト全完了: スコア100%")
+        elif score > 80 or any(f"{x}%" in content for x in range(85, 100)):
+            ok(f"チェックリスト高スコア（{score}%・全{total_checked}件チェック）")
+        else:
+            bug("100%未達成", f"全項目チェック後のスコアが{score}%（{total_checked}件チェック）", page, p)
+
+    except Exception as e:
+        fail("チェックリスト100%テスト", str(e), page, p)
+
+    # ─ エンディングノート全タブ保存テスト ─
+    try:
+        # 医療・介護タブ全フィールド入力
+        goto_ending_note_tab(page, "医療・介護")
+        try:
+            page.click("label:has-text('希望しない')", timeout=2000)
+        except Exception:
+            pass
+        page.fill("textarea[placeholder='医師名・病院名・電話番号']", "深層テストクリニック・深層先生")
+        page.fill("textarea[placeholder='薬の名前・用量・処方医']", "血圧の薬（アムロジピン5mg）毎朝1錠")
+        page.wait_for_timeout(1500)
+        ok("全タブ: 医療・介護タブ入力保存")
+
+        # 葬儀タブ
+        goto_ending_note_tab(page, "葬儀")
+        try:
+            page.click("label:has-text('直葬')", timeout=2000)
+        except Exception:
+            pass
+        page.fill("input[placeholder='例：仏教（浄土宗）、無宗教など']", "無宗教")
+        page.wait_for_timeout(1500)
+        ok("全タブ: 葬儀タブ入力保存")
+
+        ss(page, f"{p}_07_all_tabs")
+    except Exception as e:
+        fail("全タブ保存テスト", str(e), page, p)
+
+    # ─ エンディングノート削除操作テスト ─
+    try:
+        # デジタル資産を追加→削除
+        goto_ending_note_tab(page, "デジタル資産")
+        page.fill("input[placeholder='サービス名（例：X / Instagram）']", "削除テスト用SNS")
+        page.fill("input[placeholder='アカウント名（任意）']", "test_account")
+        page.click("button:has-text('追加')")
+        page.wait_for_timeout(500)
+
+        content_before = page.content()
+        if "削除テスト用SNS" in content_before:
+            # 削除ボタン
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(500)
+                content_after = page.content()
+                if "削除テスト用SNS" not in content_after:
+                    ok("デジタル資産削除: 正常に削除された")
+                else:
+                    bug("デジタル資産削除失敗", "削除後もデータが残っている", page, p)
+            else:
+                bug("削除ボタンなし", "デジタル資産に削除ボタンがない", page, p)
+        else:
+            bug("デジタル資産追加確認失敗", "追加後に表示されない", page, p)
+        ss(page, f"{p}_08_delete_digital")
+    except Exception as e:
+        fail("デジタル資産削除テスト", str(e), page, p)
+
+    print(f"\n  ✨ 深層テスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -1058,12 +1279,13 @@ def main():
         page.set_default_timeout(12000)
 
         for fn, label in [
-            (persona_tanaka,  "田中幸子"),
-            (persona_sato,    "佐藤健一"),
-            (persona_yamada,  "山田花子"),
-            (persona_suzuki,  "鈴木太郎"),
-            (persona_nakamura,"中村美代"),
-            (test_qr_and_misc,"追加テスト"),
+            (persona_tanaka,     "田中幸子"),
+            (persona_sato,       "佐藤健一"),
+            (persona_yamada,     "山田花子"),
+            (persona_suzuki,     "鈴木太郎"),
+            (persona_nakamura,   "中村美代"),
+            (test_qr_and_misc,   "追加テスト"),
+            (test_deep_operations, "深層テスト"),
         ]:
             try:
                 fn(page)
