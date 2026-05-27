@@ -544,6 +544,23 @@ class TestChecklist:
             assert "is_completed" in item
             assert "category" in item
             assert "priority" in item
+            assert "stars" in item
+            assert 1 <= item["stars"] <= 5
+
+    def test_checklist_sorted_by_stars_desc(self, auth_client):
+        items = auth_client.get("/api/checklist").json()["items"]
+        stars_list = [item["stars"] for item in items]
+        assert stars_list == sorted(stars_list, reverse=True)
+
+    def test_checklist_priority_matches_stars(self, auth_client):
+        items = auth_client.get("/api/checklist").json()["items"]
+        for item in items:
+            if item["stars"] >= 3:
+                assert item["priority"] == "必須"
+            elif item["stars"] == 2:
+                assert item["priority"] == "推奨"
+            else:
+                assert item["priority"] == "任意"
 
     def test_initial_completion_rate_zero(self, auth_client):
         data = auth_client.get("/api/checklist").json()

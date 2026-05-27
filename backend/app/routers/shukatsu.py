@@ -371,8 +371,6 @@ def delete_pet(item_id: int, db: Session = Depends(get_db), current_user: User =
 # チェックリスト
 # ═══════════════════════════════════════════════════════════
 
-VALID_TASK_KEYS = {item["task_key"] for item in CHECKLIST_ITEMS}
-
 
 @router.get("/checklist")
 def get_checklist(
