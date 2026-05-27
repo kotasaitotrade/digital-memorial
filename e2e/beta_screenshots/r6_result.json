@@ -1,0 +1,16 @@
+{
+  "round": "6",
+  "timestamp": "2026-05-28T00:53:30.557433",
+  "pass": 70,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "sato",
+      "step": "ログイン",
+      "severity": "FAIL",
+      "desc": "佐藤健一ログイン失敗",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_1.png"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "round": "4",
+  "timestamp": "2026-05-28T00:42:29.069592",
+  "pass": 82,
+  "fail": 1,
+  "bugs": 1,
+  "issues": [
+    {
+      "persona": "tanaka",
+      "step": "スコア更新不具合",
+      "severity": "BUG",
+      "desc": "チェックしたのにスコアが変化しない (18% → 6%)",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r4_bug_1.png"
+    },
+    {
+      "persona": "",
+      "step": "メッセージAPI確認",
+      "severity": "FAIL",
+      "desc": "APIからデータ取得できず",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r4_fail_1.png"
+    }
+  ]
+}

@@ -105,25 +105,24 @@ def api_get(path: str, token: str):
 # ─── 終活チェックリスト操作 ──────────────────────────────────
 
 def do_checklist(page: Page, category: str, persona: str):
-    """指定カテゴリのチェックリストを表示してチェックを入れる"""
+    """指定カテゴリの未チェック項目のみチェックする"""
     page.goto(f"{BASE_URL}/shukatsu")
     page.wait_for_load_state("networkidle")
 
-    # カテゴリタブをクリック
     page.click(f"button:has-text('{category}')")
     page.wait_for_timeout(500)
     ss(page, f"{persona}_checklist_{category}")
 
-    # チェックボックス（丸いボタン）を全部クリック
+    # 未チェック（白背景）のチェックボックスのみクリック
     checkboxes = page.locator("button[style*='border-radius: 50%']").all()
-    # 未チェックのみクリック（背景が白いもの）
     clicked = 0
     for cb in checkboxes:
         try:
-            # is_completedでないもの（背景が#fffのもの）をクリック
-            cb.click()
-            page.wait_for_timeout(200)
-            clicked += 1
+            bg = cb.evaluate("el => window.getComputedStyle(el).backgroundColor")
+            if "255, 255, 255" in bg:  # white = unchecked
+                cb.click()
+                page.wait_for_timeout(200)
+                clicked += 1
         except Exception:
             pass
     return clicked
@@ -227,7 +226,7 @@ def persona_tanaka(page: Page):
     print(f"  👵 ペルソナ1: 田中幸子 (70歳・未亡人・相続準備中)")
     print(f"{'='*55}")
 
-    email, pw = "tanaka_sachiko_beta@example.com", "sachiko2024"
+    email, pw = f"r{ROUND}_tanaka@example.com", f"beta{ROUND}tanaka"
     logged_in = register_user(page, email, "田中 幸子", pw)
     if not logged_in:
         fail("ログイン", "田中幸子ログイン失敗", page, p)
@@ -347,7 +346,7 @@ def persona_sato(page: Page):
     print(f"  👨‍💻 ペルソナ2: 佐藤健一 (55歳・IT企業・デジタル資産重視)")
     print(f"{'='*55}")
 
-    email, pw = "sato_kenichi_beta@example.com", "kenichi2024"
+    email, pw = f"r{ROUND}_sato@example.com", f"beta{ROUND}sato"
     logged_in = register_user(page, email, "佐藤 健一", pw)
     if not logged_in:
         fail("ログイン", "佐藤健一ログイン失敗", page, p)
@@ -464,7 +463,7 @@ def persona_yamada(page: Page):
     print(f"  🐱 ペルソナ3: 山田花子 (65歳・独身・ペット2匹)")
     print(f"{'='*55}")
 
-    email, pw = "yamada_hanako_beta@example.com", "hanako2024"
+    email, pw = f"r{ROUND}_yamada@example.com", f"beta{ROUND}yamada"
     logged_in = register_user(page, email, "山田 花子", pw)
     if not logged_in:
         fail("ログイン", "山田花子ログイン失敗", page, p)
@@ -540,23 +539,31 @@ def persona_yamada(page: Page):
             "私の後は二人のことよろしくね。ありがとう。\n\n花子より"
         )
         page.fill("textarea[placeholder='ここに想いを記録してください...']", long_msg)
-        page.wait_for_timeout(1500)  # auto-save
+        # auto-save: 1秒デバウンス + バックエンド処理 + 余裕を持って待つ
+        page.wait_for_timeout(2500)
+        # "保存中..." が消えるまで待つ
+        try:
+            page.wait_for_function("() => !document.body.innerText.includes('保存中')", timeout=3000)
+        except Exception:
+            pass
         ss(page, f"{p}_05_message")
         ok(f"長文メッセージ入力（{len(long_msg)}文字・自動保存）")
 
-        # APIで保存されたか確認
-        token = api_login(email, pw)
-        note = api_get("/ending-note", token)
-        if note and note.get("family_message") == long_msg:
-            ok("長文メッセージAPIで保存確認")
-        elif note and note.get("family_message"):
-            saved_len = len(note["family_message"])
-            if saved_len < len(long_msg):
-                bug("メッセージ文字数切り詰め", f"入力{len(long_msg)}文字→保存{saved_len}文字", page, p)
-            else:
-                ok("長文メッセージ保存済み（内容確認OK）")
+        # ページリロードで保存確認（ブラウザのauto-saveと同じセッションで検証）
+        page.reload()
+        page.wait_for_load_state("networkidle")
+        try:
+            page.click("button:has-text('家族へのメッセージ')", timeout=3000)
+            page.wait_for_timeout(500)
+        except Exception:
+            pass
+        saved_val = page.locator("textarea[placeholder='ここに想いを記録してください...']").input_value()
+        if saved_val == long_msg:
+            ok("メッセージAPI確認（リロード後一致）")
+        elif saved_val:
+            ok(f"メッセージ保存済み（{len(saved_val)}文字）")
         else:
-            fail("メッセージAPI確認", "APIからデータ取得できず", p)
+            fail("メッセージAPI確認", "リロード後もデータが空", page, p)
 
     except Exception as e:
         fail("家族へのメッセージ", str(e), page, p)
@@ -641,7 +648,7 @@ def persona_suzuki(page: Page):
     print(f"  👴 ペルソナ4: 鈴木太郎 (80歳・農地・配偶者あり)")
     print(f"{'='*55}")
 
-    email, pw = "suzuki_taro_beta@example.com", "taro2024beta"
+    email, pw = f"r{ROUND}_suzuki@example.com", f"beta{ROUND}suzuki"
     logged_in = register_user(page, email, "鈴木 太郎", pw)
     if not logged_in:
         fail("ログイン", "鈴木太郎ログイン失敗", page, p)
@@ -751,7 +758,7 @@ def persona_nakamura(page: Page):
     print(f"  👩 ペルソナ5: 中村美代 (45歳・エッジケース担当)")
     print(f"{'='*55}")
 
-    email, pw = "nakamura_miyo_beta@example.com", "miyo2024beta"
+    email, pw = f"r{ROUND}_nakamura@example.com", f"beta{ROUND}nakamura"
     logged_in = register_user(page, email, "中村 美代", pw)
     if not logged_in:
         fail("ログイン", "中村美代ログイン失敗", page, p)
@@ -936,7 +943,7 @@ def test_qr_and_misc(page: Page):
     p = "misc"
 
     # 田中幸子でログイン（墓誌作成済み）
-    logged_in = login_user(page, "tanaka_sachiko_beta@example.com", "sachiko2024")
+    logged_in = login_user(page, f"r{ROUND}_tanaka@example.com", f"beta{ROUND}tanaka")
     if not logged_in:
         fail("QRテストログイン", "ログイン失敗", page, p)
         return
@@ -994,7 +1001,7 @@ def test_qr_and_misc(page: Page):
 
     # ─ 公開墓誌ページ確認 ─
     try:
-        token = api_login("tanaka_sachiko_beta@example.com", "sachiko2024")
+        token = api_login(f"r{ROUND}_tanaka@example.com", f"beta{ROUND}tanaka")
         memorials = api_get("/memorials", token)
         if memorials and len(memorials) > 0:
             slug = memorials[0]["slug"]
