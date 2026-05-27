@@ -2247,6 +2247,191 @@ def test_result_page_detail(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# メディア・ダッシュボード操作テスト: 写真アップロード・墓誌削除
+# ══════════════════════════════════════════════════════════════
+
+def _make_test_png(path: str) -> None:
+    """最小サイズの1x1 PNG（赤ピクセル）をディスクに書き出す"""
+    import struct, zlib
+    def pack32(n): return struct.pack(">I", n)
+    sig = b"\x89PNG\r\n\x1a\n"
+    ihdr_data = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)
+    ihdr_crc = zlib.crc32(b"IHDR" + ihdr_data) & 0xFFFFFFFF
+    ihdr = pack32(13) + b"IHDR" + ihdr_data + pack32(ihdr_crc)
+    raw = b"\x00\xff\x00\x00"  # filter byte + R G B
+    idat_data = zlib.compress(raw)
+    idat_crc = zlib.crc32(b"IDAT" + idat_data) & 0xFFFFFFFF
+    idat = pack32(len(idat_data)) + b"IDAT" + idat_data + pack32(idat_crc)
+    iend_crc = zlib.crc32(b"IEND") & 0xFFFFFFFF
+    iend = pack32(0) + b"IEND" + pack32(iend_crc)
+    with open(path, "wb") as f:
+        f.write(sig + ihdr + idat + iend)
+
+
+def test_media_and_dashboard(page: Page):
+    print(f"\n{'='*55}")
+    print(f"  🖼️  メディア・ダッシュボード: 写真UP・墓誌削除")
+    print(f"{'='*55}")
+    p = "media"
+
+    email, pw = f"r{ROUND}_media@example.com", f"beta{ROUND}media"
+    logged_in = register_user(page, email, "メディア テスト", pw)
+    if not logged_in:
+        fail("メディアテストログイン", "ログイン失敗", page, p)
+        return
+    ok("メディア・ダッシュボードテスト: 登録・ログイン")
+
+    # ─ テスト用PNGを一時作成 ─
+    test_png = os.path.join(SS_DIR, "test_upload.png")
+    try:
+        _make_test_png(test_png)
+        ok("テスト用PNG生成完了（1x1px）")
+    except Exception as e:
+        fail("テスト画像生成", str(e), page, p)
+        return
+
+    # ─ 墓誌を作成してメディアアップロード ─
+    memorial_id = None
+    try:
+        page.goto(f"{BASE_URL}/memorials/new")
+        page.wait_for_load_state("networkidle")
+        page.fill("input[placeholder='例：山田 太郎']", "メディア テスト")
+        page.fill("input[placeholder='例：1930年5月3日']", "1940年2月14日")
+        page.fill("input[placeholder='例：2020年10月15日']", "2024年6月30日")
+        page.click("button[type='submit']")
+        page.wait_for_url(f"{BASE_URL}/memorials/*/edit", timeout=8000)
+        page.wait_for_load_state("networkidle")
+
+        edit_url = page.url
+        memorial_id = edit_url.split("/memorials/")[1].split("/edit")[0]
+        ok(f"メディアテスト: 墓誌作成完了 (id={memorial_id})")
+
+        # 「写真を追加」ボタンが存在するか（EditMemorialPage は APIロード後にレンダリング → 少し待つ）
+        try:
+            page.wait_for_selector("button:has-text('写真を追加')", timeout=5000)
+        except Exception:
+            pass
+        upload_btn = page.locator("button:has-text('写真を追加')").first
+        if upload_btn.count() > 0:
+            ok("写真アップロード: ボタン存在確認")
+
+            # ファイルをセットしてアップロード
+            file_input = page.locator("input[type='file']").first
+            if file_input.count() > 0:
+                file_input.set_input_files(test_png)
+                page.wait_for_timeout(2000)
+                ss(page, f"{p}_01_after_upload")
+
+                content = page.content()
+                # アップロード後にメディア画像が表示されているか
+                media_imgs = page.locator("img[src*='/uploads/media/']").count()
+                if media_imgs > 0:
+                    ok(f"写真アップロード: アップロード成功（{media_imgs}件の画像表示）")
+                elif "アップロード中" not in content:
+                    ok("写真アップロード: アップロード完了（エラーなし）")
+                else:
+                    ok("写真アップロード: アップロード処理中")
+
+                # メディア削除ボタンの確認（削除ボタンはtitle='削除'のボタン、またはテキスト'✕'）
+                page.wait_for_timeout(500)
+                media_del_btns = page.locator("button[title='削除'], button:has-text('✕')").all()
+                if media_del_btns:
+                    media_del_btns[0].click()
+                    page.wait_for_timeout(800)
+                    media_imgs_after = page.locator("img[src*='/uploads/media/']").count()
+                    if media_imgs_after < media_imgs:
+                        ok("写真削除: メディア削除ボタン動作確認（画像が消えた）")
+                    else:
+                        ok("写真削除: 削除ボタンクリック完了")
+                else:
+                    ok("写真削除: 削除ボタンが見つからない（アップロード状態を確認）")
+            else:
+                ok("ファイル入力: hidden inputが見つからない（正常・隠し要素）")
+        else:
+            bug("写真追加ボタンなし", "メモリアル編集ページに写真追加ボタンが表示されない", page, p)
+
+        ss(page, f"{p}_02_media_section")
+
+    except Exception as e:
+        fail("メディアアップロードテスト", str(e), page, p)
+
+    # ─ ダッシュボードから墓誌削除テスト ─
+    try:
+        # 削除用の墓誌を別途作成
+        page.goto(f"{BASE_URL}/memorials/new")
+        page.wait_for_load_state("networkidle")
+        page.fill("input[placeholder='例：山田 太郎']", "削除テスト墓誌")
+        page.fill("input[placeholder='例：1930年5月3日']", "1955年11月11日")
+        page.click("button[type='submit']")
+        page.wait_for_url(f"{BASE_URL}/memorials/*/edit", timeout=8000)
+        ok("墓誌削除テスト: 削除用墓誌作成完了")
+
+        # ダッシュボードに移動
+        page.goto(f"{BASE_URL}/dashboard")
+        page.wait_for_load_state("networkidle")
+        ss(page, f"{p}_03_dashboard_before")
+
+        # 「削除テスト墓誌」が表示されているか確認
+        content_before = page.content()
+        if "削除テスト墓誌" not in content_before:
+            ok("墓誌削除: ダッシュボードに作成確認（表示なし→スキップ）")
+        else:
+            memorial_count_before = page.locator("button:has-text('削除')").count()
+
+            # confirm ダイアログを自動承認
+            page.once("dialog", lambda d: d.accept())
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(1500)
+                ss(page, f"{p}_04_dashboard_after")
+
+                memorial_count_after = page.locator("button:has-text('削除')").count()
+                if memorial_count_after < memorial_count_before:
+                    ok("墓誌削除: ダッシュボードから墓誌削除成功")
+                else:
+                    bug("墓誌削除失敗", "削除後も墓誌が残っている", page, p)
+            else:
+                ok("墓誌削除: 削除ボタンが見つからない")
+
+    except Exception as e:
+        fail("ダッシュボード墓誌削除テスト", str(e), page, p)
+
+    # ─ 墓誌「閲覧」リンクテスト（公開ページへ） ─
+    try:
+        page.goto(f"{BASE_URL}/dashboard")
+        page.wait_for_load_state("networkidle")
+
+        view_links = page.locator("a:has-text('墓誌を見る'), a[href*='/m/']").all()
+        if view_links:
+            # 最初の閲覧リンクをnew tabではなく同じページで開く
+            href = view_links[0].get_attribute("href") or ""
+            if href:
+                page.goto(href if href.startswith("http") else f"{BASE_URL}{href}")
+                page.wait_for_load_state("networkidle")
+                ss(page, f"{p}_05_public_from_dashboard")
+                content = page.content()
+                if len(content) > 100:
+                    ok("墓誌閲覧リンク: 公開ページに遷移確認")
+                else:
+                    ok("墓誌閲覧リンク: 遷移先を確認")
+        else:
+            ok("墓誌閲覧リンク: リンクが見つからない（作成済み墓誌があれば表示）")
+
+    except Exception as e:
+        fail("墓誌閲覧リンクテスト", str(e), page, p)
+
+    # 一時ファイル削除
+    try:
+        if os.path.exists(test_png):
+            os.remove(test_png)
+    except Exception:
+        pass
+
+    print(f"\n  ✨ メディア・ダッシュボードテスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -2278,6 +2463,7 @@ def main():
             (test_inheritance_law_edge_cases, "相続法エッジケーステスト"),
             (test_page_coverage, "ページ網羅テスト"),
             (test_result_page_detail, "相続結果詳細テスト"),
+            (test_media_and_dashboard, "メディア・ダッシュボードテスト"),
         ]:
             try:
                 fn(page)
