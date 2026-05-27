@@ -32,33 +32,39 @@ router = APIRouter(tags=["shukatsu"])
 
 # ─── チェックリスト定義（コードで管理）─────────────────────
 
-CHECKLIST_ITEMS = [
-    # 相続
-    {"task_key": "estate_heirs_confirmed",   "category": "相続", "label": "相続人を確認した",                   "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_assets_listed",     "category": "相続", "label": "財産・負債を一覧にした",             "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_reserved_checked",  "category": "相続", "label": "遺留分を把握した",                   "priority": "必須", "link": "/estate"},
-    {"task_key": "estate_gifts_recorded",    "category": "相続", "label": "生前贈与の記録を残した",             "priority": "推奨", "link": "/ending-note"},
-    # 遺言
-    {"task_key": "will_considered",          "category": "遺言", "label": "遺言書を作成した（または検討した）", "priority": "必須", "link": "/estate"},
-    # 医療
-    {"task_key": "medical_prolonging_set",   "category": "医療", "label": "延命治療の希望を記録した",           "priority": "必須", "link": "/ending-note"},
-    {"task_key": "medical_doctor_recorded",  "category": "医療", "label": "かかりつけ医・処方薬を記録した",     "priority": "必須", "link": "/ending-note"},
-    {"task_key": "medical_organ_set",        "category": "医療", "label": "臓器提供の意思を記録した",           "priority": "推奨", "link": "/ending-note"},
-    # 葬儀
-    {"task_key": "funeral_style_set",        "category": "葬儀", "label": "葬儀の希望（形式・規模）を記録した", "priority": "必須", "link": "/ending-note"},
-    {"task_key": "funeral_photo_selected",   "category": "葬儀", "label": "遺影に使いたい写真を選んだ",         "priority": "推奨", "link": "/ending-note"},
-    # デジタル
-    {"task_key": "digital_subscriptions",    "category": "デジタル", "label": "サブスクリプション一覧を作成した", "priority": "推奨", "link": "/ending-note"},
-    {"task_key": "digital_sns_set",          "category": "デジタル", "label": "SNSアカウントの死後処理を決めた", "priority": "推奨", "link": "/ending-note"},
-    {"task_key": "digital_key_set",          "category": "デジタル", "label": "デジタル遺品鍵を設定した",         "priority": "必須", "link": "/digital-key"},
-    # 人間関係
-    {"task_key": "contacts_listed",          "category": "人間関係", "label": "緊急連絡先リストを作成した",       "priority": "必須", "link": "/ending-note"},
-    {"task_key": "bequest_listed",           "category": "人間関係", "label": "形見分けリストを作成した",         "priority": "推奨", "link": "/ending-note"},
-    # ペット
-    {"task_key": "pet_caretaker_set",        "category": "ペット", "label": "ペットの引き継ぎ先を決めた",        "priority": "任意", "link": "/ending-note"},
-    # 思い出
-    {"task_key": "family_message_written",   "category": "思い出", "label": "家族へのメッセージを書いた",        "priority": "推奨", "link": "/ending-note"},
+# stars(1-5): 3以上 → 必須 / 2 → 推奨 / 1 → 任意  ／ 降順ソート済み
+_RAW_CHECKLIST = [
+    {"task_key": "estate_heirs_confirmed",   "category": "相続",    "label": "相続人を確認した",                   "stars": 5, "link": "/estate"},
+    {"task_key": "estate_assets_listed",     "category": "相続",    "label": "財産・負債を一覧にした",             "stars": 5, "link": "/estate"},
+    {"task_key": "will_considered",          "category": "遺言",    "label": "遺言書を作成した（または検討した）", "stars": 5, "link": "/estate"},
+    {"task_key": "medical_prolonging_set",   "category": "医療",    "label": "延命治療の希望を記録した",           "stars": 5, "link": "/ending-note"},
+    {"task_key": "contacts_listed",          "category": "人間関係","label": "緊急連絡先リストを作成した",         "stars": 5, "link": "/ending-note"},
+    {"task_key": "estate_reserved_checked",  "category": "相続",    "label": "遺留分を把握した",                   "stars": 4, "link": "/estate"},
+    {"task_key": "medical_doctor_recorded",  "category": "医療",    "label": "かかりつけ医・処方薬を記録した",     "stars": 4, "link": "/ending-note"},
+    {"task_key": "funeral_style_set",        "category": "葬儀",    "label": "葬儀の希望（形式・規模）を記録した", "stars": 4, "link": "/ending-note"},
+    {"task_key": "digital_key_set",          "category": "デジタル","label": "デジタル遺品鍵を設定した",           "stars": 4, "link": "/digital-key"},
+    {"task_key": "estate_gifts_recorded",    "category": "相続",    "label": "生前贈与の記録を残した",             "stars": 3, "link": "/ending-note"},
+    {"task_key": "medical_organ_set",        "category": "医療",    "label": "臓器提供の意思を記録した",           "stars": 3, "link": "/ending-note"},
+    {"task_key": "funeral_photo_selected",   "category": "葬儀",    "label": "遺影に使いたい写真を選んだ",         "stars": 3, "link": "/ending-note"},
+    {"task_key": "digital_subscriptions",    "category": "デジタル","label": "サブスクリプション一覧を作成した",   "stars": 3, "link": "/ending-note"},
+    {"task_key": "digital_sns_set",          "category": "デジタル","label": "SNSアカウントの死後処理を決めた",     "stars": 3, "link": "/ending-note"},
+    {"task_key": "family_message_written",   "category": "思い出",  "label": "家族へのメッセージを書いた",         "stars": 3, "link": "/ending-note"},
+    {"task_key": "bequest_listed",           "category": "人間関係","label": "形見分けリストを作成した",           "stars": 2, "link": "/ending-note"},
+    {"task_key": "pet_caretaker_set",        "category": "ペット",  "label": "ペットの引き継ぎ先を決めた",         "stars": 2, "link": "/ending-note"},
 ]
+
+def _stars_to_priority(stars: int) -> str:
+    if stars >= 3:
+        return "必須"
+    if stars == 2:
+        return "推奨"
+    return "任意"
+
+CHECKLIST_ITEMS = sorted(
+    [{**item, "priority": _stars_to_priority(item["stars"])} for item in _RAW_CHECKLIST],
+    key=lambda x: x["stars"],
+    reverse=True,
+)
 
 VALID_TASK_KEYS = {item["task_key"] for item in CHECKLIST_ITEMS}
 

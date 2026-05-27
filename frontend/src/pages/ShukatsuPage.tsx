@@ -11,6 +11,16 @@ const PRIORITY_COLOR: Record<string, string> = {
   任意: "#6b7280",
 };
 
+function StarRating({ stars }: { stars: number }) {
+  return (
+    <span style={{ letterSpacing: 1, fontSize: "0.75rem" }}>
+      {Array.from({ length: 5 }, (_, i) => (
+        <span key={i} style={{ color: i < stars ? "#f59e0b" : "#d1d5db" }}>★</span>
+      ))}
+    </span>
+  );
+}
+
 export default function ShukatsuPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -140,6 +150,7 @@ export default function ShukatsuPage() {
                     <span style={{ ...s.priorityBadge, color: PRIORITY_COLOR[item.priority] }}>
                       {item.priority}
                     </span>
+                    <StarRating stars={item.stars ?? 0} />
                   </div>
                 </div>
                 {!item.is_completed && (

@@ -135,6 +135,7 @@ export interface ChecklistItem {
   task_key: string;
   category: string;
   label: string;
+  stars: number;
   priority: "必須" | "推奨" | "任意";
   link: string;
   is_completed: boolean;
