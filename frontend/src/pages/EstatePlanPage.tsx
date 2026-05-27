@@ -28,7 +28,8 @@ export default function EstatePlanListPage() {
   }, []);
 
   const handleCreate = async () => {
-    const r = await api.post("/estate-plans", { title: newTitle });
+    if (!newTitle.trim()) return;
+    const r = await api.post("/estate-plans", { title: newTitle.trim() });
     navigate(`/estate/${r.data.id}/family`);
   };
   const handleDelete = async (id: number) => {
@@ -344,7 +345,10 @@ export function EstateResultPage() {
               </div>
             </Section>
 
-            {result.estate_value > 0 && result.estate_value <= result.basic_deduction && (
+            {result.estate_value < 0 && (
+              <div style={s.warningBox}>⚠️ 負債が資産を上回っています（債務超過: {Math.abs(result.estate_value).toLocaleString()}円）。相続放棄も選択肢の一つです。弁護士・司法書士にご相談ください。</div>
+            )}
+            {result.estate_value >= 0 && result.estate_value <= result.basic_deduction && (
               <div style={s.infoBox}>✅ 正味遺産額が基礎控除（{result.basic_deduction.toLocaleString()}円）以内のため、相続税の申告は不要の可能性があります。</div>
             )}
             {result.estate_value > result.basic_deduction && (

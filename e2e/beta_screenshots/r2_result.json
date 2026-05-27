@@ -1,0 +1,51 @@
+{
+  "round": "2",
+  "timestamp": "2026-05-28T00:29:28.857045",
+  "pass": 76,
+  "fail": 3,
+  "bugs": 3,
+  "issues": [
+    {
+      "persona": "tanaka",
+      "step": "墓誌作成",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='田中 一郎']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_fail_1.png"
+    },
+    {
+      "persona": "tanaka",
+      "step": "スコア更新不具合",
+      "severity": "BUG",
+      "desc": "チェックしたのにスコアが変化しない (-1% → -1%)",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_bug_1.png"
+    },
+    {
+      "persona": "",
+      "step": "メッセージAPI確認",
+      "severity": "FAIL",
+      "desc": "APIからデータ取得できず",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_fail_2.png"
+    },
+    {
+      "persona": "yamada",
+      "step": "兄弟相続表示なし",
+      "severity": "BUG",
+      "desc": "兄弟姉妹が相続人として表示されていない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_bug_2.png"
+    },
+    {
+      "persona": "yamada",
+      "step": "相続順位（第3順位）未表示",
+      "severity": "BUG",
+      "desc": "独身・子なしで兄弟が第3順位と表示されない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_bug_3.png"
+    },
+    {
+      "persona": "",
+      "step": "1000文字保存確認",
+      "severity": "FAIL",
+      "desc": "APIで取得できず",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r2_fail_3.png"
+    }
+  ]
+}

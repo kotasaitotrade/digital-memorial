@@ -90,6 +90,10 @@ class TestEstatePlans:
         assert res.status_code == 200
         assert res.json()["title"] is not None
 
+    def test_create_plan_empty_title_rejected(self, auth_client):
+        res = auth_client.post("/api/estate-plans", json={"title": ""})
+        assert res.status_code == 422
+
     def test_list_plans_empty(self, auth_client):
         res = auth_client.get("/api/estate-plans")
         assert res.status_code == 200
@@ -285,6 +289,39 @@ class TestInheritanceCalculate:
         res = auth_client.get(f"/api/estate-plans/{plan_id}/calculate")
         assert res.status_code == 200
         assert res.json()["heirs"] == []
+
+    def test_calculate_negative_estate_no_negative_share_amount(self, auth_client):
+        """債務超過時でも share_amount は 0 以上"""
+        plan_id = auth_client.post("/api/estate-plans", json={}).json()["id"]
+        auth_client.post(f"/api/estate-plans/{plan_id}/family", json={
+            "members": [{"name": "子", "relationship": "child", "is_alive": True}]
+        })
+        auth_client.post(f"/api/estate-plans/{plan_id}/assets", json={
+            "assets": [
+                {"name": "預金", "asset_type": "bank_account", "estimated_value": 1_000_000},
+                {"name": "借金", "asset_type": "debt", "estimated_value": -5_000_000},
+            ]
+        })
+        res = auth_client.get(f"/api/estate-plans/{plan_id}/calculate")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["estate_value"] == -4_000_000
+        for heir in data["heirs"]:
+            assert heir["share_amount"] >= 0
+            assert heir["reserved_amount"] >= 0
+
+    def test_calculate_sibling_third_order(self, auth_client):
+        """独身・子なし・親なしの場合、兄弟姉妹が第3順位相続人となる"""
+        plan_id = auth_client.post("/api/estate-plans", json={}).json()["id"]
+        auth_client.post(f"/api/estate-plans/{plan_id}/family", json={
+            "members": [{"name": "姉", "relationship": "sibling", "is_alive": True}]
+        })
+        res = auth_client.get(f"/api/estate-plans/{plan_id}/calculate")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["order_label"] == "第3順位（兄弟姉妹・甥姪）"
+        assert len(data["heirs"]) == 1
+        assert data["heirs"][0]["name"] == "姉"
 
     def test_calculate_share_fractions(self, auth_client):
         plan_id = auth_client.post("/api/estate-plans", json={}).json()["id"]
@@ -615,3 +652,46 @@ class TestChecklist:
     def test_unauthenticated_checklist(self, client):
         res = client.get("/api/checklist")
         assert res.status_code == 401
+
+
+# ═══════════════════════════════════════════════════════════════
+# 公開墓誌（パスワード保護）
+# ═══════════════════════════════════════════════════════════════
+
+class TestPublicMemorial:
+    def _create_memorial(self, client, is_public=True, password=None):
+        data = {"name": "テスト太郎", "is_public": is_public}
+        if password:
+            data["password"] = password
+        res = client.post("/api/memorials", json=data)
+        return res.json()
+
+    def test_public_memorial_accessible(self, auth_client, client):
+        m = self._create_memorial(auth_client, is_public=True)
+        res = client.get(f"/api/m/{m['slug']}")
+        assert res.status_code == 200
+        assert res.json()["name"] == "テスト太郎"
+
+    def test_private_memorial_without_password_returns_403(self, auth_client, client):
+        """非公開墓誌にパスワードなしでアクセス → 403"""
+        m = self._create_memorial(auth_client, is_public=False)
+        res = client.get(f"/api/m/{m['slug']}")
+        assert res.status_code == 403
+
+    def test_private_memorial_with_no_hash_and_password_provided_returns_403(self, auth_client, client):
+        """非公開墓誌(password_hash=None)にパスワードを提供しても403（クラッシュしない）"""
+        m = self._create_memorial(auth_client, is_public=False)
+        res = client.get(f"/api/m/{m['slug']}?password=wrongpassword")
+        assert res.status_code == 403
+
+    def test_password_protected_correct_password(self, auth_client, client):
+        """パスワード付き非公開墓誌: 正しいパスワードで閲覧可能"""
+        m = self._create_memorial(auth_client, is_public=False, password="secret123")
+        res = client.get(f"/api/m/{m['slug']}?password=secret123")
+        assert res.status_code == 200
+
+    def test_password_protected_wrong_password(self, auth_client, client):
+        """パスワード付き非公開墓誌: 誤ったパスワードで403"""
+        m = self._create_memorial(auth_client, is_public=False, password="secret123")
+        res = client.get(f"/api/m/{m['slug']}?password=wrongpassword")
+        assert res.status_code == 403

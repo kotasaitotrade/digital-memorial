@@ -158,6 +158,8 @@ def calculate_inheritance(family_members: List[Any], estate_value: int = 0) -> D
             reserved_shares[heir_id] = total_reserved_ratio * share
 
     # ─── レスポンスを組み立て ────────────────────────────────
+    # 債務超過の場合は分配可能額を0とする（マイナス相続額を防ぐ）
+    distributable = max(estate_value, 0)
     heir_map = {h.id: h for h in heirs}
     result_heirs = []
     for h in heirs:
@@ -169,10 +171,10 @@ def calculate_inheritance(family_members: List[Any], estate_value: int = 0) -> D
             "relationship": h.relationship,
             "share_fraction": f"{share.numerator}/{share.denominator}",
             "share_percent": float(share * 100),
-            "share_amount": int(estate_value * float(share)) if estate_value else 0,
+            "share_amount": int(distributable * float(share)) if distributable else 0,
             "reserved_fraction": f"{reserved.numerator}/{reserved.denominator}" if reserved else None,
             "reserved_percent": float(reserved * 100) if reserved else None,
-            "reserved_amount": int(estate_value * float(reserved)) if (estate_value and reserved) else 0,
+            "reserved_amount": int(distributable * float(reserved)) if (distributable and reserved) else 0,
             "has_reserved_right": h.id in reserved_eligible_ids,
         })
 

@@ -80,7 +80,7 @@ def view_memorial_public(slug: str, password: str = None, db: Session = Depends(
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
     if not memorial.is_public:
-        if not password or not pwd_context.verify(password, memorial.password_hash):
+        if not memorial.password_hash or not password or not pwd_context.verify(password, memorial.password_hash):
             raise HTTPException(status_code=403, detail="Password required")
     return memorial
 

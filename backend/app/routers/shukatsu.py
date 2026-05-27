@@ -42,7 +42,7 @@ _RAW_CHECKLIST = [
     {"task_key": "estate_reserved_checked",  "category": "相続",    "label": "遺留分を把握した",                   "stars": 4, "link": "/estate"},
     {"task_key": "medical_doctor_recorded",  "category": "医療",    "label": "かかりつけ医・処方薬を記録した",     "stars": 4, "link": "/ending-note"},
     {"task_key": "funeral_style_set",        "category": "葬儀",    "label": "葬儀の希望（形式・規模）を記録した", "stars": 4, "link": "/ending-note"},
-    {"task_key": "digital_key_set",          "category": "デジタル","label": "デジタル遺品鍵を設定した",           "stars": 4, "link": "/digital-key"},
+    {"task_key": "digital_key_set",          "category": "デジタル","label": "デジタル遺品鍵を設定した",           "stars": 4, "link": "/ending-note"},
     {"task_key": "estate_gifts_recorded",    "category": "相続",    "label": "生前贈与の記録を残した",             "stars": 3, "link": "/ending-note"},
     {"task_key": "medical_organ_set",        "category": "医療",    "label": "臓器提供の意思を記録した",           "stars": 3, "link": "/ending-note"},
     {"task_key": "funeral_photo_selected",   "category": "葬儀",    "label": "遺影に使いたい写真を選んだ",         "stars": 3, "link": "/ending-note"},

@@ -35,7 +35,7 @@ class AssetResponse(AssetCreate):
         from_attributes = True
 
 class EstatePlanCreate(BaseModel):
-    title: str = "自分の相続計画"
+    title: str = Field(default="自分の相続計画", min_length=1, max_length=100)
 
 class EstatePlanResponse(BaseModel):
     id: int
