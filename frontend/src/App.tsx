@@ -7,6 +7,9 @@ import MemorialFormPage from "./pages/MemorialFormPage";
 import EditMemorialPage from "./pages/EditMemorialPage";
 import PublicMemorialPage from "./pages/PublicMemorialPage";
 import PrintQRPage from "./pages/PrintQRPage";
+import ShukatsuPage from "./pages/ShukatsuPage";
+import EstatePlanListPage, { FamilyInputPage, AssetInputPage, EstateResultPage } from "./pages/EstatePlanPage";
+import EndingNotePage from "./pages/EndingNotePage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -17,25 +20,27 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <Routes>
+      {/* 認証 */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+
+      {/* 公開 */}
       <Route path="/m/:slug" element={<PublicMemorialPage />} />
-      <Route
-        path="/dashboard"
-        element={<PrivateRoute><DashboardPage /></PrivateRoute>}
-      />
-      <Route
-        path="/memorials/new"
-        element={<PrivateRoute><MemorialFormPage /></PrivateRoute>}
-      />
-      <Route
-        path="/memorials/:id/edit"
-        element={<PrivateRoute><EditMemorialPage /></PrivateRoute>}
-      />
-      <Route
-        path="/memorials/:id/print-qr"
-        element={<PrivateRoute><PrintQRPage /></PrivateRoute>}
-      />
+
+      {/* 墓誌管理 */}
+      <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+      <Route path="/memorials/new" element={<PrivateRoute><MemorialFormPage /></PrivateRoute>} />
+      <Route path="/memorials/:id/edit" element={<PrivateRoute><EditMemorialPage /></PrivateRoute>} />
+      <Route path="/memorials/:id/print-qr" element={<PrivateRoute><PrintQRPage /></PrivateRoute>} />
+
+      {/* 終活 */}
+      <Route path="/shukatsu" element={<PrivateRoute><ShukatsuPage /></PrivateRoute>} />
+      <Route path="/estate" element={<PrivateRoute><EstatePlanListPage /></PrivateRoute>} />
+      <Route path="/estate/:planId/family" element={<PrivateRoute><FamilyInputPage /></PrivateRoute>} />
+      <Route path="/estate/:planId/assets" element={<PrivateRoute><AssetInputPage /></PrivateRoute>} />
+      <Route path="/estate/:planId/result" element={<PrivateRoute><EstateResultPage /></PrivateRoute>} />
+      <Route path="/ending-note" element={<PrivateRoute><EndingNotePage /></PrivateRoute>} />
+
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>
   );

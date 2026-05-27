@@ -39,6 +39,16 @@ export default function DashboardPage() {
       </header>
 
       <main style={s.main}>
+        {/* 終活ノートバナー */}
+        <Link to="/shukatsu" style={s.shukatsuBanner}>
+          <span style={{ fontSize: "1.3rem" }}>📋</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>終活ノートを開く</div>
+            <div style={{ fontSize: "0.78rem", opacity: 0.85 }}>相続の棚卸し・エンディングノート・チェックリスト</div>
+          </div>
+          <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>→</span>
+        </Link>
+
         {/* タイトル行 */}
         <div style={s.titleRow}>
           <div>
@@ -187,4 +197,5 @@ const s: Record<string, React.CSSProperties> = {
   btnEdit: { padding: "0.3rem 0.8rem", background: "var(--sand-200)", color: "var(--gray-700)", borderRadius: 6, fontSize: "0.78rem" },
   btnQr: { padding: "0.3rem 0.8rem", background: "var(--gray-100)", color: "var(--gray-700)", borderRadius: 6, fontSize: "0.78rem", border: "none", cursor: "pointer" },
   btnDelete: { padding: "0.3rem 0.8rem", background: "transparent", border: "1px solid #FECACA", color: "var(--red)", borderRadius: 6, fontSize: "0.78rem", cursor: "pointer", marginLeft: "auto" },
+  shukatsuBanner: { display: "flex", alignItems: "center", gap: "0.75rem", background: "linear-gradient(135deg, #1a5c38, #2d7a4f)", color: "#fff", borderRadius: 10, padding: "0.85rem 1.25rem", textDecoration: "none", marginBottom: "1.5rem", boxShadow: "0 2px 6px rgba(26,92,56,.25)" },
 };

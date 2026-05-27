@@ -37,3 +37,106 @@ export interface MemorialPublic {
   message?: string;
   media: MemorialMedia[];
 }
+
+// ─── 相続計画 ────────────────────────────────────────────────
+
+export interface FamilyMember {
+  id: number;
+  estate_plan_id: number;
+  name: string;
+  relationship: "spouse" | "child" | "grandchild" | "parent" | "grandparent" | "sibling" | "nephew_niece";
+  is_alive: boolean;
+  is_adopted: boolean;
+  is_half_blood: boolean;
+  has_renounced: boolean;
+  is_disqualified: boolean;
+  parent_member_id?: number;
+}
+
+export interface Asset {
+  id: number;
+  estate_plan_id: number;
+  asset_type: "real_estate" | "bank_account" | "securities" | "life_insurance" | "retirement" | "other" | "debt";
+  name: string;
+  estimated_value: number;
+  is_deemed_estate: boolean;
+  notes?: string;
+}
+
+export interface EstatePlan {
+  id: number;
+  user_id: number;
+  title: string;
+  created_at: string;
+  updated_at?: string;
+  family_members: FamilyMember[];
+  assets: Asset[];
+}
+
+export interface HeirResult {
+  id: number;
+  name: string;
+  relationship: string;
+  share_fraction: string;
+  share_percent: number;
+  share_amount: number;
+  reserved_fraction?: string;
+  reserved_percent?: number;
+  reserved_amount: number;
+  has_reserved_right: boolean;
+}
+
+export interface InheritanceCalculation {
+  heirs: HeirResult[];
+  order_label: string;
+  estate_value: number;
+  total_reserved_ratio?: string;
+  basic_deduction: number;
+  message?: string;
+}
+
+// ─── エンディングノート ──────────────────────────────────────
+
+export interface BequestItem { id: number; item_name: string; recipient: string; notes?: string; }
+export interface DigitalAssetItem { id: number; service_name: string; account?: string; after_death_instruction?: string; notes?: string; }
+export interface SubscriptionItem { id: number; service_name: string; monthly_fee?: number; cancellation_method?: string; notes?: string; }
+export interface EmergencyContact { id: number; name: string; relationship?: string; phone?: string; email?: string; notes?: string; priority: number; }
+export interface PetItem { id: number; name: string; species?: string; medical_info?: string; personality?: string; caretaker?: string; notes?: string; }
+
+export interface EndingNote {
+  id: number;
+  user_id: number;
+  life_prolonging?: string;
+  cpr?: string;
+  tube_feeding?: string;
+  organ_donation?: string;
+  organ_donation_detail?: string;
+  care_location?: string;
+  primary_doctor?: string;
+  medications?: string;
+  medical_notes?: string;
+  funeral_style?: string;
+  religion?: string;
+  funeral_music?: string;
+  funeral_notes?: string;
+  funeral_photo_path?: string;
+  family_message?: string;
+  updated_at?: string;
+  bequest_items: BequestItem[];
+  digital_assets: DigitalAssetItem[];
+  subscriptions: SubscriptionItem[];
+  emergency_contacts: EmergencyContact[];
+  pets: PetItem[];
+}
+
+// ─── チェックリスト ──────────────────────────────────────────
+
+export interface ChecklistItem {
+  task_key: string;
+  category: string;
+  label: string;
+  priority: "必須" | "推奨" | "任意";
+  link: string;
+  is_completed: boolean;
+  completed_at?: string;
+}

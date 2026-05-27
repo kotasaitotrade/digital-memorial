@@ -4,7 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import os
 from .database import engine, Base
-from .routers import auth_router, memorial_router
+from .routers import auth_router, memorial_router, shukatsu_router
 from .config import settings
 
 Base.metadata.create_all(bind=engine)
@@ -25,6 +25,7 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router, prefix="/api")
 app.include_router(memorial_router, prefix="/api")
+app.include_router(shukatsu_router, prefix="/api")
 
 
 @app.get("/")
