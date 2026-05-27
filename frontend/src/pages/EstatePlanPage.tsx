@@ -22,6 +22,8 @@ export default function EstatePlanListPage() {
   const [plans, setPlans] = useState<EstatePlan[]>([]);
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState("自分の相続計画");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingTitle, setEditingTitle] = useState("");
 
   useEffect(() => {
     api.get("/estate-plans").then((r) => setPlans(r.data));
@@ -36,6 +38,16 @@ export default function EstatePlanListPage() {
     if (!confirm("この相続計画を削除しますか？")) return;
     await api.delete(`/estate-plans/${id}`);
     setPlans((p) => p.filter((x) => x.id !== id));
+  };
+  const startEdit = (plan: EstatePlan) => {
+    setEditingId(plan.id);
+    setEditingTitle(plan.title);
+  };
+  const saveEdit = async (id: number) => {
+    if (!editingTitle.trim()) return;
+    const r = await api.patch(`/estate-plans/${id}`, { title: editingTitle.trim() });
+    setPlans((p) => p.map((x) => x.id === id ? r.data : x));
+    setEditingId(null);
   };
 
   return (
@@ -71,7 +83,24 @@ export default function EstatePlanListPage() {
           <div style={s.cardGrid}>
             {plans.map((plan) => (
               <div key={plan.id} style={s.card}>
-                <div style={s.cardTitle}>{plan.title}</div>
+                {editingId === plan.id ? (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                    <input
+                      style={{ ...s.input, flex: 1, padding: "0.35rem 0.6rem", fontSize: "0.9rem" }}
+                      value={editingTitle}
+                      onChange={(e) => setEditingTitle(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") saveEdit(plan.id); if (e.key === "Escape") setEditingId(null); }}
+                      autoFocus
+                    />
+                    <button style={s.primaryBtn} onClick={() => saveEdit(plan.id)}>保存</button>
+                    <button style={s.ghostBtn} onClick={() => setEditingId(null)}>✕</button>
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                    <div style={s.cardTitle}>{plan.title}</div>
+                    <button style={s.iconBtn} onClick={() => startEdit(plan)} title="名前を変更">✏️</button>
+                  </div>
+                )}
                 <div style={s.cardMeta}>
                   家族: {plan.family_members.length}名 ／ 財産: {plan.assets.length}件
                 </div>
@@ -528,6 +557,7 @@ const s: Record<string, React.CSSProperties> = {
   actionBtn: { fontSize: "0.8rem", padding: "0.3rem 0.75rem", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", cursor: "pointer", textDecoration: "none", color: "#374151" },
   actionBtnPrimary: { background: GREEN, color: "#fff", border: "none" },
   deleteBtn: { fontSize: "0.8rem", padding: "0.3rem 0.75rem", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#dc2626" },
+  iconBtn: { background: "none", border: "none", cursor: "pointer", padding: "0 2px", fontSize: "0.85rem", opacity: 0.6 },
   wizardHeader: { display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" as const },
   wizardStep: { fontSize: "0.85rem", color: "#9ca3af", padding: "0.3rem 0.75rem", borderRadius: 20, border: "1px solid #e5e7eb" },
   wizardStepActive: { color: GREEN, borderColor: GREEN, fontWeight: 600 },

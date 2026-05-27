@@ -104,6 +104,21 @@ def get_estate_plan(
     return plan
 
 
+@router.patch("/estate-plans/{plan_id}", response_model=EstatePlanResponse)
+def rename_estate_plan(
+    plan_id: int,
+    data: EstatePlanCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    plan = _get_plan_or_404(db, plan_id, current_user.id)
+    if data.title.strip():
+        plan.title = data.title.strip()
+        db.commit()
+        db.refresh(plan)
+    return plan
+
+
 @router.delete("/estate-plans/{plan_id}")
 def delete_estate_plan(
     plan_id: int,
