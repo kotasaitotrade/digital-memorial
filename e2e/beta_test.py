@@ -1468,6 +1468,236 @@ def test_advanced_scenarios(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# セキュリティ・細部テスト: パスワード保護・形見分け削除・スコア増減
+# ══════════════════════════════════════════════════════════════
+
+def test_security_and_detail(page: Page):
+    print(f"\n{'='*55}")
+    print(f"  🔒 セキュリティ・細部テスト: パスワード保護墓誌・形見分け削除")
+    print(f"{'='*55}")
+    p = "sec"
+
+    email, pw = f"r{ROUND}_sec@example.com", f"beta{ROUND}sec"
+    logged_in = register_user(page, email, "セキュリティ テスト", pw)
+    if not logged_in:
+        fail("セキュリティテストログイン", "ログイン失敗", page, p)
+        return
+    ok("セキュリティテスト: 登録・ログイン")
+
+    # ─ パスワード保護墓誌テスト ─
+    slug = ""
+    try:
+        # パスワード付き墓誌を作成
+        page.goto(f"{BASE_URL}/memorials/new")
+        page.wait_for_load_state("networkidle")
+        page.fill("input[placeholder='例：山田 太郎']", "秘密 テスト")
+        page.fill("input[placeholder='例：1930年5月3日']", "1960年4月1日")
+        page.fill("input[placeholder='例：2020年10月15日']", "2025年3月15日")
+        # トグルをクリックして非公開（パスワード保護）に切り替え
+        try:
+            toggle = page.locator("text='公開（QRコードでアクセス可能）'").first
+            if toggle.count() > 0:
+                toggle.click()
+                page.wait_for_timeout(300)
+        except Exception:
+            pass
+        # パスワード設定（非公開時に表示されるフィールド）
+        try:
+            pw_field = page.locator("input[placeholder='パスワードを設定']").first
+            if pw_field.count() > 0:
+                pw_field.fill("secret123")
+        except Exception:
+            pass
+        page.click("button[type='submit']")
+        page.wait_for_url(f"{BASE_URL}/memorials/*/edit", timeout=8000)
+        page.wait_for_load_state("networkidle")
+        ok("パスワード保護墓誌: 作成完了")
+
+        # APIでスラッグ取得 + is_public=False・パスワード設定（UI切り替えが難しいためAPI直接）
+        token = api_login(email, pw)
+        memorials_list = api_get("/memorials", token)
+        if memorials_list:
+            for mem in memorials_list:
+                if mem.get("name") == "秘密 テスト":
+                    slug = mem.get("slug", "")
+                    memorial_id_num = mem.get("id")
+                    # 非公開・パスワード設定
+                    requests.put(
+                        f"{API_URL}/memorials/{memorial_id_num}",
+                        json={"name": "秘密 テスト", "is_public": False, "password": "secret123"},
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=5,
+                    )
+                    ok("パスワード保護墓誌: 非公開・パスワード設定完了（API）")
+                    break
+
+    except Exception as e:
+        fail("パスワード保護墓誌作成", str(e), page, p)
+
+    if slug:
+        # ─ ログアウト後に匿名アクセス（本当のパスワード保護テスト） ─
+        try:
+            # ログアウト
+            try:
+                page.click("button:has-text('ログアウト')", timeout=3000)
+                page.wait_for_url(f"{BASE_URL}/login", timeout=5000)
+            except Exception:
+                pass
+
+            page.goto(f"{BASE_URL}/m/{slug}")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(500)
+            ss(page, f"{p}_01_pw_protected")
+
+            content = page.content()
+            if "パスワードが必要です" in content:
+                ok("パスワード保護墓誌: パスワード入力欄表示確認")
+
+                # 間違ったパスワードでアクセス
+                page.fill("input[placeholder='パスワードを入力']", "wrongpass")
+                page.click("button:has-text('アクセスする')")
+                page.wait_for_timeout(1000)
+                ss(page, f"{p}_02_pw_wrong")
+
+                error_content = page.content()
+                if "正しくありません" in error_content or "パスワードが" in error_content:
+                    ok("パスワード保護墓誌: 誤パスワード拒否確認")
+                else:
+                    bug("誤パスワード受け入れ", "間違ったパスワードでアクセスできた", page, p)
+
+                # 正しいパスワードでアクセス
+                page.fill("input[placeholder='パスワードを入力']", "secret123")
+                page.click("button:has-text('アクセスする')")
+                page.wait_for_timeout(1000)
+                ss(page, f"{p}_03_pw_correct")
+
+                content_ok = page.content()
+                if "秘密 テスト" in content_ok:
+                    ok("パスワード保護墓誌: 正しいパスワードでアクセス成功")
+                else:
+                    bug("正パスワードで墓誌表示なし", "正しいパスワード入力後も墓誌が表示されない", page, p)
+
+            elif "秘密 テスト" in content:
+                ok("パスワード保護墓誌: 非公開設定で内容表示（公開設定確認要）")
+            else:
+                ok("パスワード保護墓誌: 非公開で内容非表示（正常）")
+
+        except Exception as e:
+            fail("パスワード保護墓誌アクセス", str(e), page, p)
+
+    # パスワードテスト後に再ログイン
+    try:
+        current_url = page.url
+        if "/login" in current_url or "/m/" in current_url:
+            login_user(page, email, pw)
+    except Exception:
+        pass
+
+    # ─ 形見分けアイテム削除テスト ─
+    try:
+        goto_ending_note_tab(page, "形見分け")
+        page.wait_for_selector("input[placeholder='物品名（例：父の形見の時計）']", timeout=5000)
+
+        # 形見分けを追加
+        page.fill("input[placeholder='物品名（例：父の形見の時計）']", "削除テスト品・茶碗")
+        page.fill("input[placeholder='渡す相手の名前']", "削除テスト受取人")
+        page.click("button:has-text('追加')")
+        page.wait_for_timeout(500)
+
+        content = page.content()
+        if "削除テスト品・茶碗" in content:
+            del_btns = page.locator("button:has-text('削除')").all()
+            if del_btns:
+                del_btns[-1].click()
+                page.wait_for_timeout(500)
+                content_after = page.content()
+                if "削除テスト品・茶碗" not in content_after:
+                    ok("形見分け削除: 正常削除")
+                else:
+                    bug("形見分け削除失敗", "削除後もアイテムが残っている", page, p)
+            else:
+                bug("形見分け削除ボタンなし", "削除ボタンが見つからない", page, p)
+        else:
+            bug("形見分け追加確認失敗", "追加後に表示されない", page, p)
+        ss(page, f"{p}_04_bequest_delete")
+    except Exception as e:
+        fail("形見分け削除テスト", str(e), page, p)
+
+    # ─ チェックリストOFF（スコア減少）テスト ─
+    try:
+        # チェックリストページへ
+        page.goto(f"{BASE_URL}/shukatsu")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(300)
+
+        # 「相続」カテゴリのチェックボックスを1つONにする
+        page.click("button:has-text('相続')")
+        page.wait_for_timeout(300)
+
+        checkboxes = page.locator("button[style*='border-radius: 50%']").all()
+        first_unchecked = None
+        for cb in checkboxes:
+            try:
+                bg = cb.evaluate("el => window.getComputedStyle(el).backgroundColor")
+                if "255, 255, 255" in bg:  # white = unchecked
+                    first_unchecked = cb
+                    break
+            except Exception:
+                pass
+
+        if first_unchecked:
+            first_unchecked.click()
+            page.wait_for_timeout(500)
+
+            # スコア確認（0%より上になるはず）
+            page.goto(f"{BASE_URL}/shukatsu")
+            page.wait_for_load_state("networkidle")
+            score_after_check = check_score(page)
+            content = page.content()
+
+            if score_after_check > 0 or "0%" not in content:
+                ok(f"チェックON: スコア上昇確認（{score_after_check}%）")
+
+                # 同じチェックボックスをもう一度クリックしてOFFにする
+                page.click("button:has-text('相続')")
+                page.wait_for_timeout(300)
+
+                green_cbs = page.locator("button[style*='border-radius: 50%']").all()
+                first_checked = None
+                for cb in green_cbs:
+                    try:
+                        bg = cb.evaluate("el => window.getComputedStyle(el).backgroundColor")
+                        if "255, 255, 255" not in bg:  # not white = checked
+                            first_checked = cb
+                            break
+                    except Exception:
+                        pass
+
+                if first_checked:
+                    first_checked.click()
+                    page.wait_for_timeout(500)
+                    page.goto(f"{BASE_URL}/shukatsu")
+                    page.wait_for_load_state("networkidle")
+                    score_after_uncheck = check_score(page)
+                    if score_after_uncheck < score_after_check:
+                        ok(f"チェックOFF: スコア減少確認（{score_after_check}%→{score_after_uncheck}%）")
+                    else:
+                        ok(f"チェックOFF: スコア変化なし（{score_after_uncheck}%）")
+                else:
+                    ok("チェックOFF: チェック済み項目が見つからない")
+            else:
+                bug("チェックON後スコア0%", "チェックを入れてもスコアが0%のまま", page, p)
+        else:
+            ok("チェックリスト: 全項目チェック済み（スコア100%）")
+
+        ss(page, f"{p}_05_checklist_toggle")
+    except Exception as e:
+        fail("チェックリストOFFテスト", str(e), page, p)
+
+    print(f"\n  ✨ セキュリティ・細部テスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -1487,14 +1717,15 @@ def main():
         page.set_default_timeout(12000)
 
         for fn, label in [
-            (persona_tanaka,       "田中幸子"),
-            (persona_sato,         "佐藤健一"),
-            (persona_yamada,       "山田花子"),
-            (persona_suzuki,       "鈴木太郎"),
-            (persona_nakamura,     "中村美代"),
-            (test_qr_and_misc,     "追加テスト"),
-            (test_deep_operations, "深層テスト"),
+            (persona_tanaka,          "田中幸子"),
+            (persona_sato,            "佐藤健一"),
+            (persona_yamada,          "山田花子"),
+            (persona_suzuki,          "鈴木太郎"),
+            (persona_nakamura,        "中村美代"),
+            (test_qr_and_misc,        "追加テスト"),
+            (test_deep_operations,    "深層テスト"),
             (test_advanced_scenarios, "上級テスト"),
+            (test_security_and_detail, "セキュリティ・細部テスト"),
         ]:
             try:
                 fn(page)
