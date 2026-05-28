@@ -1,16 +1,8 @@
 {
   "round": "3",
-  "timestamp": "2026-05-28T00:34:27.084817",
-  "pass": 83,
-  "fail": 1,
+  "timestamp": "2026-05-28T11:14:44.677022",
+  "pass": 234,
+  "fail": 0,
   "bugs": 0,
-  "issues": [
-    {
-      "persona": "",
-      "step": "メッセージAPI確認",
-      "severity": "FAIL",
-      "desc": "APIからデータ取得できず",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r3_fail_1.png"
-    }
-  ]
+  "issues": []
 }
