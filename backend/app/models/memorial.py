@@ -48,4 +48,11 @@ class MemorialMedia(Base):
     order = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
+    # 写真アルバム・詳細フィールド（小林雪 要望）
+    album_name = Column(String, nullable=True, default="メイン")  # アルバム名
+    taken_at = Column(String, nullable=True)                      # 撮影日（YYYY-MM-DD）
+    location = Column(String, nullable=True)                      # 撮影場所
+    episode = Column(Text, nullable=True)                         # エピソード・思い出
+    media_is_public = Column(Boolean, default=True)               # 写真単位の公開/非公開
+
     memorial = relationship("Memorial", back_populates="media")

@@ -3777,6 +3777,335 @@ def test_new_impl_features(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# v3機能テスト: ペルソナフィードバック実装確認
+# ══════════════════════════════════════════════════════════════
+
+def test_v3_persona_features(page: Page):
+    """10ペルソナのフィードバックで実装した全機能を網羅的にテスト"""
+    p = "v3feat"
+    print(f"\n{'='*55}")
+    print(f"  🆕 v3機能テスト: ペルソナフィードバック全機能検証")
+    print(f"{'='*55}")
+
+    email, pw = f"r{ROUND}_v3feat@example.com", f"beta{ROUND}v3feat"
+    logged_in = register_user(page, email, "v3機能 テスト", pw)
+    if not logged_in:
+        fail("ログイン", "v3機能テストログイン失敗", page, p)
+        return
+    ok("v3機能テスト: 登録・ログイン")
+
+    # ─ 1. アカウント設定: フォントサイズ・かんたんモード・活動ログ ─
+    try:
+        page.goto(f"{BASE_URL}/account")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(500)
+        content = page.content()
+
+        # フォントサイズ設定の確認
+        if "フォントサイズ" in content or "文字サイズ" in content:
+            ok("v3: フォントサイズ設定セクション表示 ✓")
+            # セレクト or ラジオで「大」を選択
+            font_sel = page.locator("select").filter(has_text="標準").first
+            if font_sel.count() > 0:
+                font_sel.select_option("large")
+                page.wait_for_timeout(500)
+                ok("v3: フォントサイズ「大」選択 ✓")
+        else:
+            bug("フォントサイズ設定なし", "アカウント設定にフォントサイズ選択がない", page, p)
+
+        # かんたんモードトグル
+        if "かんたんモード" in content or "シンプル" in content:
+            ok("v3: かんたんモード設定表示 ✓")
+        else:
+            bug("かんたんモードなし", "アカウント設定にかんたんモードがない", page, p)
+
+        # 設定保存ボタン
+        save_btn = page.locator("button:has-text('保存')").first
+        if save_btn.count() > 0:
+            save_btn.click()
+            page.wait_for_timeout(800)
+            ok("v3: アカウント設定保存 ✓")
+
+        # 活動ログ表示
+        if "活動ログ" in content or "ログイン履歴" in content:
+            ok("v3: 活動ログセクション表示 ✓")
+        else:
+            bug("活動ログなし", "アカウント設定に活動ログが表示されない", page, p)
+
+        # CSVエクスポート
+        if "CSV" in content or "エクスポート" in content:
+            ok("v3: データエクスポート(CSV)表示 ✓")
+        else:
+            bug("CSVエクスポートなし", "アカウント設定にCSVエクスポートがない", page, p)
+
+        # 二要素認証(2FA)セクション
+        if "二要素認証" in content or "2FA" in content or "ワンタイム" in content:
+            ok("v3: 二要素認証セクション表示 ✓")
+        else:
+            bug("2FAセクションなし", "アカウント設定に二要素認証セクションがない", page, p)
+
+        ss(page, f"{p}_01_account_v3")
+
+    except Exception as e:
+        fail("v3: アカウント設定テスト", str(e), page, p)
+
+    # ─ 2. デジタルカギ: デッドマンスイッチ ─
+    try:
+        page.goto(f"{BASE_URL}/digital-key")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        content = page.content()
+
+        # デッドマンスイッチセクション
+        if "デッドマンスイッチ" in content or "死活監視" in content or "定期チェックイン" in content:
+            ok("v3: デッドマンスイッチセクション表示 ✓")
+
+            # チェックイン間隔セレクト
+            interval_sel = page.locator("select").first
+            if interval_sel.count() > 0:
+                ok("v3: チェックイン間隔セレクト表示 ✓")
+
+            # チェックインボタン
+            checkin_btn = page.locator("button:has-text('チェックイン')").first
+            if checkin_btn.count() > 0:
+                checkin_btn.click()
+                page.wait_for_timeout(1000)
+                ok("v3: デッドマンスイッチ チェックイン実行 ✓")
+            else:
+                bug("チェックインボタンなし", "デッドマンスイッチにチェックインボタンがない", page, p)
+        else:
+            bug("デッドマンスイッチなし", "デジタルカギページにデッドマンスイッチがない", page, p)
+
+        ss(page, f"{p}_02_deadman")
+
+    except Exception as e:
+        fail("v3: デッドマンスイッチテスト", str(e), page, p)
+
+    # ─ 3. エンディングノート: お気に入り(趣味)タブ ─
+    try:
+        goto_ending_note_tab(page, "お気に入り")
+        page.wait_for_timeout(500)
+        content = page.content()
+
+        if "好きな音楽" in content or "favorite" in content.lower() or "お気に入り" in content:
+            ok("v3: お気に入りタブ表示 ✓")
+
+            # 好きな音楽入力
+            music_area = page.locator("textarea").first
+            if music_area.count() > 0:
+                music_area.fill("ビートルズ「Let It Be」、サザンオールスターズ「TSUNAMI」")
+                page.wait_for_timeout(1500)
+                ok("v3: 好きな音楽入力・自動保存 ✓")
+        else:
+            bug("お気に入りタブなし", "エンディングノートにお気に入りタブが存在しない", page, p)
+
+        ss(page, f"{p}_03_favorites_tab")
+
+    except Exception as e:
+        fail("v3: お気に入りタブテスト", str(e), page, p)
+
+    # ─ 4. エンディングノート: 葬儀詳細（戒名・花・参列者数・埋葬方法）─
+    try:
+        goto_ending_note_tab(page, "葬儀")
+        page.wait_for_timeout(500)
+        content = page.content()
+
+        if "戒名" in content or "法名" in content:
+            ok("v3: 戒名・法名設定フィールド表示 ✓")
+        else:
+            bug("戒名フィールドなし", "葬儀タブに戒名設定がない", page, p)
+
+        if "埋葬" in content or "散骨" in content or "樹木葬" in content:
+            ok("v3: 埋葬方法フィールド表示 ✓")
+        else:
+            bug("埋葬フィールドなし", "葬儀タブに埋葬方法設定がない", page, p)
+
+        if "参列者" in content or "人数" in content:
+            ok("v3: 参列者数制限フィールド表示 ✓")
+        else:
+            bug("参列者数フィールドなし", "葬儀タブに参列者数入力がない", page, p)
+
+        ss(page, f"{p}_04_funeral_v3")
+
+    except Exception as e:
+        fail("v3: 葬儀詳細テスト", str(e), page, p)
+
+    # ─ 5. エンディングノート: ペット詳細（品種・マイクロチップ・獣医情報）─
+    try:
+        goto_ending_note_tab(page, "ペット")
+        page.wait_for_timeout(500)
+        content = page.content()
+
+        if "マイクロチップ" in content or "chip" in content.lower():
+            ok("v3: マイクロチップ入力欄表示 ✓")
+        else:
+            bug("マイクロチップフィールドなし", "ペットタブにマイクロチップ入力がない", page, p)
+
+        if "ワクチン" in content or "予防接種" in content:
+            ok("v3: ワクチン情報入力欄表示 ✓")
+        else:
+            bug("ワクチン情報フィールドなし", "ペットタブにワクチン情報入力がない", page, p)
+
+        # ペット追加: 拡張フィールドを使って登録
+        page.fill("input[placeholder='ペットの名前']", "テストネコ")
+        page.fill("input[placeholder='種類（例：柴犬）']", "猫")
+
+        # 品種入力（拡張フィールド）
+        breed_inp = page.locator("input[placeholder*='品種']").first
+        if breed_inp.count() > 0:
+            breed_inp.fill("ロシアンブルー")
+
+        page.click("button:has-text('追加')")
+        page.wait_for_timeout(500)
+
+        content2 = page.content()
+        if "テストネコ" in content2:
+            ok("v3: 拡張ペット情報追加成功 ✓")
+        else:
+            bug("拡張ペット追加失敗", "拡張ペット情報の追加が失敗した", page, p)
+
+        ss(page, f"{p}_05_pet_v3")
+
+    except Exception as e:
+        fail("v3: ペット詳細テスト", str(e), page, p)
+
+    # ─ 6. 相続計画: 農地・保険フィールド・家族メッセージ ─
+    try:
+        plan_id = create_estate_plan(page, "v3テスト相続計画", p)
+
+        # 家族メンバーに個人メッセージ
+        add_family_member(page, "子どもを追加", "メッセージテスト子")
+        page.wait_for_timeout(300)
+
+        # 個人メッセージ入力欄を探す
+        msg_inp = page.locator("input[placeholder*='メッセージ']").first
+        if msg_inp.count() == 0:
+            msg_inp = page.locator("textarea[placeholder*='メッセージ']").first
+        if msg_inp.count() > 0:
+            msg_inp.fill("一番の宝物よ。笑顔でいてね。")
+            ok("v3: 家族メンバー個人メッセージ入力 ✓")
+        else:
+            bug("個人メッセージフィールドなし", "家族メンバーの個人メッセージ入力欄がない", page, p)
+
+        save_family(page, plan_id)
+
+        # 農地財産を追加
+        page.click("button:has-text('＋ 農地・田畑を追加')", timeout=5000)
+        page.wait_for_timeout(300)
+        name_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
+        if name_inputs:
+            name_inputs[-1].fill("千葉県農地")
+        amount_inputs = page.locator("input[placeholder='金額（円）']").all()
+        if amount_inputs:
+            amount_inputs[-1].fill("50000000")
+
+        # 農地フィールド（場所・固定資産税評価額）
+        loc_inp = page.locator("input[placeholder*='住所']").first
+        if loc_inp.count() == 0:
+            loc_inp = page.locator("input[placeholder*='所在地']").first
+        if loc_inp.count() > 0:
+            loc_inp.fill("千葉県市原市XX町1-2-3")
+            ok("v3: 農地所在地入力 ✓")
+
+        fixed_inp = page.locator("input[placeholder*='固定資産税']").first
+        if fixed_inp.count() > 0:
+            fixed_inp.fill("15000000")
+            ok("v3: 固定資産税評価額入力 ✓")
+
+        ss(page, f"{p}_06_farmland_asset")
+
+        # 生命保険/年金資産を追加
+        page.click("button:has-text('＋ 生命保険を追加')", timeout=5000)
+        page.wait_for_timeout(300)
+        ins_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
+        if ins_inputs:
+            ins_inputs[-1].fill("日本生命養老保険")
+        ins_amount = page.locator("input[placeholder='金額（円）']").all()
+        if ins_amount:
+            ins_amount[-1].fill("20000000")
+
+        # 保険フィールド（証券番号・保険会社・受取人）
+        policy_inp = page.locator("input[placeholder*='証券番号']").first
+        if policy_inp.count() > 0:
+            policy_inp.fill("ABC-12345678")
+            ok("v3: 証券番号入力 ✓")
+
+        beneficiary_inp = page.locator("input[placeholder*='受取人']").first
+        if beneficiary_inp.count() > 0:
+            beneficiary_inp.fill("配偶者")
+            ok("v3: 受取人入力 ✓")
+
+        ss(page, f"{p}_07_insurance_asset")
+        save_assets(page, plan_id)
+
+    except Exception as e:
+        fail("v3: 農地・保険フィールドテスト", str(e), page, p)
+
+    # ─ 7. API: 2FA TOTPセットアップ確認 ─
+    try:
+        token = api_login(email, pw)
+        if token:
+            # TOTPセットアップAPIを叩く
+            res = requests.post(
+                f"{API_URL}/auth/totp/setup",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=5
+            )
+            if res.status_code == 200:
+                data = res.json()
+                if "qr_code" in data or "secret" in data or "otpauth" in data:
+                    ok("v3: TOTP setup API → QRコード取得 ✓")
+                else:
+                    bug("TOTPセットアップ応答不正", f"期待外のレスポンス: {list(data.keys())}", page, p)
+            else:
+                bug("TOTPセットアップAPI失敗", f"HTTP {res.status_code}: {res.text[:80]}", page, p)
+        else:
+            fail("v3: 2FAテスト", "APIログイン失敗", p)
+    except Exception as e:
+        fail("v3: 2FA TOTPテスト", str(e), page, p)
+
+    # ─ 8. API: 活動ログ取得 ─
+    try:
+        token = api_login(email, pw)
+        if token:
+            res = requests.get(
+                f"{API_URL}/auth/activity-log",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=5
+            )
+            if res.status_code == 200:
+                logs = res.json()
+                if isinstance(logs, list):
+                    ok(f"v3: 活動ログAPI取得 ✓ ({len(logs)}件)")
+                else:
+                    bug("活動ログ形式不正", f"リスト以外が返った: {type(logs)}", page, p)
+            else:
+                bug("活動ログAPI失敗", f"HTTP {res.status_code}", page, p)
+    except Exception as e:
+        fail("v3: 活動ログAPIテスト", str(e), page, p)
+
+    # ─ 9. API: CSVエクスポート ─
+    try:
+        token = api_login(email, pw)
+        if token:
+            res = requests.get(
+                f"{API_URL}/auth/export/csv",
+                headers={"Authorization": f"Bearer {token}"},
+                timeout=5
+            )
+            if res.status_code == 200 and "text/csv" in res.headers.get("content-type", ""):
+                ok("v3: CSVエクスポートAPI ✓")
+            elif res.status_code == 200:
+                ok(f"v3: CSVエクスポートAPI ✓ (content-type: {res.headers.get('content-type')})")
+            else:
+                bug("CSVエクスポートAPI失敗", f"HTTP {res.status_code}", page, p)
+    except Exception as e:
+        fail("v3: CSVエクスポートAPIテスト", str(e), page, p)
+
+    print(f"\n  ✨ v3機能テスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -3808,6 +4137,7 @@ def main():
             (persona_fujita,          "藤田美香（新）"),
             (test_new_features,       "新機能テスト"),
             (test_new_impl_features,  "新実装機能テスト（デジタル遺品鍵等）"),
+            (test_v3_persona_features, "v3ペルソナ機能テスト"),
             (test_qr_and_misc,        "追加テスト"),
             (test_deep_operations,    "深層テスト"),
             (test_advanced_scenarios, "上級テスト"),

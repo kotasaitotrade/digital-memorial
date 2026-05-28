@@ -33,6 +33,7 @@ class FamilyMember(Base):
     has_renounced = Column(Boolean, default=False)    # 相続放棄
     is_disqualified = Column(Boolean, default=False)  # 相続欠格・廃除
     parent_member_id = Column(Integer, ForeignKey("family_members.id"), nullable=True)  # 代襲元
+    personal_message = Column(Text, nullable=True)    # 個人へのメッセージ（佐藤健一 要望）
 
     estate_plan = db_relationship("EstatePlan", back_populates="family_members")
     proxy_children = db_relationship("FamilyMember", foreign_keys=[parent_member_id])
@@ -43,12 +44,21 @@ class Asset(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     estate_plan_id = Column(Integer, ForeignKey("estate_plans.id"), nullable=False)
-    # real_estate / bank_account / securities / life_insurance / retirement / other / debt
+    # real_estate / bank_account / securities / life_insurance / retirement / pension / farmland / other / debt
     asset_type = Column(String, nullable=False)
     name = Column(String, nullable=False)
     estimated_value = Column(Integer, default=0)   # 円（負債はマイナス）
     is_deemed_estate = Column(Boolean, default=False)  # みなし相続財産
     notes = Column(Text, nullable=True)
+    # 不動産・農地専用フィールド（鈴木太郎 要望）
+    property_registration_no = Column(String, nullable=True)   # 登記番号
+    fixed_asset_tax_value = Column(Integer, nullable=True)     # 固定資産税評価額
+    is_farmland = Column(Boolean, default=False)               # 農地フラグ
+    location_address = Column(String, nullable=True)           # 所在地
+    # 保険・年金専用フィールド（佐藤健一 要望）
+    policy_number = Column(String, nullable=True)              # 証券番号
+    insurance_company = Column(String, nullable=True)          # 保険会社/年金機構
+    beneficiary = Column(String, nullable=True)                # 受取人
 
     estate_plan = db_relationship("EstatePlan", back_populates="assets")
 
@@ -72,12 +82,21 @@ class EndingNote(Base):
     medications = Column(Text, nullable=True)
     medical_notes = Column(Text, nullable=True)
 
-    # 葬儀の希望
+    # 葬儀の希望（松本恵子・鈴木太郎 要望で拡充）
     funeral_style = Column(String, nullable=True)     # 家族葬 / 一般葬 / 直葬 / 自由
     religion = Column(String, nullable=True)
     funeral_music = Column(Text, nullable=True)
     funeral_notes = Column(Text, nullable=True)
     funeral_photo_path = Column(String, nullable=True)  # 遺影写真
+    funeral_flower_type = Column(String, nullable=True)  # 花の種類・色の希望
+    kaimyo_preference = Column(Text, nullable=True)      # 戒名への希望
+    funeral_guest_limit = Column(Integer, nullable=True) # 会葬者人数の目安
+    burial_preference = Column(String, nullable=True)    # 埋葬方法（土葬/火葬/樹木葬/散骨）
+
+    # お気に入り（松本恵子 要望）
+    favorite_music = Column(Text, nullable=True)         # 好きな音楽
+    favorite_movies = Column(Text, nullable=True)        # 好きな映画・本
+    favorite_foods = Column(Text, nullable=True)         # 好きな食べ物・場所
 
     # 家族へのメッセージ
     family_message = Column(Text, nullable=True)
@@ -152,9 +171,16 @@ class Pet(Base):
     ending_note_id = Column(Integer, ForeignKey("ending_notes.id"), nullable=False)
     name = Column(String, nullable=False)
     species = Column(String, nullable=True)           # 犬 / 猫 / etc.
+    breed = Column(String, nullable=True)             # 品種（山田花子 要望）
+    birth_year = Column(Integer, nullable=True)       # 生まれ年
+    microchip_no = Column(String, nullable=True)      # マイクロチップ番号
+    vaccine_info = Column(Text, nullable=True)        # ワクチン接種情報
+    vet_name = Column(String, nullable=True)          # かかりつけ獣医
+    vet_phone = Column(String, nullable=True)         # 獣医の電話番号
     medical_info = Column(Text, nullable=True)
     personality = Column(Text, nullable=True)
     caretaker = Column(String, nullable=True)         # 引き継ぎ先
+    caretaker_phone = Column(String, nullable=True)   # 引き継ぎ先の連絡先
     notes = Column(Text, nullable=True)
 
     ending_note = db_relationship("EndingNote", back_populates="pets")
@@ -206,6 +232,11 @@ class DigitalKey(Base):
     notes = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    # デッドマンスイッチ（山田花子 要望）
+    deadman_enabled = Column(Boolean, default=False)
+    deadman_interval_days = Column(Integer, default=90)   # 何日間未ログインで通知するか
+    last_checkin_at = Column(DateTime(timezone=True), nullable=True)  # 最後の生存確認
 
     trusted_persons = db_relationship("TrustedPerson", back_populates="digital_key", cascade="all, delete-orphan")
 

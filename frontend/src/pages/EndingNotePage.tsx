@@ -4,7 +4,7 @@ import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import type { EndingNote, BequestItem, DigitalAssetItem, SubscriptionItem, EmergencyContact, PetItem } from "../types";
 
-const TABS = ["医療・介護", "葬儀", "形見分け", "デジタル資産", "緊急連絡先", "ペット", "家族へのメッセージ", "追悼メッセージ", "ビデオメッセージ"] as const;
+const TABS = ["医療・介護", "葬儀", "形見分け", "デジタル資産", "緊急連絡先", "ペット", "お気に入り", "家族へのメッセージ", "追悼メッセージ", "ビデオメッセージ"] as const;
 type Tab = (typeof TABS)[number];
 
 interface ScheduledMessage {
@@ -142,6 +142,9 @@ export default function EndingNotePage() {
           {activeTab === "ペット" && (
             <PetSection items={note.pets} onRefresh={refreshNote} />
           )}
+          {activeTab === "お気に入り" && (
+            <FavoritesSection draft={draft} onUpdate={updateDraft} />
+          )}
           {activeTab === "家族へのメッセージ" && (
             <MessageSection draft={draft} onUpdate={updateDraft} />
           )}
@@ -211,6 +214,10 @@ function PrintAllView({ note, draft, userName }: { note: EndingNote; draft: Part
         <PrintRow label="葬儀スタイル" value={draft.funeral_style} />
         <PrintRow label="宗教・宗派" value={draft.religion} />
         <PrintRow label="流したい音楽" value={draft.funeral_music} />
+        <PrintRow label="お花の希望" value={draft.funeral_flower_type} />
+        <PrintRow label="戒名への希望" value={draft.kaimyo_preference} />
+        <PrintRow label="会葬者人数目安" value={draft.funeral_guest_limit ? `${draft.funeral_guest_limit}名程度` : undefined} />
+        <PrintRow label="埋葬方法" value={draft.burial_preference} />
         <PrintRow label="その他備考" value={draft.funeral_notes} />
       </PrintSection>
 
@@ -257,12 +264,23 @@ function PrintAllView({ note, draft, userName }: { note: EndingNote; draft: Part
       {note.pets.length > 0 && (
         <PrintSection title="ペット">
           {note.pets.map(it => (
-            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
-              <strong>{it.name}</strong>{it.species ? ` (${it.species})` : ""}
-              {it.caretaker ? `　引き継ぎ先: ${it.caretaker}` : ""}
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.4rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.name}</strong>{it.species ? ` (${it.species}${it.breed ? `・${it.breed}` : ""})` : ""}
+              {it.microchip_no ? `　チップ: ${it.microchip_no}` : ""}
+              {it.caretaker ? `　引き継ぎ先: ${it.caretaker}${it.caretaker_phone ? ` 📞${it.caretaker_phone}` : ""}` : ""}
+              {it.vet_name ? `　獣医: ${it.vet_name}${it.vet_phone ? ` 📞${it.vet_phone}` : ""}` : ""}
+              {it.vaccine_info ? `　ワクチン: ${it.vaccine_info}` : ""}
               {it.medical_info ? `　医療: ${it.medical_info}` : ""}
             </div>
           ))}
+        </PrintSection>
+      )}
+
+      {(draft.favorite_music || draft.favorite_movies || draft.favorite_foods) && (
+        <PrintSection title="お気に入り・思い出">
+          <PrintRow label="好きな音楽" value={draft.favorite_music} />
+          <PrintRow label="好きな映画・本" value={draft.favorite_movies} />
+          <PrintRow label="好きな食べ物・場所" value={draft.favorite_foods} />
         </PrintSection>
       )}
 
@@ -353,8 +371,21 @@ function FuneralSection({ draft, note, onUpdate, onRefresh }: {
       <Field label="流してほしい音楽・曲">
         <textarea style={s.textarea} rows={2} value={draft.funeral_music ?? ""} onChange={(e) => onUpdate("funeral_music", e.target.value)} placeholder="曲名・アーティスト名など" />
       </Field>
+      <Field label="お花の希望（種類・色）">
+        <input style={s.input} value={draft.funeral_flower_type ?? ""} onChange={(e) => onUpdate("funeral_flower_type", e.target.value)} placeholder="例：白いユリ・菊、シンプルに白のみ" />
+      </Field>
+      <Field label="戒名への希望">
+        <textarea style={s.textarea} rows={2} value={draft.kaimyo_preference ?? ""} onChange={(e) => onUpdate("kaimyo_preference", e.target.value)} placeholder="例：院号は不要、シンプルな居士でよい など" />
+      </Field>
+      <Field label="会葬者の人数目安">
+        <input style={{ ...s.input, width: 120 }} type="number" value={draft.funeral_guest_limit ?? ""} onChange={(e) => onUpdate("funeral_guest_limit", e.target.value)} placeholder="例：30" />
+      </Field>
+      <Field label="埋葬方法">
+        <RadioGroup value={draft.burial_preference ?? ""} onChange={(v) => onUpdate("burial_preference", v)}
+          options={["火葬（一般的）", "土葬", "樹木葬", "散骨", "家族に委ねる"]} />
+      </Field>
       <Field label="その他・希望">
-        <textarea style={s.textarea} rows={3} value={draft.funeral_notes ?? ""} onChange={(e) => onUpdate("funeral_notes", e.target.value)} placeholder="会場・花・参列者への要望など" />
+        <textarea style={s.textarea} rows={3} value={draft.funeral_notes ?? ""} onChange={(e) => onUpdate("funeral_notes", e.target.value)} placeholder="会場・参列者への要望など" />
       </Field>
       <Field label="遺影に使いたい写真">
         {note.funeral_photo_path && (
@@ -505,36 +536,72 @@ function ContactSection({ items, onRefresh }: { items: EmergencyContact[]; onRef
 // ─────────────────────────────────────────────────
 // ペットセクション
 // ─────────────────────────────────────────────────
+const PET_EMPTY = { name: "", species: "", breed: "", microchip_no: "", vaccine_info: "", vet_name: "", vet_phone: "", medical_info: "", personality: "", caretaker: "", caretaker_phone: "", notes: "" };
+
 function PetSection({ items, onRefresh }: { items: PetItem[]; onRefresh: () => void }) {
-  const [form, setForm] = useState({ name: "", species: "", medical_info: "", personality: "", caretaker: "", notes: "" });
+  const [form, setForm] = useState(PET_EMPTY);
   const add = async () => {
     if (!form.name) return;
     await api.post("/ending-note/pets", form);
-    setForm({ name: "", species: "", medical_info: "", personality: "", caretaker: "", notes: "" });
+    setForm(PET_EMPTY);
     onRefresh();
   };
 
   return (
     <div style={s.sectionWrap}>
       <h2 style={s.sectionTitle}>ペット</h2>
+      <p style={s.sectionNote}>大切なペットの引き継ぎ情報を詳しく記録しておきましょう（山田花子 要望）。</p>
       {items.map((it) => (
         <div key={it.id} style={s.listCard}>
           <div style={{ flex: 1 }}>
             <span style={s.listCardTitle}>{it.name}</span>
-            {it.species && <span style={s.listCardSub}> ({it.species})</span>}
-            {it.caretaker && <div style={s.listCardNote}>引き継ぎ先: {it.caretaker}</div>}
+            {it.species && <span style={s.listCardSub}> {it.species}{it.breed ? `（${it.breed}）` : ""}</span>}
+            {it.caretaker && <div style={s.listCardNote}>引き継ぎ先: {it.caretaker}{it.caretaker_phone ? ` 📞${it.caretaker_phone}` : ""}</div>}
+            {it.vet_name && <div style={s.listCardNote}>獣医: {it.vet_name}{it.vet_phone ? ` 📞${it.vet_phone}` : ""}</div>}
+            {it.vaccine_info && <div style={s.listCardNote}>ワクチン: {it.vaccine_info}</div>}
+            {it.microchip_no && <div style={s.listCardNote}>マイクロチップ: {it.microchip_no}</div>}
             {it.medical_info && <div style={s.listCardNote}>医療: {it.medical_info}</div>}
           </div>
           <button style={s.delBtn} onClick={async () => { await api.delete(`/ending-note/pets/${it.id}`); onRefresh(); }}>削除</button>
         </div>
       ))}
       <div style={s.addForm}>
-        <input style={s.input} placeholder="ペットの名前" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-        <input style={s.input} placeholder="種類（例：柴犬）" value={form.species} onChange={(e) => setForm({ ...form, species: e.target.value })} />
-        <input style={s.input} placeholder="引き継ぎ先" value={form.caretaker} onChange={(e) => setForm({ ...form, caretaker: e.target.value })} />
-        <input style={s.input} placeholder="医療情報（持病・かかりつけ医）" value={form.medical_info} onChange={(e) => setForm({ ...form, medical_info: e.target.value })} />
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+          <input style={s.input} placeholder="ペットの名前 *" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input style={s.input} placeholder="種類（例：犬・猫）" value={form.species} onChange={(e) => setForm({ ...form, species: e.target.value })} />
+          <input style={s.input} placeholder="品種（例：柴犬）" value={form.breed} onChange={(e) => setForm({ ...form, breed: e.target.value })} />
+          <input style={s.input} placeholder="マイクロチップ番号" value={form.microchip_no} onChange={(e) => setForm({ ...form, microchip_no: e.target.value })} />
+          <input style={s.input} placeholder="引き継ぎ先の名前" value={form.caretaker} onChange={(e) => setForm({ ...form, caretaker: e.target.value })} />
+          <input style={s.input} placeholder="引き継ぎ先の電話番号" value={form.caretaker_phone} onChange={(e) => setForm({ ...form, caretaker_phone: e.target.value })} />
+          <input style={s.input} placeholder="かかりつけ獣医の名前" value={form.vet_name} onChange={(e) => setForm({ ...form, vet_name: e.target.value })} />
+          <input style={s.input} placeholder="獣医の電話番号" value={form.vet_phone} onChange={(e) => setForm({ ...form, vet_phone: e.target.value })} />
+        </div>
+        <textarea style={s.textarea} rows={2} placeholder="ワクチン接種情報" value={form.vaccine_info} onChange={(e) => setForm({ ...form, vaccine_info: e.target.value })} />
+        <textarea style={s.textarea} rows={2} placeholder="医療情報・持病・アレルギー" value={form.medical_info} onChange={(e) => setForm({ ...form, medical_info: e.target.value })} />
+        <textarea style={s.textarea} rows={2} placeholder="性格・特記事項" value={form.personality} onChange={(e) => setForm({ ...form, personality: e.target.value })} />
         <button style={s.addBtn} onClick={add}>追加</button>
       </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// お気に入りセクション（松本恵子 要望）
+// ─────────────────────────────────────────────────
+function FavoritesSection({ draft, onUpdate }: { draft: Partial<EndingNote>; onUpdate: (k: keyof EndingNote, v: string) => void }) {
+  return (
+    <div style={s.sectionWrap}>
+      <h2 style={s.sectionTitle}>お気に入り・思い出</h2>
+      <p style={s.sectionNote}>あなたの好きなもの・大切な思い出を記録しておきましょう。葬儀や追悼の場で参考にしてもらえます。</p>
+      <Field label="好きな音楽・曲">
+        <textarea style={s.textarea} rows={3} value={draft.favorite_music ?? ""} onChange={(e) => onUpdate("favorite_music", e.target.value)} placeholder="例：ビートルズのLet It Be、演歌・三波春夫など" />
+      </Field>
+      <Field label="好きな映画・本・テレビ">
+        <textarea style={s.textarea} rows={3} value={draft.favorite_movies ?? ""} onChange={(e) => onUpdate("favorite_movies", e.target.value)} placeholder="例：「男はつらいよ」、「坂の上の雲」など" />
+      </Field>
+      <Field label="好きな食べ物・場所・思い出">
+        <textarea style={s.textarea} rows={4} value={draft.favorite_foods ?? ""} onChange={(e) => onUpdate("favorite_foods", e.target.value)} placeholder="例：母の手作りのから揚げ、家族で行った北海道旅行など" />
+      </Field>
     </div>
   );
 }

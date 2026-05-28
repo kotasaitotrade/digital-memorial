@@ -5,3 +5,4 @@ from .shukatsu import (
     EndingNote, BequestItem, DigitalAsset, Subscription, EmergencyContact, Pet,
     ChecklistCompletion,
 )
+from .activity_log import ActivityLog

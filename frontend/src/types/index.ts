@@ -4,6 +4,10 @@ export interface User {
   name: string;
   is_active: boolean;
   created_at: string;
+  last_login_at?: string;
+  totp_enabled?: boolean;
+  font_size?: string;
+  simple_mode?: boolean;
 }
 
 export interface MemorialMedia {
@@ -12,6 +16,11 @@ export interface MemorialMedia {
   media_type: "image" | "video";
   caption?: string;
   order: number;
+  album_name?: string;
+  taken_at?: string;
+  location?: string;
+  episode?: string;
+  media_is_public?: boolean;
 }
 
 export interface Memorial {
@@ -51,16 +60,24 @@ export interface FamilyMember {
   has_renounced: boolean;
   is_disqualified: boolean;
   parent_member_id?: number;
+  personal_message?: string;
 }
 
 export interface Asset {
   id: number;
   estate_plan_id: number;
-  asset_type: "real_estate" | "bank_account" | "securities" | "life_insurance" | "retirement" | "other" | "debt";
+  asset_type: "real_estate" | "bank_account" | "securities" | "life_insurance" | "retirement" | "pension" | "farmland" | "other" | "debt";
   name: string;
   estimated_value: number;
   is_deemed_estate: boolean;
   notes?: string;
+  property_registration_no?: string;
+  fixed_asset_tax_value?: number;
+  is_farmland?: boolean;
+  location_address?: string;
+  policy_number?: string;
+  insurance_company?: string;
+  beneficiary?: string;
 }
 
 export interface EstatePlan {
@@ -101,7 +118,11 @@ export interface BequestItem { id: number; item_name: string; recipient: string;
 export interface DigitalAssetItem { id: number; service_name: string; account?: string; after_death_instruction?: string; notes?: string; }
 export interface SubscriptionItem { id: number; service_name: string; monthly_fee?: number; cancellation_method?: string; notes?: string; }
 export interface EmergencyContact { id: number; name: string; relationship?: string; phone?: string; email?: string; notes?: string; priority: number; }
-export interface PetItem { id: number; name: string; species?: string; medical_info?: string; personality?: string; caretaker?: string; notes?: string; }
+export interface PetItem {
+  id: number; name: string; species?: string; breed?: string; birth_year?: number;
+  microchip_no?: string; vaccine_info?: string; vet_name?: string; vet_phone?: string;
+  medical_info?: string; personality?: string; caretaker?: string; caretaker_phone?: string; notes?: string;
+}
 
 export interface EndingNote {
   id: number;
@@ -121,6 +142,13 @@ export interface EndingNote {
   funeral_notes?: string;
   funeral_photo_path?: string;
   family_message?: string;
+  funeral_flower_type?: string;
+  kaimyo_preference?: string;
+  funeral_guest_limit?: number;
+  burial_preference?: string;
+  favorite_music?: string;
+  favorite_movies?: string;
+  favorite_foods?: string;
   updated_at?: string;
   bequest_items: BequestItem[];
   digital_assets: DigitalAssetItem[];

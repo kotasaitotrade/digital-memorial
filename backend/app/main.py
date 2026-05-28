@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 import os
 from .database import engine, Base
 from .routers import auth_router, memorial_router, shukatsu_router
+from .models import activity_log  # noqa: F401 — ensure ActivityLog table is created
 from .config import settings
 
 Base.metadata.create_all(bind=engine)

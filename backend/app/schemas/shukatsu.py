@@ -14,6 +14,7 @@ class FamilyMemberCreate(BaseModel):
     has_renounced: bool = False
     is_disqualified: bool = False
     parent_member_id: Optional[int] = None
+    personal_message: Optional[str] = None   # 個人へのメッセージ（佐藤健一 要望）
 
 class FamilyMemberResponse(FamilyMemberCreate):
     id: int
@@ -27,6 +28,15 @@ class AssetCreate(BaseModel):
     estimated_value: int = 0
     is_deemed_estate: bool = False
     notes: Optional[str] = None
+    # 不動産・農地専用（鈴木太郎 要望）
+    property_registration_no: Optional[str] = None
+    fixed_asset_tax_value: Optional[int] = None
+    is_farmland: bool = False
+    location_address: Optional[str] = None
+    # 保険・年金専用（佐藤健一 要望）
+    policy_number: Optional[str] = None
+    insurance_company: Optional[str] = None
+    beneficiary: Optional[str] = None
 
 class AssetResponse(AssetCreate):
     id: int
@@ -105,9 +115,16 @@ class EmergencyContactResponse(EmergencyContactCreate):
 class PetCreate(BaseModel):
     name: str
     species: Optional[str] = None
+    breed: Optional[str] = None               # 品種（山田花子 要望）
+    birth_year: Optional[int] = None
+    microchip_no: Optional[str] = None
+    vaccine_info: Optional[str] = None
+    vet_name: Optional[str] = None
+    vet_phone: Optional[str] = None
     medical_info: Optional[str] = None
     personality: Optional[str] = None
     caretaker: Optional[str] = None
+    caretaker_phone: Optional[str] = None
     notes: Optional[str] = None
 
 class PetResponse(PetCreate):
@@ -130,6 +147,15 @@ class EndingNoteUpdate(BaseModel):
     funeral_music: Optional[str] = None
     funeral_notes: Optional[str] = None
     family_message: Optional[str] = None
+    # 葬儀詳細（松本恵子 要望）
+    funeral_flower_type: Optional[str] = None
+    kaimyo_preference: Optional[str] = None
+    funeral_guest_limit: Optional[int] = None
+    burial_preference: Optional[str] = None
+    # お気に入り（松本恵子 要望）
+    favorite_music: Optional[str] = None
+    favorite_movies: Optional[str] = None
+    favorite_foods: Optional[str] = None
 
 class EndingNoteResponse(BaseModel):
     id: int
@@ -149,6 +175,13 @@ class EndingNoteResponse(BaseModel):
     funeral_notes: Optional[str]
     funeral_photo_path: Optional[str]
     family_message: Optional[str]
+    funeral_flower_type: Optional[str]
+    kaimyo_preference: Optional[str]
+    funeral_guest_limit: Optional[int]
+    burial_preference: Optional[str]
+    favorite_music: Optional[str]
+    favorite_movies: Optional[str]
+    favorite_foods: Optional[str]
     updated_at: Optional[datetime]
     bequest_items: List[BequestItemResponse] = []
     digital_assets: List[DigitalAssetResponse] = []
@@ -210,6 +243,9 @@ class TrustedPersonResponse(BaseModel):
 class DigitalKeyUpdate(BaseModel):
     unlock_condition: Optional[str] = None
     notes: Optional[str] = None
+    # デッドマンスイッチ（山田花子 要望）
+    deadman_enabled: Optional[bool] = None
+    deadman_interval_days: Optional[int] = None
 
 class DigitalKeyResponse(BaseModel):
     id: int
@@ -218,6 +254,9 @@ class DigitalKeyResponse(BaseModel):
     is_unlocked: bool
     unlocked_at: Optional[datetime]
     notes: Optional[str]
+    deadman_enabled: bool = False
+    deadman_interval_days: int = 90
+    last_checkin_at: Optional[datetime]
     trusted_persons: List[TrustedPersonResponse] = []
     created_at: datetime
     updated_at: Optional[datetime]

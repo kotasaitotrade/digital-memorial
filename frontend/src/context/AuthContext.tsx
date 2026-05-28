@@ -2,12 +2,14 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import axios from "axios";
 import type { User } from "../types";
 import { API_BASE } from "../lib/config";
+import { applyFontSize } from "../pages/AccountSettingsPage";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -16,15 +18,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchUser = async () => {
     const token = localStorage.getItem("token");
     if (!token) { setLoading(false); return; }
-    axios
-      .get(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => setUser(res.data))
-      .catch(() => localStorage.removeItem("token"))
-      .finally(() => setLoading(false));
-  }, []);
+    try {
+      const res = await axios.get(`${API_BASE}/api/auth/me`, { headers: { Authorization: `Bearer ${token}` } });
+      setUser(res.data);
+      applyFontSize(res.data.font_size ?? "medium");
+    } catch {
+      localStorage.removeItem("token");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchUser(); }, []);
 
   const login = async (email: string, password: string) => {
     const params = new URLSearchParams({ username: email, password });
@@ -34,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { Authorization: `Bearer ${res.data.access_token}` },
     });
     setUser(me.data);
+    applyFontSize(me.data.font_size ?? "medium");
   };
 
   const logout = () => {
@@ -41,8 +50,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshUser = async () => {
+    await fetchUser();
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

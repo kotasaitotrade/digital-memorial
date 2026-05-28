@@ -24,6 +24,9 @@ interface DigitalKey {
   unlocked_at: string | null;
   notes: string | null;
   trusted_persons: TrustedPerson[];
+  deadman_enabled: boolean;
+  deadman_interval_days: number;
+  last_checkin_at: string | null;
 }
 
 const ACCESS_SCOPE_LABELS: Record<string, string> = {
@@ -70,6 +73,24 @@ export default function DigitalKeyPage() {
     if (!confirm("この信頼者を削除しますか？")) return;
     await api.delete(`/digital-key/trusted-persons/${id}`);
     setKey((prev) => prev ? { ...prev, trusted_persons: prev.trusted_persons.filter((p) => p.id !== id) } : prev);
+  };
+
+  const [checkinDone, setCheckinDone] = useState(false);
+
+  const doCheckin = async () => {
+    await api.post("/digital-key/checkin");
+    const r = await api.get("/digital-key");
+    setKey(r.data);
+    setCheckinDone(true);
+    setTimeout(() => setCheckinDone(false), 3000);
+  };
+
+  const updateDeadman = async (enabled: boolean, days?: number) => {
+    const r = await api.patch("/digital-key", {
+      deadman_enabled: enabled,
+      ...(days !== undefined ? { deadman_interval_days: days } : {}),
+    });
+    setKey(r.data);
   };
 
   const copyToken = (person: TrustedPerson) => {
@@ -145,6 +166,55 @@ export default function DigitalKeyPage() {
               placeholder="信頼者への伝言・注意事項など"
             />
           </label>
+        </section>
+
+        {/* デッドマンスイッチ（山田花子 要望） */}
+        <section style={{ background: "white", borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
+          <h2 style={{ color: GREEN, fontSize: "1.1rem", marginTop: 0 }}>⏰ 生存確認スイッチ（デッドマンスイッチ）</h2>
+          <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1rem", lineHeight: 1.7 }}>
+            設定した日数の間ログインがなかった場合、信頼者へ通知が送られる機能です（山田花子 要望）。<br />
+            定期的に「生存確認」ボタンを押すことでリセットされます。
+          </p>
+
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1rem" }}>
+            <div>
+              <span style={{ fontWeight: 600 }}>デッドマンスイッチを有効化</span>
+              <div style={{ fontSize: "0.78rem", color: "#888", marginTop: 2 }}>
+                {key.last_checkin_at ? `最後の確認: ${new Date(key.last_checkin_at).toLocaleString("ja-JP")}` : "まだ生存確認を行っていません"}
+              </div>
+            </div>
+            <div
+              onClick={() => updateDeadman(!key.deadman_enabled)}
+              style={{ width: 44, height: 24, borderRadius: 12, cursor: "pointer", background: key.deadman_enabled ? GREEN : "#d1d5db", position: "relative", transition: "background 0.2s" }}
+            >
+              <div style={{ position: "absolute", top: 2, left: key.deadman_enabled ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,.3)" }} />
+            </div>
+          </div>
+
+          {key.deadman_enabled && (
+            <>
+              <label style={{ fontSize: "0.85rem", fontWeight: 600, display: "block", marginBottom: "0.4rem" }}>
+                未ログイン通知の日数（現在: {key.deadman_interval_days}日間）
+              </label>
+              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1rem" }}>
+                {[30, 60, 90, 180, 365].map((d) => (
+                  <button
+                    key={d}
+                    onClick={() => updateDeadman(true, d)}
+                    style={{ padding: "0.3rem 0.8rem", borderRadius: 6, border: `2px solid ${key.deadman_interval_days === d ? GREEN : "#e5e7eb"}`, background: key.deadman_interval_days === d ? "#f0f7f4" : "#fff", cursor: "pointer", fontSize: "0.82rem", fontWeight: key.deadman_interval_days === d ? 700 : 400, color: key.deadman_interval_days === d ? GREEN : "#374151" }}
+                  >
+                    {d}日
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={doCheckin}
+                style={{ background: checkinDone ? "#16a34a" : GREEN, color: "#fff", border: "none", padding: "0.6rem 1.5rem", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: "0.9rem" }}
+              >
+                {checkinDone ? "✓ 確認済み" : "✅ 今日の生存確認"}
+              </button>
+            </>
+          )}
         </section>
 
         {/* 信頼者一覧 */}

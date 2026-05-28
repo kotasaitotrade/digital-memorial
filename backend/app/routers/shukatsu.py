@@ -538,9 +538,25 @@ def update_digital_key(
         key.unlock_condition = data.unlock_condition
     if data.notes is not None:
         key.notes = data.notes
+    if data.deadman_enabled is not None:
+        key.deadman_enabled = data.deadman_enabled
+    if data.deadman_interval_days is not None:
+        key.deadman_interval_days = data.deadman_interval_days
     db.commit()
     db.refresh(key)
     return key
+
+
+@router.post("/digital-key/checkin")
+def deadman_checkin(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """デッドマンスイッチ：生存確認チェックイン（山田花子 要望）"""
+    key = _get_or_create_digital_key(db, current_user.id)
+    key.last_checkin_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"ok": True, "last_checkin_at": key.last_checkin_at.isoformat()}
 
 
 @router.post("/digital-key/trusted-persons", response_model=TrustedPersonResponse)

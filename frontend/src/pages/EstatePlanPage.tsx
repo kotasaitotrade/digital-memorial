@@ -10,7 +10,9 @@ const REL_LABELS: Record<string, string> = {
 };
 const ASSET_TYPE_LABELS: Record<string, string> = {
   real_estate: "不動産", bank_account: "預貯金", securities: "有価証券",
-  life_insurance: "生命保険金", retirement: "退職金", other: "その他資産", debt: "負債",
+  life_insurance: "生命保険金", retirement: "退職金",
+  pension: "年金（受取予定）", farmland: "農地・田畑",
+  other: "その他資産", debt: "負債",
 };
 
 // ─────────────────────────────────────────────────
@@ -584,6 +586,13 @@ function MemberRow({ m, idx, onUpdate, onRemove, showAdopted, showHalfBlood, par
         </select>
       )}
       <button style={s.removeBtn} onClick={() => onRemove(idx)}>✕</button>
+      {/* 個人へのメッセージ（佐藤健一 要望） */}
+      <input
+        style={{ ...s.input, flex: "0 0 100%", marginTop: "0.35rem", fontSize: "0.82rem" }}
+        placeholder={`${m.name || "この方"}へのメッセージ（任意）`}
+        value={m.personal_message ?? ""}
+        onChange={(e) => onUpdate(idx, "personal_message", e.target.value)}
+      />
     </div>
   );
 }
@@ -613,6 +622,26 @@ function AssetRow({ a, idx, onUpdate, onRemove, isDebt }: {
         </label>
       )}
       <button style={s.removeBtn} onClick={() => onRemove(idx)}>✕</button>
+      {/* 不動産・農地専用（鈴木太郎 要望） */}
+      {(a.asset_type === "real_estate" || a.asset_type === "farmland") && (
+        <div style={{ flex: "0 0 100%", display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.35rem" }}>
+          <label style={s.checkLabel}>
+            <input type="checkbox" checked={a.is_farmland ?? false} onChange={(e) => onUpdate(idx, "is_farmland", e.target.checked)} />
+            農地
+          </label>
+          <input style={{ ...s.input, flex: 1, fontSize: "0.82rem" }} placeholder="所在地" value={a.location_address ?? ""} onChange={(e) => onUpdate(idx, "location_address", e.target.value)} />
+          <input style={{ ...s.input, flex: 1, fontSize: "0.82rem" }} placeholder="登記番号" value={a.property_registration_no ?? ""} onChange={(e) => onUpdate(idx, "property_registration_no", e.target.value)} />
+          <input style={{ ...s.input, width: 130, fontSize: "0.82rem" }} type="number" placeholder="固定資産税評価額（円）" value={a.fixed_asset_tax_value ?? ""} onChange={(e) => onUpdate(idx, "fixed_asset_tax_value", e.target.value ? Number(e.target.value) : undefined)} />
+        </div>
+      )}
+      {/* 保険・年金専用（佐藤健一 要望） */}
+      {(a.asset_type === "life_insurance" || a.asset_type === "pension") && (
+        <div style={{ flex: "0 0 100%", display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.35rem" }}>
+          <input style={{ ...s.input, flex: 1, fontSize: "0.82rem" }} placeholder="証券番号" value={a.policy_number ?? ""} onChange={(e) => onUpdate(idx, "policy_number", e.target.value)} />
+          <input style={{ ...s.input, flex: 1, fontSize: "0.82rem" }} placeholder="保険会社・年金機構" value={a.insurance_company ?? ""} onChange={(e) => onUpdate(idx, "insurance_company", e.target.value)} />
+          <input style={{ ...s.input, flex: 1, fontSize: "0.82rem" }} placeholder="受取人" value={a.beneficiary ?? ""} onChange={(e) => onUpdate(idx, "beneficiary", e.target.value)} />
+        </div>
+      )}
     </div>
   );
 }
