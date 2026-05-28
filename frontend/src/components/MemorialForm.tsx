@@ -34,6 +34,9 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
   });
 
   const [mediaList, setMediaList] = useState(initial?.media ?? []);
+  const [captions, setCaptions] = useState<Record<number, string>>(
+    Object.fromEntries((initial?.media ?? []).map((m) => [m.id, m.caption ?? ""]))
+  );
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -74,7 +77,9 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
         const res = await api.post(`/memorials/${savedId}/media`, fd, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        setMediaList((prev) => [...prev, res.data]);
+        const newMedia = res.data;
+      setMediaList((prev) => [...prev, newMedia]);
+      setCaptions((prev) => ({ ...prev, [newMedia.id]: newMedia.caption ?? "" }));
       }
     } catch {
       setError("写真のアップロードに失敗しました");
@@ -88,6 +93,12 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
     if (!savedId) return;
     await api.delete(`/memorials/${savedId}/media/${mediaId}`);
     setMediaList((prev) => prev.filter((m) => m.id !== mediaId));
+    setCaptions((prev) => { const n = { ...prev }; delete n[mediaId]; return n; });
+  };
+
+  const handleCaptionBlur = async (mediaId: number) => {
+    if (!savedId) return;
+    await api.patch(`/memorials/${savedId}/media/${mediaId}`, { caption: captions[mediaId] ?? "" });
   };
 
   return (
@@ -151,6 +162,14 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
                       onClick={() => handleDeleteMedia(m.id)}
                       title="削除"
                     >✕</button>
+                    <input
+                      type="text"
+                      value={captions[m.id] ?? ""}
+                      onChange={(e) => setCaptions((prev) => ({ ...prev, [m.id]: e.target.value }))}
+                      onBlur={() => handleCaptionBlur(m.id)}
+                      placeholder="キャプションを追加"
+                      style={s.captionInput}
+                    />
                   </div>
                 ))}
               </div>
@@ -242,6 +261,7 @@ const s: Record<string, React.CSSProperties> = {
   mediaThumb: { width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" },
   mediaDeleteBtn: { position: "absolute", top: 5, right: 5, width: 24, height: 24, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", fontSize: "0.65rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
   mediaEmpty: { fontSize: "0.85rem", color: "var(--gray-500)", textAlign: "center", padding: "1rem" },
+  captionInput: { width: "100%", padding: "0.3rem 0.4rem", fontSize: "0.72rem", border: "1px solid var(--sand-300)", borderRadius: "0 0 var(--radius-sm) var(--radius-sm)", background: "rgba(255,255,255,0.9)", outline: "none", boxSizing: "border-box" as const },
 
   toggleRow: { display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" },
   toggle: { width: 44, height: 24, borderRadius: 12, position: "relative", transition: "background var(--transition)", cursor: "pointer", flexShrink: 0 },

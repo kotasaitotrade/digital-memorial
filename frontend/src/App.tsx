@@ -10,6 +10,7 @@ import PrintQRPage from "./pages/PrintQRPage";
 import ShukatsuPage from "./pages/ShukatsuPage";
 import EstatePlanListPage, { FamilyInputPage, AssetInputPage, EstateResultPage } from "./pages/EstatePlanPage";
 import EndingNotePage from "./pages/EndingNotePage";
+import AccountSettingsPage from "./pages/AccountSettingsPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -40,6 +41,8 @@ export default function App() {
       <Route path="/estate/:planId/assets" element={<PrivateRoute><AssetInputPage /></PrivateRoute>} />
       <Route path="/estate/:planId/result" element={<PrivateRoute><EstateResultPage /></PrivateRoute>} />
       <Route path="/ending-note" element={<PrivateRoute><EndingNotePage /></PrivateRoute>} />
+
+      <Route path="/account" element={<PrivateRoute><AccountSettingsPage /></PrivateRoute>} />
 
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>

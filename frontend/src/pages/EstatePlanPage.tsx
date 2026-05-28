@@ -86,6 +86,7 @@ export default function EstatePlanListPage() {
                 {editingId === plan.id ? (
                   <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                     <input
+                      data-testid="rename-input"
                       style={{ ...s.input, flex: 1, padding: "0.35rem 0.6rem", fontSize: "0.9rem" }}
                       value={editingTitle}
                       onChange={(e) => setEditingTitle(e.target.value)}
@@ -341,14 +342,76 @@ export function AssetInputPage() {
 // ─────────────────────────────────────────────────
 // 計算結果ページ
 // ─────────────────────────────────────────────────
+// 相続税の簡易計算（法定相続分課税方式）
+function calcInheritanceTax(taxableBase: number, heirCount: number): number {
+  if (taxableBase <= 0) return 0;
+  // 各相続人の取得額仮定（均等割り）
+  const perHeir = taxableBase / Math.max(heirCount, 1);
+  const taxPerHeir = (amount: number): number => {
+    if (amount <= 10_000_000)    return amount * 0.10;
+    if (amount <= 30_000_000)    return amount * 0.15 -   500_000;
+    if (amount <= 50_000_000)    return amount * 0.20 - 2_000_000;
+    if (amount <= 100_000_000)   return amount * 0.30 - 7_000_000;
+    if (amount <= 200_000_000)   return amount * 0.40 - 17_000_000;
+    if (amount <= 300_000_000)   return amount * 0.45 - 27_000_000;
+    if (amount <= 600_000_000)   return amount * 0.50 - 42_000_000;
+    return amount * 0.55 - 72_000_000;
+  };
+  return Math.round(taxPerHeir(perHeir) * Math.max(heirCount, 1));
+}
+
+function AssetPieChart({ assets }: { assets: Asset[] }) {
+  const COLORS = ["#16a34a","#2563eb","#d97706","#dc2626","#7c3aed","#0891b2","#64748b"];
+  const positiveAssets = assets.filter((a) => a.asset_type !== "debt" && a.estimated_value > 0);
+  const total = positiveAssets.reduce((s, a) => s + a.estimated_value, 0);
+  if (total <= 0 || positiveAssets.length === 0) return null;
+
+  const cx = 90, cy = 90, r = 75;
+  let startAngle = -Math.PI / 2;
+  const slices = positiveAssets.map((a, i) => {
+    const angle = (a.estimated_value / total) * 2 * Math.PI;
+    const x1 = cx + r * Math.cos(startAngle);
+    const y1 = cy + r * Math.sin(startAngle);
+    startAngle += angle;
+    const x2 = cx + r * Math.cos(startAngle);
+    const y2 = cy + r * Math.sin(startAngle);
+    const large = angle > Math.PI ? 1 : 0;
+    return { path: `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} Z`, color: COLORS[i % COLORS.length], label: ASSET_TYPE_LABELS[a.asset_type] ?? a.name, pct: Math.round((a.estimated_value / total) * 100) };
+  });
+
+  return (
+    <div style={{ display: "flex", gap: "1.5rem", alignItems: "center", flexWrap: "wrap" as const }}>
+      <svg width={180} height={180} style={{ flexShrink: 0 }}>
+        {slices.map((sl, i) => <path key={i} d={sl.path} fill={sl.color} stroke="#fff" strokeWidth={1.5} />)}
+      </svg>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+        {slices.map((sl, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem" }}>
+            <div style={{ width: 12, height: 12, borderRadius: 2, background: sl.color, flexShrink: 0 }} />
+            <span style={{ color: "var(--gray-700)" }}>{sl.label}</span>
+            <span style={{ color: "var(--gray-500)", marginLeft: "auto" }}>{sl.pct}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function EstateResultPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { planId } = useParams<{ planId: string }>();
   const [result, setResult] = useState<InheritanceCalculation | null>(null);
+  const [assets, setAssets] = useState<Asset[]>([]);
 
   useEffect(() => {
-    api.get(`/estate-plans/${planId}/calculate`).then((r) => setResult(r.data));
+    Promise.all([
+      api.get(`/estate-plans/${planId}/calculate`),
+      api.get(`/estate-plans/${planId}`),
+    ]).then(([calcRes, planRes]) => {
+      setResult(calcRes.data);
+      setAssets(planRes.data.assets ?? []);
+    });
   }, [planId]);
 
   if (!result) return <div style={{ padding: "4rem", textAlign: "center" as const }}>計算中...</div>;
@@ -373,7 +436,21 @@ export function EstateResultPage() {
               <div style={s.resultItem}><div style={s.resultLabel}>相続人の順位</div><div style={s.resultValue}>{result.order_label}</div></div>
               <div style={s.resultItem}><div style={s.resultLabel}>正味遺産額</div><div style={s.resultValue}>{result.estate_value.toLocaleString()}円</div></div>
               <div style={s.resultItem}><div style={s.resultLabel}>相続税基礎控除</div><div style={s.resultValue}>{result.basic_deduction.toLocaleString()}円</div></div>
+              {result.estate_value > result.basic_deduction && (
+                <div style={s.resultItem}>
+                  <div style={s.resultLabel}>相続税概算額（試算）</div>
+                  <div style={{ ...s.resultValue, color: "#dc2626" }}>
+                    約 {calcInheritanceTax(result.estate_value - result.basic_deduction, result.heirs.length).toLocaleString()}円
+                  </div>
+                </div>
+              )}
             </div>
+
+            {assets.length > 0 && (
+              <Section title="資産の内訳">
+                <AssetPieChart assets={assets} />
+              </Section>
+            )}
 
             <Section title="法定相続人と相続分">
               <div style={s.heirTable}>
@@ -414,6 +491,7 @@ export function EstateResultPage() {
         </div>
 
         <div style={s.btnRow}>
+          <Link to={`/estate/${planId}/family`} style={{ ...s.primaryBtn, background: "#64748b", marginRight: "1rem" }}>← 家族構成を修正する</Link>
           <Link to="/shukatsu" style={s.primaryBtn}>チェックリストに戻る</Link>
         </div>
       </main>

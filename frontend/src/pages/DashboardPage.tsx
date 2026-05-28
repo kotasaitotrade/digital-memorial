@@ -3,11 +3,20 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import QRModal from "../components/QRModal";
+import OnboardingModal from "../components/OnboardingModal";
+
+const ONBOARDING_KEY = "dm_onboarding_done";
 import type { Memorial } from "../types";
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
+
+  const dismissOnboarding = () => {
+    localStorage.setItem(ONBOARDING_KEY, "1");
+    setShowOnboarding(false);
+  };
   const [memorials, setMemorials] = useState<Memorial[]>([]);
   const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
 
@@ -23,6 +32,7 @@ export default function DashboardPage() {
 
   return (
     <div style={s.page}>
+      {showOnboarding && <OnboardingModal onClose={dismissOnboarding} />}
       {/* ヘッダー */}
       <header style={s.header}>
         <div style={s.headerInner}>
@@ -31,6 +41,7 @@ export default function DashboardPage() {
           </div>
           <div style={s.headerRight}>
             <span style={s.headerUser}>{user?.name}</span>
+            <Link to="/account" style={s.settingsLink}>設定</Link>
             <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>
               ログアウト
             </button>
@@ -144,6 +155,7 @@ const s: Record<string, React.CSSProperties> = {
   headerLogo: { fontFamily: "var(--font-serif)", fontSize: "1.05rem", fontWeight: 700, color: "var(--green-900)", letterSpacing: "0.04em" },
   headerRight: { display: "flex", alignItems: "center", gap: "1rem" },
   headerUser: { fontSize: "0.85rem", color: "var(--gray-500)" },
+  settingsLink: { fontSize: "0.82rem", color: "var(--gray-500)", textDecoration: "none" },
   logoutBtn: { padding: "0.35rem 0.85rem", background: "transparent", border: "1.5px solid var(--gray-300)", borderRadius: 6, fontSize: "0.82rem", color: "var(--gray-700)", transition: "all var(--transition)" },
 
   main: { maxWidth: 1100, margin: "0 auto", padding: "2.5rem 2rem" },

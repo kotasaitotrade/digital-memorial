@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from typing import List
 import shutil
@@ -107,6 +107,20 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
     media_type = "image" if file.content_type.startswith("image") else "video"
     media = MemorialMedia(memorial_id=memorial_id, file_path=url_path, media_type=media_type, caption=caption)
     db.add(media)
+    db.commit()
+    db.refresh(media)
+    return media
+
+
+@router.patch("/memorials/{memorial_id}/media/{media_id}")
+def update_media_caption(memorial_id: int, media_id: int, caption: str = Body(..., embed=True), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+    media = db.query(MemorialMedia).filter(MemorialMedia.id == media_id, MemorialMedia.memorial_id == memorial_id).first()
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    media.caption = caption
     db.commit()
     db.refresh(media)
     return media

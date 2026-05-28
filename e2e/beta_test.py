@@ -55,6 +55,16 @@ def bug(label: str, detail: str, page: Page = None, persona: str = ""):
 
 # ─── ユーティリティ ───────────────────────────────────────────
 
+def dismiss_onboarding(page: Page):
+    """オンボーディングモーダルを閉じる（初回ログイン時に表示）"""
+    try:
+        page.evaluate("localStorage.setItem('dm_onboarding_done', '1')")
+        close = page.locator("button:has-text('✕'), button:has-text('始める')")
+        if close.first.is_visible(timeout=1500):
+            close.first.click()
+    except Exception:
+        pass
+
 def register_user(page: Page, email: str, name: str, pw: str) -> bool:
     page.goto(f"{BASE_URL}/register")
     page.wait_for_load_state("networkidle")
@@ -64,6 +74,7 @@ def register_user(page: Page, email: str, name: str, pw: str) -> bool:
         page.fill("input[type='password']", pw)
         page.click("button[type='submit']")
         page.wait_for_url(f"{BASE_URL}/dashboard", timeout=8000)
+        dismiss_onboarding(page)
         return True
     except Exception:
         return login_user(page, email, pw)
@@ -76,6 +87,7 @@ def login_user(page: Page, email: str, pw: str) -> bool:
         page.fill("input[type='password']", pw)
         page.click("button[type='submit']")
         page.wait_for_url(f"{BASE_URL}/dashboard", timeout=8000)
+        dismiss_onboarding(page)
         return True
     except Exception as e:
         print(f"    ⚠️ ログイン失敗: {e}")
@@ -1079,9 +1091,10 @@ def test_deep_operations(page: Page):
         edit_btn = page.locator("button[title='名前を変更']").first
         if edit_btn.count() > 0:
             edit_btn.click()
-            page.wait_for_timeout(300)
-            inp = page.locator("input[value='変更前のタイトル']").first
-            if inp.count() > 0:
+            page.wait_for_timeout(500)
+            # data-testidで確実にリネーム入力欄を検出
+            inp = page.locator("[data-testid='rename-input']").first
+            if inp.count() > 0 and inp.is_visible():
                 inp.fill("変更後のタイトル（修正済）")
                 page.click("button:has-text('保存')")
                 page.wait_for_timeout(500)

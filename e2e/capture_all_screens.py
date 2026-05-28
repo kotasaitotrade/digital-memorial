@@ -36,11 +36,22 @@ def login_ui(page: Page):
     page.wait_for_url(f"{BASE_URL}/dashboard", timeout=8000)
     page.wait_for_load_state("networkidle")
 
+def dismiss_onboarding(page: Page):
+    """オンボーディングモーダルを閉じる"""
+    try:
+        page.evaluate("localStorage.setItem('dm_onboarding_done', '1')")
+        close = page.locator("button:has-text('✕'), button:has-text('始める →')")
+        if close.first.is_visible(timeout=1000):
+            close.first.click()
+    except Exception:
+        pass
+
 def ensure_login(page: Page):
     page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_timeout(1200)
     if "/login" in page.url:
         login_ui(page)
+    dismiss_onboarding(page)
 
 # ─────────────────────────────────────────────────────────────
 # S01: ログインページ

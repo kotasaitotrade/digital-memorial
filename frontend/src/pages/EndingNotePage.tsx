@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
@@ -15,6 +15,8 @@ export default function EndingNotePage() {
   const [note, setNote] = useState<EndingNote | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("医療・介護");
   const [saving, setSaving] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
+  const [, forceUpdate] = useState(0);
   const [draft, setDraft] = useState<Partial<EndingNote>>({});
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -36,9 +38,26 @@ export default function EndingNotePage() {
     const r = await api.put("/ending-note", partial);
     setNote(r.data);
     setSaving(false);
+    setLastSavedAt(new Date());
   };
 
+  const savedLabel = (() => {
+    if (saving) return "保存中...";
+    if (!lastSavedAt) return null;
+    const sec = Math.round((Date.now() - lastSavedAt.getTime()) / 1000);
+    if (sec < 5) return "保存しました";
+    if (sec < 60) return `${sec}秒前に保存`;
+    return `${Math.floor(sec / 60)}分前に保存`;
+  })();
+
   const refreshNote = () => api.get("/ending-note").then((r) => { setNote(r.data); setDraft(r.data); });
+
+  // 「○秒前に保存」ラベルを毎秒更新
+  useEffect(() => {
+    if (!lastSavedAt) return;
+    const id = setInterval(() => forceUpdate((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [lastSavedAt]);
 
   if (!note) return <div style={{ padding: "4rem", textAlign: "center" as const }}>読み込み中...</div>;
 
@@ -51,7 +70,7 @@ export default function EndingNotePage() {
             <span style={s.headerLogo}>エンディングノート</span>
           </div>
           <div style={s.headerRight}>
-            {saving && <span style={s.savingLabel}>保存中...</span>}
+            {savedLabel && <span style={saving ? s.savingLabel : s.savedLabel}>{savedLabel}</span>}
             <span style={s.headerUser}>{user?.name}</span>
             <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
           </div>
@@ -411,6 +430,7 @@ const s: Record<string, React.CSSProperties> = {
   headerLogo: { fontSize: "1.1rem", fontWeight: 700, color: GREEN },
   headerRight: { display: "flex", alignItems: "center", gap: "0.75rem" },
   savingLabel: { fontSize: "0.78rem", color: "#9ca3af" },
+  savedLabel:  { fontSize: "0.78rem", color: "#6ee7b7" },
   headerUser: { fontSize: "0.9rem", color: "#374151" },
   logoutBtn: { fontSize: "0.8rem", padding: "0.3rem 0.8rem", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", cursor: "pointer" },
   main: { maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" },
