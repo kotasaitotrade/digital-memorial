@@ -651,6 +651,114 @@ def main():
         s19_ending_message(page)
         s20_auth_guard(page)
 
+        # ── S16: デジタル遺品鍵 ──────────────────────────────
+        ensure_login(page)
+        page.goto(f"{BASE_URL}/digital-key")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1000)
+        ss(page, "s16a_digital_key_empty")
+
+        # 信頼者を追加
+        try:
+            page.click("button:has-text('+ 追加'), button:has-text('追加')")
+            page.wait_for_timeout(500)
+            name_input = page.locator("input[placeholder*='名前'], input[placeholder*='太郎']").first
+            email_input = page.locator("input[type='email']").first
+            if name_input.count() > 0:
+                name_input.fill("山田 一郎")
+                email_input.fill("ichiro@example.com")
+                page.click("button:has-text('登録')")
+                page.wait_for_timeout(1000)
+                ss(page, "s16b_digital_key_added")
+                # トークン表示
+                page.click("button:has-text('解除キーURL'), button:has-text('URLを表示')")
+                page.wait_for_timeout(500)
+                ss(page, "s16c_digital_key_token")
+        except Exception:
+            ss(page, "s16b_digital_key_added")
+            ss(page, "s16c_digital_key_token")
+
+        # ── S17: リマインダー設定 ────────────────────────────
+        page.goto(f"{BASE_URL}/settings/reminders")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1000)
+        ss(page, "s17a_reminder_on")
+
+        try:
+            page.select_option("select", "4")
+            page.wait_for_timeout(500)
+            ss(page, "s17b_reminder_month")
+            # 通知OFF
+            page.click("div[style*='cursor: pointer']")
+            page.wait_for_timeout(500)
+            ss(page, "s17c_reminder_off")
+        except Exception:
+            ss(page, "s17b_reminder_month")
+            ss(page, "s17c_reminder_off")
+
+        # ── S18: エンディングノート — 追悼メッセージ ─────────
+        page.goto(f"{BASE_URL}/ending-note")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1000)
+        try:
+            page.click("button:has-text('追悼メッセージ')")
+            page.wait_for_timeout(500)
+            ss(page, "s18a_scheduled_msg_empty")
+            page.click("button:has-text('+ メッセージを追加')")
+            page.wait_for_timeout(500)
+            ss(page, "s18b_scheduled_msg_form")
+            inputs = page.locator("input").all()
+            for i, inp in enumerate(inputs[:2]):
+                inp.fill(["山田 太郎", "taro@example.com"][i])
+            page.locator("input[placeholder*='件名']").fill("最後のメッセージ")
+            page.locator("textarea").last.fill("ありがとう。")
+            page.wait_for_timeout(500)
+            page.click("button:has-text('保存')")
+            page.wait_for_timeout(1000)
+            ss(page, "s18c_scheduled_msg_created")
+        except Exception:
+            ss(page, "s18b_scheduled_msg_form")
+            ss(page, "s18c_scheduled_msg_created")
+
+        # ── S19: エンディングノート — ビデオメッセージ ────────
+        page.goto(f"{BASE_URL}/ending-note")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1000)
+        try:
+            page.click("button:has-text('ビデオメッセージ')")
+            page.wait_for_timeout(500)
+            ss(page, "s19a_video_empty")
+            page.locator("input[placeholder*='タイトル']").fill("家族へのメッセージ")
+            page.wait_for_timeout(500)
+            ss(page, "s19b_video_form")
+        except Exception:
+            ss(page, "s19a_video_empty")
+            ss(page, "s19b_video_form")
+
+        # ── S20: 遺言書シミュレーター — テキストプレビュー ────
+        # 相続計画が既存の場合のみ
+        plans_resp = page.evaluate("""
+            async () => {
+                const r = await fetch('/api/estate-plans', {headers: {'Authorization': 'Bearer ' + localStorage.getItem('dm_token')}});
+                return r.json();
+            }
+        """)
+        if isinstance(plans_resp, list) and len(plans_resp) > 0:
+            plan_id = plans_resp[0]['id']
+            page.goto(f"{BASE_URL}/estate/{plan_id}/will")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(2000)
+            try:
+                page.click("button:has-text('プレビュー'), button:has-text('テキスト')")
+                page.wait_for_timeout(1000)
+                ss(page, "s20a_will_preview")
+            except Exception:
+                ss(page, "s20a_will_preview")
+            # スクロールして法的案内
+            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            page.wait_for_timeout(500)
+            ss(page, "s20b_will_legal")
+
         browser.close()
 
     # 撮影結果一覧

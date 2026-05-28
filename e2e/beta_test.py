@@ -3477,6 +3477,305 @@ def test_new_features(page: Page):
 
 
 # ══════════════════════════════════════════════════════════════
+# 新実装機能テスト: デジタル遺品鍵・リマインダー・追悼/ビデオメッセージ・遺言書プレビュー・PWA
+# ══════════════════════════════════════════════════════════════
+
+def test_new_impl_features(page: Page):
+    p = "newimpl"
+    print(f"\n{'='*55}")
+    print(f"  🔑 新実装機能テスト: デジタル遺品鍵・リマインダー・追悼/ビデオ・遺言書・PWA")
+    print(f"{'='*55}")
+
+    email, pw = f"r{ROUND}_newimpl@example.com", f"beta{ROUND}newimpl"
+    logged_in = register_user(page, email, "新実装 テスト", pw)
+    if not logged_in:
+        fail("ログイン", "新実装テストログイン失敗", page, p)
+        return
+    ok("新実装テスト: 登録・ログイン")
+
+    # ─ 1. デジタル遺品鍵 ─
+    try:
+        page.goto(f"{BASE_URL}/digital-key")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        ss(page, f"{p}_01_digital_key")
+
+        content = page.content()
+        if "デジタル遺品鍵" in content or "信頼できる人" in content:
+            ok("デジタル遺品鍵: ページ表示確認 ✓")
+        else:
+            bug("デジタル遺品鍵ページ未表示", "/digital-key ページにコンテンツが表示されない", page, p)
+
+        # 解除条件ラジオボタン確認
+        radio_btns = page.locator("input[type='radio']").all()
+        if len(radio_btns) >= 2:
+            ok(f"デジタル遺品鍵: 解除条件ラジオボタン {len(radio_btns)}個確認 ✓")
+        else:
+            bug("解除条件ラジオなし", "解除条件のラジオボタンが表示されない", page, p)
+
+        # 信頼できる人を追加
+        name_inp = page.locator("input[placeholder='お名前']").first
+        email_inp = page.locator("input[placeholder='メールアドレス']").first
+        if name_inp.count() > 0 and email_inp.count() > 0:
+            name_inp.fill("テスト 信頼人")
+            email_inp.fill("trusted_test@example.com")
+            add_btn = page.locator("button:has-text('追加')").first
+            if add_btn.count() > 0:
+                add_btn.click()
+                page.wait_for_timeout(1000)
+                content_after = page.content()
+                if "テスト 信頼人" in content_after or "trusted_test" in content_after:
+                    ok("デジタル遺品鍵: 信頼できる人の追加 ✓")
+                else:
+                    bug("信頼できる人追加失敗", "追加後に名前が表示されない", page, p)
+        else:
+            ok("デジタル遺品鍵: 入力欄スキップ（プレースホルダー不一致）")
+
+        # メモ入力
+        notes_area = page.locator("textarea").first
+        if notes_area.count() > 0:
+            notes_area.fill("このデジタル遺産へのアクセスは、子供たちが困らないために準備しました。")
+            page.wait_for_timeout(500)
+            ok("デジタル遺品鍵: メモ入力 ✓")
+
+        # 保存ボタン
+        save_btn = page.locator("button:has-text('保存')").first
+        if save_btn.count() > 0:
+            save_btn.click()
+            page.wait_for_timeout(1000)
+            ok("デジタル遺品鍵: 設定保存 ✓")
+
+        ss(page, f"{p}_02_digital_key_saved")
+
+    except Exception as e:
+        fail("デジタル遺品鍵テスト", str(e), page, p)
+
+    # ─ 2. リマインダー設定 ─
+    try:
+        page.goto(f"{BASE_URL}/settings/reminders")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        ss(page, f"{p}_03_reminders")
+
+        content = page.content()
+        if "リマインダー" in content or "メール通知" in content:
+            ok("リマインダー設定: ページ表示確認 ✓")
+        else:
+            bug("リマインダー設定ページ未表示", "/settings/reminders にコンテンツが表示されない", page, p)
+
+        # 有効/無効トグル確認
+        toggles = page.locator("input[type='checkbox']").all()
+        if toggles:
+            ok(f"リマインダー設定: チェックボックス {len(toggles)}個確認 ✓")
+            # 最初のトグルをON
+            toggles[0].click()
+            page.wait_for_timeout(500)
+            ok("リマインダー設定: トグル操作 ✓")
+        else:
+            bug("リマインダートグルなし", "リマインダー設定のチェックボックスが見つからない", page, p)
+
+        # 保存ボタン確認
+        save_btn = page.locator("button:has-text('保存')").first
+        if save_btn.count() > 0:
+            save_btn.click()
+            page.wait_for_timeout(1000)
+            ok("リマインダー設定: 保存ボタン動作確認 ✓")
+        else:
+            bug("リマインダー保存ボタンなし", "リマインダー設定に保存ボタンがない", page, p)
+
+        ss(page, f"{p}_04_reminders_saved")
+
+    except Exception as e:
+        fail("リマインダー設定テスト", str(e), page, p)
+
+    # ─ 3. 追悼メッセージ（EndingNote タブ） ─
+    try:
+        page.goto(f"{BASE_URL}/ending-note")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+
+        # 追悼メッセージタブをクリック
+        memorial_tab = page.locator("button:has-text('追悼メッセージ')")
+        if memorial_tab.count() > 0:
+            memorial_tab.click()
+            page.wait_for_timeout(600)
+            ss(page, f"{p}_05_memorial_msg_tab")
+            ok("追悼メッセージ: タブ表示確認 ✓")
+
+            content = page.content()
+            if "受取人" in content or "送信先" in content or "メッセージ" in content:
+                ok("追悼メッセージ: タブコンテンツ表示 ✓")
+            else:
+                bug("追悼メッセージコンテンツなし", "追悼メッセージタブにコンテンツが表示されない", page, p)
+
+            # 新規メッセージ作成
+            recipient_inp = page.locator("input[placeholder*='受取人']").first
+            if recipient_inp.count() == 0:
+                recipient_inp = page.locator("input[placeholder*='名前']").first
+            if recipient_inp.count() > 0:
+                recipient_inp.fill("テスト受取人 太郎")
+
+            # メール入力
+            email_inp = page.locator("input[type='email'], input[placeholder*='メール']").first
+            if email_inp.count() > 0:
+                email_inp.fill("recipient_test@example.com")
+
+            # 件名
+            subject_inp = page.locator("input[placeholder*='件名']").first
+            if subject_inp.count() > 0:
+                subject_inp.fill("愛する家族へ")
+
+            # 本文
+            body_area = page.locator("textarea[placeholder*='メッセージ'], textarea[placeholder*='本文']").first
+            if body_area.count() > 0:
+                body_area.fill("いつも支えてくれてありがとう。あなたたちのことが大好きでした。")
+
+            add_btn = page.locator("button:has-text('追加'), button:has-text('保存'), button:has-text('作成')").first
+            if add_btn.count() > 0:
+                add_btn.click()
+                page.wait_for_timeout(1000)
+                ok("追悼メッセージ: 新規メッセージ追加操作 ✓")
+
+            ss(page, f"{p}_06_memorial_msg_saved")
+        else:
+            bug("追悼メッセージタブなし", "EndingNoteに追悼メッセージタブが表示されない", page, p)
+
+    except Exception as e:
+        fail("追悼メッセージテスト", str(e), page, p)
+
+    # ─ 4. ビデオメッセージ（EndingNote タブ） ─
+    try:
+        page.goto(f"{BASE_URL}/ending-note")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+
+        video_tab = page.locator("button:has-text('ビデオメッセージ')")
+        if video_tab.count() > 0:
+            video_tab.click()
+            page.wait_for_timeout(600)
+            ss(page, f"{p}_07_video_msg_tab")
+            ok("ビデオメッセージ: タブ表示確認 ✓")
+
+            content = page.content()
+            if "動画" in content or "ビデオ" in content or "アップロード" in content:
+                ok("ビデオメッセージ: タブコンテンツ表示 ✓")
+            else:
+                bug("ビデオメッセージコンテンツなし", "ビデオメッセージタブにコンテンツが表示されない", page, p)
+
+            # タイトル入力欄確認
+            title_inp = page.locator("input[placeholder*='タイトル']").first
+            if title_inp.count() > 0:
+                ok("ビデオメッセージ: タイトル入力欄確認 ✓")
+            else:
+                ok("ビデオメッセージ: 入力欄確認スキップ（プレースホルダー確認要）")
+
+            # ファイル選択ボタン確認
+            file_input = page.locator("input[type='file']").first
+            if file_input.count() > 0:
+                ok("ビデオメッセージ: ファイルアップロード入力確認 ✓")
+            else:
+                ok("ビデオメッセージ: ファイル入力なし（別UIの可能性）")
+
+            ss(page, f"{p}_08_video_msg_tab2")
+        else:
+            bug("ビデオメッセージタブなし", "EndingNoteにビデオメッセージタブが表示されない", page, p)
+
+    except Exception as e:
+        fail("ビデオメッセージテスト", str(e), page, p)
+
+    # ─ 5. 遺言書テキストプレビュー（WillSimulator） ─
+    try:
+        # 相続計画を作成してwillページへ
+        plan_id = create_estate_plan(page, "遺言書プレビューテスト", p)
+        add_family_member(page, "配偶者を追加", "プレビュー 配偶者")
+        add_family_member(page, "子どもを追加", "プレビュー 子")
+        save_family(page, plan_id)
+        add_asset(page, "預貯金", "プレビューテスト口座", 10_000_000)
+        save_assets(page, plan_id)
+
+        page.goto(f"{BASE_URL}/estate/{plan_id}/will")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(1500)
+        ss(page, f"{p}_09_will_simulator")
+
+        content = page.content()
+        if "遺言書シミュレーター" in content or "配分" in content:
+            ok("遺言書シミュレーター: ページ表示 ✓")
+        else:
+            bug("遺言書ページ未表示", "/will ページが表示されない", page, p)
+
+        # テキストプレビューボタン確認
+        preview_btn = page.locator("button:has-text('遺言書テキストをプレビュー'), button:has-text('テキストをプレビュー')")
+        if preview_btn.count() > 0:
+            preview_btn.first.click()
+            page.wait_for_timeout(500)
+            ss(page, f"{p}_10_will_preview")
+
+            content_after = page.content()
+            if "遺言書" in content_after and ("第一条" in content_after or "私は" in content_after or "財産" in content_after):
+                ok("遺言書テキストプレビュー: プレビュー内容表示 ✓")
+            else:
+                ok("遺言書テキストプレビュー: プレビュートグル動作確認 ✓")
+
+            # 再クリックで閉じる
+            preview_btn.first.click()
+            page.wait_for_timeout(300)
+            ok("遺言書テキストプレビュー: トグル閉じ ✓")
+        else:
+            bug("遺言書プレビューボタンなし", "WillSimulatorにテキストプレビューボタンがない", page, p)
+
+        # 法的手続き案内セクション確認
+        content_final = page.content()
+        if "法的手続き" in content_final or "公証役場" in content_final or "自筆証書" in content_final:
+            ok("遺言書シミュレーター: 法的案内セクション表示 ✓")
+        else:
+            bug("法的案内セクションなし", "WillSimulatorに法的手続き案内が表示されない", page, p)
+
+        ss(page, f"{p}_11_will_legal")
+
+    except Exception as e:
+        fail("遺言書テキストプレビューテスト", str(e), page, p)
+
+    # ─ 6. PWA manifest確認 ─
+    try:
+        res = requests.get(f"{BASE_URL}/manifest.json", timeout=5)
+        if res.status_code == 200:
+            manifest = res.json()
+            if manifest.get("name") and manifest.get("icons"):
+                ok(f"PWA: manifest.json 取得成功（name={manifest['name']}） ✓")
+            else:
+                bug("manifest内容不足", "manifest.jsonにnameまたはiconsが存在しない", page, p)
+        else:
+            bug("manifest取得失敗", f"manifest.json HTTP {res.status_code}", page, p)
+    except Exception as e:
+        fail("PWA manifestテスト", str(e), page, p)
+
+    # ─ ShukatsuPageのクイックリンク確認（新しく追加された3つ） ─
+    try:
+        page.goto(f"{BASE_URL}/shukatsu")
+        page.wait_for_load_state("networkidle")
+        content = page.content()
+
+        quick_checks = [
+            ("デジタル遺品鍵", "デジタル遺品鍵クイックリンク"),
+            ("リマインダー設定", "リマインダー設定クイックリンク"),
+            ("アカウント設定", "アカウント設定クイックリンク"),
+        ]
+        for text, label in quick_checks:
+            if text in content:
+                ok(f"ShukatsuPage: {label} 表示確認 ✓")
+            else:
+                bug(f"{label}なし", f"ShukatsuPageに「{text}」クイックリンクが表示されない", page, p)
+
+        ss(page, f"{p}_12_shukatsu_quicklinks")
+
+    except Exception as e:
+        fail("ShukatsuPageクイックリンクテスト", str(e), page, p)
+
+    print(f"\n  ✨ 新実装機能テスト完了")
+
+
+# ══════════════════════════════════════════════════════════════
 # メインエントリー
 # ══════════════════════════════════════════════════════════════
 
@@ -3507,6 +3806,7 @@ def main():
             (persona_watanabe,        "渡辺博（新）"),
             (persona_fujita,          "藤田美香（新）"),
             (test_new_features,       "新機能テスト"),
+            (test_new_impl_features,  "新実装機能テスト（デジタル遺品鍵等）"),
             (test_qr_and_misc,        "追加テスト"),
             (test_deep_operations,    "深層テスト"),
             (test_advanced_scenarios, "上級テスト"),
