@@ -34,6 +34,8 @@ export default function DashboardPage() {
   const [memorials, setMemorials] = useState<Memorial[]>([]);
   const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
   const [todoItems, setTodoItems] = useState<ChecklistItem[]>([]);
+  const [allChecklistItems, setAllChecklistItems] = useState<ChecklistItem[]>([]);
+  const [estatePlanCount, setEstatePlanCount] = useState(0);
   const [showPriorityOnly, setShowPriorityOnly] = useState(false);
 
   const isSimple = user?.simple_mode ?? false;
@@ -48,8 +50,10 @@ export default function DashboardPage() {
     api.get("/checklist").then((r) => {
       const data = r.data;
       const all = Array.isArray(data) ? data : (data.items ?? []);
+      setAllChecklistItems(all);
       setTodoItems(all.filter((i: ChecklistItem) => !i.is_completed));
     });
+    api.get("/estate-plans").then((r) => setEstatePlanCount(r.data.length)).catch(() => {});
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -60,6 +64,9 @@ export default function DashboardPage() {
 
   const priorityTodos = todoItems.filter((i) => i.stars >= 4);
   const displayTodos = showPriorityOnly ? priorityTodos : todoItems.slice(0, 5);
+  const checklistTotal = allChecklistItems.length;
+  const checklistDone = allChecklistItems.filter((i) => i.is_completed).length;
+  const completionPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
 
   return (
     <div style={s.page}>
@@ -90,6 +97,30 @@ export default function DashboardPage() {
           </div>
           <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>→</span>
         </Link>
+
+        {/* クイックスタッツ */}
+        {!isSimple && (
+          <div style={s.statsRow}>
+            {[
+              { label: "墓誌", value: memorials.length, unit: "件", to: "#memorials", icon: "🪦" },
+              { label: "相続計画", value: estatePlanCount, unit: "件", to: "/estate", icon: "📊" },
+              { label: "終活完了率", value: completionPct, unit: "%", to: "/shukatsu", icon: "✅", progress: completionPct },
+            ].map(({ label, value, unit, to, icon, progress }) => (
+              <Link key={label} to={to} style={s.statCard}>
+                <span style={s.statIcon}>{icon}</span>
+                <div style={s.statBody}>
+                  <div style={s.statLabel}>{label}</div>
+                  <div style={s.statValue}>{value}<span style={s.statUnit}>{unit}</span></div>
+                  {progress !== undefined && (
+                    <div style={s.progressBar}>
+                      <div style={{ ...s.progressFill, width: `${progress}%` }} />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
 
         {/* かんたんモード時のクイックアクション（田中幸子・藤田美香 要望） */}
         {isSimple && (
@@ -246,6 +277,15 @@ const s: Record<string, React.CSSProperties> = {
   shukatsuBanner: { display: "flex", alignItems: "center", gap: "0.75rem", background: "linear-gradient(135deg, #1a5c38, #2d7a4f)", color: "#fff", borderRadius: 10, padding: "0.85rem 1.25rem", textDecoration: "none", marginBottom: "1.25rem", boxShadow: "0 2px 6px rgba(26,92,56,.25)" },
   quickActions: { background: "var(--white)", borderRadius: 10, padding: "1.25rem", boxShadow: "var(--shadow-sm)", marginBottom: "1.25rem" },
   quickBtn: { display: "flex", flexDirection: "column", alignItems: "center", gap: "0.3rem", padding: "0.75rem 1rem", background: "var(--sand-100)", borderRadius: 8, textDecoration: "none", color: "var(--gray-700)", minWidth: 80 },
+  statsRow: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", marginBottom: "1.25rem" },
+  statCard: { background: "var(--white)", borderRadius: 10, padding: "0.9rem 1rem", boxShadow: "var(--shadow-sm)", display: "flex", alignItems: "center", gap: "0.75rem", textDecoration: "none", color: "inherit", border: "1px solid var(--sand-300)", transition: "box-shadow var(--transition)" },
+  statIcon: { fontSize: "1.5rem", flexShrink: 0 },
+  statBody: { flex: 1, minWidth: 0 },
+  statLabel: { fontSize: "0.72rem", color: "var(--gray-500)", marginBottom: "0.15rem" },
+  statValue: { fontSize: "1.35rem", fontWeight: 700, color: "var(--green-900)", lineHeight: 1.2 },
+  statUnit: { fontSize: "0.72rem", fontWeight: 400, color: "var(--gray-500)", marginLeft: "0.15rem" },
+  progressBar: { marginTop: "0.3rem", height: 4, background: "var(--sand-200)", borderRadius: 2, overflow: "hidden" },
+  progressFill: { height: "100%", background: "var(--green-700)", borderRadius: 2, transition: "width 0.5s ease" },
   todoCard: { background: "var(--white)", borderRadius: 10, padding: "1.25rem", boxShadow: "var(--shadow-sm)", marginBottom: "1.25rem", border: "1px solid var(--sand-300)" },
   titleRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" },
   pageTitle: { fontFamily: "var(--font-serif)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.2rem" },
