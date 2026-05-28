@@ -1,44 +1,8 @@
 {
   "round": "6",
-  "timestamp": "2026-05-28T11:29:26.833248",
-  "pass": 164,
-  "fail": 5,
+  "timestamp": "2026-05-28T14:30:44.177497",
+  "pass": 238,
+  "fail": 0,
   "bugs": 0,
-  "issues": [
-    {
-      "persona": "tanaka",
-      "step": "ログイン",
-      "severity": "FAIL",
-      "desc": "田中幸子ログイン失敗",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_1.png"
-    },
-    {
-      "persona": "yamada",
-      "step": "ログイン",
-      "severity": "FAIL",
-      "desc": "山田花子ログイン失敗",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_2.png"
-    },
-    {
-      "persona": "suzuki",
-      "step": "ログイン",
-      "severity": "FAIL",
-      "desc": "鈴木太郎ログイン失敗",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_3.png"
-    },
-    {
-      "persona": "nakamura",
-      "step": "ログイン",
-      "severity": "FAIL",
-      "desc": "中村美代ログイン失敗",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_4.png"
-    },
-    {
-      "persona": "misc",
-      "step": "QRテストログイン",
-      "severity": "FAIL",
-      "desc": "ログイン失敗",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r6_fail_5.png"
-    }
-  ]
+  "issues": []
 }

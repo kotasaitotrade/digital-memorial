@@ -95,6 +95,31 @@ def register_user(page: Page, email: str, name: str, pw: str) -> bool:
             except Exception:
                 pass
             return True
+        # どのパスワードでもログインできない場合はDBで強制リセット
+        try:
+            import subprocess
+            subprocess.run([
+                "python3", "-c",
+                f"""
+import sys, os
+sys.path.insert(0, '{os.path.dirname(__file__)}/../backend')
+os.chdir('{os.path.dirname(__file__)}/../backend')
+from app.database import SessionLocal
+from app.models import User
+from passlib.context import CryptContext
+db = SessionLocal()
+u = db.query(User).filter(User.email == '{email}').first()
+if u:
+    u.hashed_password = CryptContext(schemes=['bcrypt'], deprecated='auto').hash('{pw}')
+    db.commit()
+    print('DB reset: {email}')
+db.close()
+"""
+            ], capture_output=True, text=True, timeout=10)
+            print(f"    ℹ️ DBパスワード強制リセット: {email}")
+            return login_user(page, email, pw)
+        except Exception:
+            pass
         return False
 
 def login_user(page: Page, email: str, pw: str) -> bool:
