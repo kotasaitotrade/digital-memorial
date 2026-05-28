@@ -4,8 +4,27 @@ import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 import type { EndingNote, BequestItem, DigitalAssetItem, SubscriptionItem, EmergencyContact, PetItem } from "../types";
 
-const TABS = ["医療・介護", "葬儀", "形見分け", "デジタル資産", "緊急連絡先", "ペット", "家族へのメッセージ"] as const;
+const TABS = ["医療・介護", "葬儀", "形見分け", "デジタル資産", "緊急連絡先", "ペット", "家族へのメッセージ", "追悼メッセージ", "ビデオメッセージ"] as const;
 type Tab = (typeof TABS)[number];
+
+interface ScheduledMessage {
+  id: number;
+  recipient_name: string;
+  recipient_email: string;
+  subject: string;
+  body: string;
+  is_sent: boolean;
+  created_at: string;
+}
+
+interface VideoMessage {
+  id: number;
+  title: string;
+  description: string | null;
+  file_path: string;
+  file_size: number | null;
+  created_at: string;
+}
 
 const GREEN = "#1a5c38";
 
@@ -18,13 +37,14 @@ export default function EndingNotePage() {
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [, forceUpdate] = useState(0);
   const [draft, setDraft] = useState<Partial<EndingNote>>({});
+  const [scheduledMessages, setScheduledMessages] = useState<ScheduledMessage[]>([]);
+  const [videoMessages, setVideoMessages] = useState<VideoMessage[]>([]);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    api.get("/ending-note").then((r) => {
-      setNote(r.data);
-      setDraft(r.data);
-    });
+    api.get("/ending-note").then((r) => { setNote(r.data); setDraft(r.data); });
+    api.get("/scheduled-messages").then((r) => setScheduledMessages(r.data));
+    api.get("/video-messages").then((r) => setVideoMessages(r.data));
   }, []);
 
   const updateDraft = (key: keyof EndingNote, val: string) => {
@@ -124,6 +144,18 @@ export default function EndingNotePage() {
           )}
           {activeTab === "家族へのメッセージ" && (
             <MessageSection draft={draft} onUpdate={updateDraft} />
+          )}
+          {activeTab === "追悼メッセージ" && (
+            <ScheduledMessageSection
+              messages={scheduledMessages}
+              onRefresh={() => api.get("/scheduled-messages").then((r) => setScheduledMessages(r.data))}
+            />
+          )}
+          {activeTab === "ビデオメッセージ" && (
+            <VideoMessageSection
+              videos={videoMessages}
+              onRefresh={() => api.get("/video-messages").then((r) => setVideoMessages(r.data))}
+            />
           )}
         </div>
 
@@ -546,6 +578,131 @@ function RadioGroup({ value, onChange, options }: { value: string; onChange: (v:
           {opt}
         </label>
       ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// 追悼メッセージセクション
+// ─────────────────────────────────────────────────
+function ScheduledMessageSection({ messages, onRefresh }: { messages: ScheduledMessage[]; onRefresh: () => void }) {
+  const empty = { recipient_name: "", recipient_email: "", subject: "", body: "" };
+  const [form, setForm] = useState(empty);
+  const [editing, setEditing] = useState<ScheduledMessage | null>(null);
+  const [showForm, setShowForm] = useState(false);
+
+  const save = async () => {
+    if (!form.recipient_name || !form.recipient_email || !form.subject || !form.body) return;
+    if (editing) {
+      await api.put(`/scheduled-messages/${editing.id}`, form);
+    } else {
+      await api.post("/scheduled-messages", form);
+    }
+    setForm(empty);
+    setEditing(null);
+    setShowForm(false);
+    onRefresh();
+  };
+
+  const startEdit = (msg: ScheduledMessage) => {
+    setForm({ recipient_name: msg.recipient_name, recipient_email: msg.recipient_email, subject: msg.subject, body: msg.body });
+    setEditing(msg);
+    setShowForm(true);
+  };
+
+  return (
+    <div style={s.sectionWrap}>
+      <h2 style={s.sectionTitle}>追悼メッセージ（予約送信）</h2>
+      <p style={s.sectionNote}>
+        あなたが亡くなった後、デジタル遺品鍵が開錠されたタイミングで送信されるメッセージを事前に作成できます。
+        <br />※ メール送信機能は準備中です。メッセージは保存されています。
+      </p>
+      {messages.map((msg) => (
+        <div key={msg.id} style={s.listCard}>
+          <div style={{ flex: 1 }}>
+            <span style={s.listCardTitle}>{msg.subject}</span>
+            <span style={s.listCardSub}> → {msg.recipient_name}（{msg.recipient_email}）</span>
+            <div style={{ ...s.listCardNote, whiteSpace: "pre-wrap", marginTop: 4 }}>{msg.body.slice(0, 120)}{msg.body.length > 120 ? "..." : ""}</div>
+          </div>
+          <div style={{ display: "flex", gap: "0.4rem", flexShrink: 0 }}>
+            <button style={{ ...s.delBtn, color: "#1a5c38" }} onClick={() => startEdit(msg)}>編集</button>
+            <button style={s.delBtn} onClick={async () => { await api.delete(`/scheduled-messages/${msg.id}`); onRefresh(); }}>削除</button>
+          </div>
+        </div>
+      ))}
+      {!showForm && (
+        <button style={s.addBtn} onClick={() => { setShowForm(true); setEditing(null); setForm(empty); }}>+ メッセージを追加</button>
+      )}
+      {showForm && (
+        <div style={{ marginTop: "1rem", background: "#f0f7f4", borderRadius: 8, padding: "1.25rem", border: "1px solid #b2dfdb" }}>
+          <h3 style={{ margin: "0 0 1rem", fontSize: "0.95rem", color: "#1a5c38" }}>{editing ? "メッセージを編集" : "新しいメッセージを作成"}</h3>
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            <input style={s.input} placeholder="宛先の名前（例：山田 一郎）" value={form.recipient_name} onChange={(e) => setForm({ ...form, recipient_name: e.target.value })} />
+            <input style={s.input} type="email" placeholder="宛先のメールアドレス" value={form.recipient_email} onChange={(e) => setForm({ ...form, recipient_email: e.target.value })} />
+            <input style={s.input} placeholder="件名（例：大切なあなたへ）" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} />
+            <textarea style={{ ...s.textarea, minHeight: 160 }} placeholder="本文を入力してください..." value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem" }}>
+            <button style={s.addBtn} onClick={save}>{editing ? "更新" : "保存"}</button>
+            <button style={{ ...s.addBtn, background: "#9ca3af" }} onClick={() => { setShowForm(false); setEditing(null); setForm(empty); }}>キャンセル</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// ビデオメッセージセクション
+// ─────────────────────────────────────────────────
+function VideoMessageSection({ videos, onRefresh }: { videos: VideoMessage[]; onRefresh: () => void }) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const upload = async () => {
+    if (!title || !file) return;
+    setUploading(true);
+    const form = new FormData();
+    form.append("title", title);
+    form.append("description", description);
+    form.append("file", file);
+    await api.post("/video-messages", form, { headers: { "Content-Type": "multipart/form-data" } });
+    setTitle(""); setDescription(""); setFile(null);
+    setUploading(false);
+    onRefresh();
+  };
+
+  return (
+    <div style={s.sectionWrap}>
+      <h2 style={s.sectionTitle}>ビデオメッセージ</h2>
+      <p style={s.sectionNote}>大切な人へ残したいビデオメッセージをアップロードして保管できます。デジタル遺品鍵が開錠されると、信頼者が閲覧できます。</p>
+      {videos.map((v) => (
+        <div key={v.id} style={s.listCard}>
+          <div style={{ fontSize: "2rem", flexShrink: 0 }}>🎥</div>
+          <div style={{ flex: 1 }}>
+            <span style={s.listCardTitle}>{v.title}</span>
+            {v.description && <div style={s.listCardNote}>{v.description}</div>}
+            {v.file_size && <div style={s.listCardNote}>{(v.file_size / (1024 * 1024)).toFixed(1)} MB · {new Date(v.created_at).toLocaleDateString("ja-JP")}</div>}
+          </div>
+          <button style={s.delBtn} onClick={async () => { await api.delete(`/video-messages/${v.id}`); onRefresh(); }}>削除</button>
+        </div>
+      ))}
+      <div style={{ marginTop: "1rem", background: "#f9fafb", borderRadius: 8, padding: "1.25rem", border: "1px solid #e5e7eb" }}>
+        <h3 style={{ margin: "0 0 1rem", fontSize: "0.95rem", color: "#374151" }}>ビデオをアップロード</h3>
+        <div style={{ display: "grid", gap: "0.75rem" }}>
+          <input style={s.input} placeholder="タイトル（例：家族へのメッセージ）" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input style={s.input} placeholder="説明（任意）" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <input type="file" accept="video/*" onChange={(e) => setFile(e.target.files?.[0] || null)} style={{ fontSize: "0.9rem" }} />
+        </div>
+        <button
+          style={{ ...s.addBtn, marginTop: "0.75rem", opacity: uploading || !title || !file ? 0.6 : 1 }}
+          onClick={upload}
+          disabled={uploading || !title || !file}>
+          {uploading ? "アップロード中..." : "アップロード"}
+        </button>
+      </div>
     </div>
   );
 }

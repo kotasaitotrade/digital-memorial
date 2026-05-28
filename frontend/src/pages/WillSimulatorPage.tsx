@@ -22,6 +22,7 @@ export default function WillSimulatorPage() {
   const [memo, setMemo] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -227,10 +228,74 @@ export default function WillSimulatorPage() {
           <button style={{ ...s.primaryBtn, background: "#64748b" }} onClick={handleSave} disabled={saving}>
             {saving ? "保存中..." : saved ? "✓ 保存しました" : "💾 配分を保存"}
           </button>
+          <button style={{ ...s.primaryBtn, background: "#0891b2" }} onClick={() => setShowPreview((p) => !p)}>
+            {showPreview ? "📄 プレビューを閉じる" : "📄 遺言書テキストをプレビュー"}
+          </button>
           <button style={s.primaryBtn} onClick={handlePrint} disabled={saving}>
             🖨 遺言書テンプレートを印刷
           </button>
           <Link to={`/estate/${planId}/result`} style={{ ...s.primaryBtn, background: "#64748b" }}>← 計算結果に戻る</Link>
+        </div>
+
+        {/* 遺言書テキストプレビュー */}
+        {showPreview && (
+          <div style={{ ...s.sectionBox, border: "2px solid #1a5c38" }} className="no-print">
+            <div style={s.sectionHead}>
+              <span style={s.sectionTitle}>📄 遺言書テキスト（自動生成）</span>
+              <span style={{ fontSize: "0.78rem", color: "#9ca3af" }}>印刷時はこの内容が出力されます</span>
+            </div>
+            <div style={{ fontFamily: "serif", lineHeight: 2.2, padding: "1rem", background: "#fffde7", borderRadius: 8, fontSize: "0.93rem" }}>
+              <p style={{ textAlign: "center" as const, fontSize: "1.3rem", letterSpacing: "0.5em", fontWeight: 700, marginBottom: "0.5rem" }}>遺 言 書</p>
+              <p style={{ textAlign: "center" as const, color: "#888", fontSize: "0.8rem", marginBottom: "1.5rem" }}>（自筆証書遺言 参考テンプレート）</p>
+              <p>遺言者 <strong>{user?.name}</strong> は、以下の通り遺言する。</p>
+              <p style={{ fontWeight: 700, marginTop: "1rem" }}>第一条　財産の分配</p>
+              {calc.heirs.map((h, i) => {
+                const allocated = allocations[String(h.id)] ?? h.share_amount;
+                return <p key={h.id}>{i + 1}.&nbsp;{h.name}（{h.relationship}）に、遺産の中から金{allocated.toLocaleString()}円を相続させる。</p>;
+              })}
+              {memo && (
+                <>
+                  <p style={{ fontWeight: 700, marginTop: "1rem" }}>付言事項</p>
+                  <p style={{ whiteSpace: "pre-wrap" as const }}>{memo}</p>
+                </>
+              )}
+              <div style={{ marginTop: "2rem" }}>
+                <p>{today}</p>
+                <p>遺言者　住所：＿＿＿＿＿＿＿＿＿＿＿＿＿＿</p>
+                <p>　　　　氏名：{user?.name}　㊞</p>
+                <p>　　　　生年月日：＿＿＿＿＿年＿＿月＿＿日</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 法的手続きの案内 */}
+        <div style={{ ...s.sectionBox, background: "#fffde7", border: "1px solid #ffc107" }} className="no-print">
+          <h2 style={{ ...s.sectionTitle, color: "#7a6000", marginBottom: "1rem" }}>⚖️ 自筆証書遺言の有効要件</h2>
+          <div style={{ display: "grid", gap: "0.75rem" }}>
+            {[
+              { icon: "✍️", title: "全文自筆で書くこと", desc: "パソコン・代筆は無効。財産目録のみPC作成可（各ページに署名・押印が必要）" },
+              { icon: "📅", title: "日付を自書すること", desc: "「令和○年○月○日」と具体的に記載。「○月吉日」などは無効" },
+              { icon: "🖊️", title: "氏名を自書すること", desc: "フルネームを自筆で署名する" },
+              { icon: "🔏", title: "押印すること", desc: "認印でも可だが実印が望ましい" },
+            ].map((item) => (
+              <div key={item.title} style={{ display: "flex", gap: "0.75rem", padding: "0.75rem", background: "white", borderRadius: 8, border: "1px solid #f0e68c" }}>
+                <span style={{ fontSize: "1.3rem", flexShrink: 0 }}>{item.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 700, color: "#5a4000", fontSize: "0.9rem" }}>{item.title}</div>
+                  <div style={{ color: "#6b6b6b", fontSize: "0.82rem", marginTop: 2 }}>{item.desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: "1rem", padding: "0.75rem 1rem", background: "#fff8e1", borderRadius: 8, fontSize: "0.85rem", color: "#5a4000", lineHeight: 1.7 }}>
+            <strong>📌 法務局への保管制度：</strong>
+            自筆証書遺言は法務局（遺言書保管所）に預けることができます（手数料3,900円）。紛失・改ざんを防ぎ、家庭裁判所の検認手続きが不要になります。<br />
+            <strong>💡 より確実な遺言書には：</strong>
+            公正証書遺言の作成をお勧めします。証人2名と公証人立会のもと作成し、原本が公証役場に保管されます。費用は遺産額に応じて異なります。<br />
+            <strong>👨‍⚖️ 専門家への相談：</strong>
+            弁護士・司法書士・行政書士・公証役場にご相談ください。
+          </div>
         </div>
 
         {/* ─── 印刷テンプレート（@media print でのみ表示）─── */}

@@ -185,3 +185,95 @@ class WillDraftResponse(BaseModel):
     memo: Optional[str]
     class Config:
         from_attributes = True
+
+
+# ─── デジタル遺品鍵 ──────────────────────────────────────────
+
+class TrustedPersonCreate(BaseModel):
+    name: str
+    email: str
+    access_scope: List[str] = ["all"]
+
+class TrustedPersonResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+    access_scope: List[str]
+    access_token: str
+    has_requested: bool
+    requested_at: Optional[datetime]
+    email_verified: bool
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class DigitalKeyUpdate(BaseModel):
+    unlock_condition: Optional[str] = None
+    notes: Optional[str] = None
+
+class DigitalKeyResponse(BaseModel):
+    id: int
+    user_id: int
+    unlock_condition: str
+    is_unlocked: bool
+    unlocked_at: Optional[datetime]
+    notes: Optional[str]
+    trusted_persons: List[TrustedPersonResponse] = []
+    created_at: datetime
+    updated_at: Optional[datetime]
+    class Config:
+        from_attributes = True
+
+
+# ─── リマインダー設定 ─────────────────────────────────────────
+
+class ReminderSettingUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    review_month: Optional[int] = None
+    notify_incomplete: Optional[bool] = None
+    notify_trusted: Optional[bool] = None
+    email: Optional[str] = None
+
+class ReminderSettingResponse(BaseModel):
+    id: int
+    user_id: int
+    enabled: bool
+    review_month: int
+    notify_incomplete: bool
+    notify_trusted: bool
+    email: Optional[str]
+    updated_at: Optional[datetime]
+    class Config:
+        from_attributes = True
+
+
+# ─── 追悼メッセージ ──────────────────────────────────────────
+
+class ScheduledMessageCreate(BaseModel):
+    recipient_name: str
+    recipient_email: str
+    subject: str
+    body: str
+
+class ScheduledMessageResponse(ScheduledMessageCreate):
+    id: int
+    is_sent: bool
+    sent_at: Optional[datetime]
+    created_at: datetime
+    updated_at: Optional[datetime]
+    class Config:
+        from_attributes = True
+
+
+# ─── ビデオメッセージ ─────────────────────────────────────────
+
+class VideoMessageResponse(BaseModel):
+    id: int
+    title: str
+    description: Optional[str]
+    file_path: str
+    file_size: Optional[int]
+    duration_seconds: Optional[int]
+    created_at: datetime
+    class Config:
+        from_attributes = True

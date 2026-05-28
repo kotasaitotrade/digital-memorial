@@ -4,12 +4,14 @@ from sqlalchemy.sql import func
 from typing import List
 import os, shutil, uuid
 
+from datetime import datetime, timezone
 from ..database import get_db
 from ..models.user import User
 from ..models.shukatsu import (
     EstatePlan, FamilyMember, Asset,
     EndingNote, BequestItem, DigitalAsset, Subscription, EmergencyContact, Pet,
     ChecklistCompletion, WillDraft,
+    DigitalKey, TrustedPerson, ReminderSetting, ScheduledMessage, VideoMessage,
 )
 from ..schemas.shukatsu import (
     EstatePlanCreate, EstatePlanResponse,
@@ -23,6 +25,11 @@ from ..schemas.shukatsu import (
     PetCreate, PetResponse,
     ChecklistToggle, ChecklistStatusResponse,
     WillDraftSave, WillDraftResponse,
+    TrustedPersonCreate, TrustedPersonResponse,
+    DigitalKeyUpdate, DigitalKeyResponse,
+    ReminderSettingUpdate, ReminderSettingResponse,
+    ScheduledMessageCreate, ScheduledMessageResponse,
+    VideoMessageResponse,
 )
 from ..services.inheritance import calculate_inheritance
 from .auth import get_current_user
@@ -499,3 +506,243 @@ def save_will(
     db.commit()
     db.refresh(draft)
     return draft
+
+
+# ═══════════════════════════════════════════════════════════════
+#  デジタル遺品鍵
+# ═══════════════════════════════════════════════════════════════
+
+def _get_or_create_digital_key(db: Session, user_id: int) -> DigitalKey:
+    key = db.query(DigitalKey).filter(DigitalKey.user_id == user_id).first()
+    if not key:
+        key = DigitalKey(user_id=user_id)
+        db.add(key)
+        db.commit()
+        db.refresh(key)
+    return key
+
+
+@router.get("/digital-key", response_model=DigitalKeyResponse)
+def get_digital_key(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return _get_or_create_digital_key(db, current_user.id)
+
+
+@router.patch("/digital-key", response_model=DigitalKeyResponse)
+def update_digital_key(
+    data: DigitalKeyUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    key = _get_or_create_digital_key(db, current_user.id)
+    if data.unlock_condition is not None:
+        key.unlock_condition = data.unlock_condition
+    if data.notes is not None:
+        key.notes = data.notes
+    db.commit()
+    db.refresh(key)
+    return key
+
+
+@router.post("/digital-key/trusted-persons", response_model=TrustedPersonResponse)
+def add_trusted_person(
+    data: TrustedPersonCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    key = _get_or_create_digital_key(db, current_user.id)
+    if len(key.trusted_persons) >= 3:
+        raise HTTPException(status_code=400, detail="信頼者は最大3名まで登録できます")
+    person = TrustedPerson(digital_key_id=key.id, name=data.name, email=data.email, access_scope=data.access_scope)
+    db.add(person)
+    db.commit()
+    db.refresh(person)
+    return person
+
+
+@router.delete("/digital-key/trusted-persons/{person_id}", status_code=204)
+def delete_trusted_person(
+    person_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    key = _get_or_create_digital_key(db, current_user.id)
+    person = db.query(TrustedPerson).filter(
+        TrustedPerson.id == person_id,
+        TrustedPerson.digital_key_id == key.id,
+    ).first()
+    if not person:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(person)
+    db.commit()
+
+
+@router.post("/digital-key/trusted-persons/{person_id}/request")
+def request_unlock(
+    person_id: int,
+    token: str,
+    db: Session = Depends(get_db),
+):
+    """信頼者が解除キーを使って開錠申請する（認証不要の公開エンドポイント）"""
+    person = db.query(TrustedPerson).filter(TrustedPerson.id == person_id).first()
+    if not person or person.access_token != token:
+        raise HTTPException(status_code=403, detail="無効な解除キーです")
+    if not person.has_requested:
+        person.has_requested = True
+        person.requested_at = datetime.now(timezone.utc)
+        db.commit()
+        # 条件判定
+        key = db.query(DigitalKey).filter(DigitalKey.id == person.digital_key_id).first()
+        requesters = sum(1 for p in key.trusted_persons if p.has_requested)
+        required = 2 if key.unlock_condition == "two_requests" else 1
+        if requesters >= required and not key.is_unlocked:
+            key.is_unlocked = True
+            key.unlocked_at = datetime.now(timezone.utc)
+            db.commit()
+    db.refresh(person)
+    return {"message": "申請を受け付けました", "is_unlocked": person.digital_key.is_unlocked}
+
+
+# ═══════════════════════════════════════════════════════════════
+#  リマインダー設定
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/reminder-settings", response_model=ReminderSettingResponse)
+def get_reminder_settings(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    setting = db.query(ReminderSetting).filter(ReminderSetting.user_id == current_user.id).first()
+    if not setting:
+        setting = ReminderSetting(user_id=current_user.id, email=current_user.email)
+        db.add(setting)
+        db.commit()
+        db.refresh(setting)
+    return setting
+
+
+@router.put("/reminder-settings", response_model=ReminderSettingResponse)
+def update_reminder_settings(
+    data: ReminderSettingUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    setting = db.query(ReminderSetting).filter(ReminderSetting.user_id == current_user.id).first()
+    if not setting:
+        setting = ReminderSetting(user_id=current_user.id, email=current_user.email)
+        db.add(setting)
+    for field, val in data.model_dump(exclude_none=True).items():
+        setattr(setting, field, val)
+    db.commit()
+    db.refresh(setting)
+    return setting
+
+
+# ═══════════════════════════════════════════════════════════════
+#  追悼メッセージ（予約送信）
+# ═══════════════════════════════════════════════════════════════
+
+@router.get("/scheduled-messages", response_model=List[ScheduledMessageResponse])
+def list_scheduled_messages(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(ScheduledMessage).filter(ScheduledMessage.user_id == current_user.id).all()
+
+
+@router.post("/scheduled-messages", response_model=ScheduledMessageResponse)
+def create_scheduled_message(
+    data: ScheduledMessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    msg = ScheduledMessage(user_id=current_user.id, **data.model_dump())
+    db.add(msg)
+    db.commit()
+    db.refresh(msg)
+    return msg
+
+
+@router.put("/scheduled-messages/{msg_id}", response_model=ScheduledMessageResponse)
+def update_scheduled_message(
+    msg_id: int,
+    data: ScheduledMessageCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    msg = db.query(ScheduledMessage).filter(
+        ScheduledMessage.id == msg_id, ScheduledMessage.user_id == current_user.id
+    ).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Not found")
+    for field, val in data.model_dump().items():
+        setattr(msg, field, val)
+    db.commit()
+    db.refresh(msg)
+    return msg
+
+
+@router.delete("/scheduled-messages/{msg_id}", status_code=204)
+def delete_scheduled_message(
+    msg_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    msg = db.query(ScheduledMessage).filter(
+        ScheduledMessage.id == msg_id, ScheduledMessage.user_id == current_user.id
+    ).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="Not found")
+    db.delete(msg)
+    db.commit()
+
+
+# ═══════════════════════════════════════════════════════════════
+#  ビデオメッセージ
+# ═══════════════════════════════════════════════════════════════
+
+VIDEO_DIR = os.path.join(os.path.dirname(__file__), "../../../../uploads/videos")
+os.makedirs(VIDEO_DIR, exist_ok=True)
+
+
+@router.get("/video-messages", response_model=List[VideoMessageResponse])
+def list_video_messages(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    return db.query(VideoMessage).filter(VideoMessage.user_id == current_user.id).all()
+
+
+@router.post("/video-messages", response_model=VideoMessageResponse)
+def upload_video_message(
+    title: str,
+    description: str = "",
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not file.content_type.startswith("video/"):
+        raise HTTPException(status_code=400, detail="動画ファイルのみアップロードできます")
+    ext = os.path.splitext(file.filename or "")[1] or ".mp4"
+    filename = f"{uuid.uuid4()}{ext}"
+    dest = os.path.join(VIDEO_DIR, filename)
+    with open(dest, "wb") as f:
+        shutil.copyfileobj(file.file, f)
+    size = os.path.getsize(dest)
+    video = VideoMessage(
+        user_id=current_user.id, title=title, description=description or None,
+        file_path=f"/api/video-messages/{filename}", file_size=size,
+    )
+    db.add(video)
+    db.commit()
+    db.refresh(video)
+    return video
+
+
+@router.delete("/video-messages/{video_id}", status_code=204)
+def delete_video_message(
+    video_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    video = db.query(VideoMessage).filter(
+        VideoMessage.id == video_id, VideoMessage.user_id == current_user.id
+    ).first()
+    if not video:
+        raise HTTPException(status_code=404, detail="Not found")
+    filename = os.path.basename(video.file_path)
+    path = os.path.join(VIDEO_DIR, filename)
+    if os.path.exists(path):
+        os.remove(path)
+    db.delete(video)
+    db.commit()

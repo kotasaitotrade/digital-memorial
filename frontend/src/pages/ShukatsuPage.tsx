@@ -96,7 +96,7 @@ export default function ShukatsuPage() {
         </div>
 
         {/* クイックリンク */}
-        <div style={s.quickLinks}>
+        <div style={{ ...s.quickLinks, gridTemplateColumns: "repeat(3, 1fr)" }}>
           <Link to="/estate" style={s.quickCard}>
             <div style={s.quickIcon}>⚖️</div>
             <div style={s.quickLabel}>相続の棚卸し</div>
@@ -108,6 +108,18 @@ export default function ShukatsuPage() {
           <Link to="/dashboard" style={s.quickCard}>
             <div style={s.quickIcon}>🕊️</div>
             <div style={s.quickLabel}>墓誌の管理</div>
+          </Link>
+          <Link to="/digital-key" style={s.quickCard}>
+            <div style={s.quickIcon}>🔐</div>
+            <div style={s.quickLabel}>デジタル遺品鍵</div>
+          </Link>
+          <Link to="/settings/reminders" style={s.quickCard}>
+            <div style={s.quickIcon}>🔔</div>
+            <div style={s.quickLabel}>リマインダー設定</div>
+          </Link>
+          <Link to="/account" style={s.quickCard}>
+            <div style={s.quickIcon}>👤</div>
+            <div style={s.quickLabel}>アカウント設定</div>
           </Link>
         </div>
 
@@ -190,7 +202,7 @@ const s: Record<string, React.CSSProperties> = {
   scoreDesc: { fontSize: "0.85rem", color: "#6b7280", marginTop: 6 },
   scoreRight: {},
   gauge: {},
-  quickLinks: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "2rem" },
+  quickLinks: { display: "grid", gap: "1rem", marginBottom: "2rem" },
   quickCard: { background: "#fff", borderRadius: 10, padding: "1.25rem", textAlign: "center" as const, textDecoration: "none", boxShadow: "0 1px 4px rgba(0,0,0,.07)", transition: "box-shadow 0.2s", border: `2px solid transparent` },
   quickIcon: { fontSize: "2rem", marginBottom: 8 },
   quickLabel: { fontSize: "0.9rem", fontWeight: 600, color: "#1a1a1a" },

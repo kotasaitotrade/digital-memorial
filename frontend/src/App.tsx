@@ -12,6 +12,8 @@ import EstatePlanListPage, { FamilyInputPage, AssetInputPage, EstateResultPage }
 import EndingNotePage from "./pages/EndingNotePage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
 import WillSimulatorPage from "./pages/WillSimulatorPage";
+import DigitalKeyPage from "./pages/DigitalKeyPage";
+import ReminderSettingsPage from "./pages/ReminderSettingsPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -45,6 +47,8 @@ export default function App() {
       <Route path="/ending-note" element={<PrivateRoute><EndingNotePage /></PrivateRoute>} />
 
       <Route path="/account" element={<PrivateRoute><AccountSettingsPage /></PrivateRoute>} />
+      <Route path="/digital-key" element={<PrivateRoute><DigitalKeyPage /></PrivateRoute>} />
+      <Route path="/settings/reminders" element={<PrivateRoute><ReminderSettingsPage /></PrivateRoute>} />
 
       <Route path="/" element={<Navigate to="/dashboard" />} />
     </Routes>

@@ -190,3 +190,89 @@ class WillDraft(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     estate_plan = db_relationship("EstatePlan")
+
+
+# ─── デジタル遺品鍵 ──────────────────────────────────────────
+
+class DigitalKey(Base):
+    __tablename__ = "digital_keys"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    # one_request / two_requests
+    unlock_condition = Column(String, default="one_request")
+    is_unlocked = Column(Boolean, default=False)
+    unlocked_at = Column(DateTime(timezone=True), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    trusted_persons = db_relationship("TrustedPerson", back_populates="digital_key", cascade="all, delete-orphan")
+
+
+import secrets
+
+class TrustedPerson(Base):
+    __tablename__ = "trusted_persons"
+
+    id = Column(Integer, primary_key=True, index=True)
+    digital_key_id = Column(Integer, ForeignKey("digital_keys.id"), nullable=False)
+    name = Column(String, nullable=False)
+    email = Column(String, nullable=False)
+    # all / estate / ending_note
+    access_scope = Column(JSON, default=list)
+    access_token = Column(String, default=lambda: secrets.token_urlsafe(32))
+    has_requested = Column(Boolean, default=False)
+    requested_at = Column(DateTime(timezone=True), nullable=True)
+    email_verified = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    digital_key = db_relationship("DigitalKey", back_populates="trusted_persons")
+
+
+# ─── リマインダー設定 ─────────────────────────────────────────
+
+class ReminderSetting(Base):
+    __tablename__ = "reminder_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, unique=True)
+    enabled = Column(Boolean, default=True)
+    review_month = Column(Integer, default=1)       # 年次見直し月（1〜12）
+    notify_incomplete = Column(Boolean, default=True)  # 未完了タスク通知
+    notify_trusted = Column(Boolean, default=True)    # 信頼者確認メール
+    email = Column(String, nullable=True)             # 通知先（未設定ならアカウントのメール）
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# ─── 追悼メッセージ（予約送信） ──────────────────────────────────
+
+class ScheduledMessage(Base):
+    __tablename__ = "scheduled_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    recipient_name = Column(String, nullable=False)   # 送り先の名前
+    recipient_email = Column(String, nullable=False)  # 送り先メール
+    subject = Column(String, nullable=False)          # 件名
+    body = Column(Text, nullable=False)               # 本文
+    is_sent = Column(Boolean, default=False)
+    sent_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+# ─── ビデオメッセージ ─────────────────────────────────────────
+
+class VideoMessage(Base):
+    __tablename__ = "video_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    file_path = Column(String, nullable=False)       # サーバー上のパス
+    file_size = Column(Integer, nullable=True)       # bytes
+    duration_seconds = Column(Integer, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
