@@ -3563,16 +3563,15 @@ def test_new_impl_features(page: Page):
         else:
             bug("リマインダー設定ページ未表示", "/settings/reminders にコンテンツが表示されない", page, p)
 
-        # 有効/無効トグル確認
-        toggles = page.locator("input[type='checkbox']").all()
-        if toggles:
-            ok(f"リマインダー設定: チェックボックス {len(toggles)}個確認 ✓")
-            # 最初のトグルをON
-            toggles[0].click()
+        # 有効/無効トグル確認（カスタムdivトグル実装 — input[type='checkbox']ではない）
+        toggle_divs = page.locator("div[style*='border-radius: 13px'], div[style*='border-radius: 12px']").all()
+        if toggle_divs:
+            ok(f"リマインダー設定: トグル {len(toggle_divs)}個確認 ✓")
+            toggle_divs[0].click()
             page.wait_for_timeout(500)
             ok("リマインダー設定: トグル操作 ✓")
         else:
-            bug("リマインダートグルなし", "リマインダー設定のチェックボックスが見つからない", page, p)
+            bug("リマインダートグルなし", "リマインダー設定のdivトグルが見つからない", page, p)
 
         # 保存ボタン確認
         save_btn = page.locator("button:has-text('保存')").first
@@ -3695,7 +3694,7 @@ def test_new_impl_features(page: Page):
 
         page.goto(f"{BASE_URL}/estate/{plan_id}/will")
         page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1500)
+        page.wait_for_timeout(2500)
         ss(page, f"{p}_09_will_simulator")
 
         content = page.content()
@@ -3704,10 +3703,11 @@ def test_new_impl_features(page: Page):
         else:
             bug("遺言書ページ未表示", "/will ページが表示されない", page, p)
 
-        # テキストプレビューボタン確認
-        preview_btn = page.locator("button:has-text('遺言書テキストをプレビュー'), button:has-text('テキストをプレビュー')")
-        if preview_btn.count() > 0:
-            preview_btn.first.click()
+        # テキストプレビューボタン確認（カンマ複数セレクターは重複マッチを避けるため単一使用）
+        preview_btn = page.locator("button:has-text('遺言書テキストをプレビュー')").first
+        try:
+            preview_btn.wait_for(state="visible", timeout=6000)
+            preview_btn.click()
             page.wait_for_timeout(500)
             ss(page, f"{p}_10_will_preview")
 
@@ -3717,12 +3717,12 @@ def test_new_impl_features(page: Page):
             else:
                 ok("遺言書テキストプレビュー: プレビュートグル動作確認 ✓")
 
-            # 再クリックで閉じる
-            preview_btn.first.click()
+            # 再クリックで閉じる（ボタンテキストが変わるので再取得）
+            page.locator("button:has-text('プレビューを閉じる')").first.click(timeout=3000)
             page.wait_for_timeout(300)
             ok("遺言書テキストプレビュー: トグル閉じ ✓")
-        else:
-            bug("遺言書プレビューボタンなし", "WillSimulatorにテキストプレビューボタンがない", page, p)
+        except Exception as e_prev:
+            bug("遺言書プレビューボタンなし", f"WillSimulatorにテキストプレビューボタンがない: {str(e_prev)[:60]}", page, p)
 
         # 法的手続き案内セクション確認
         content_final = page.content()
