@@ -347,6 +347,15 @@ export default function AccountSettingsPage() {
           )}
         </div>
 
+        {/* リマインダー設定へのリンク */}
+        <div style={s.card}>
+          <h2 style={s.cardTitle}>リマインダー・通知設定</h2>
+          <p style={s.helpText}>終活の定期リマインドや、デッドマンスイッチの通知間隔を設定できます。</p>
+          <a href="/settings/reminders" style={{ ...s.btn, display: "inline-block", textDecoration: "none", padding: "0.6rem 1.25rem", fontSize: "0.88rem" }}>
+            🔔 リマインダー設定を開く →
+          </a>
+        </div>
+
         {/* データエクスポート（中村美代 要望） */}
         <div style={s.card}>
           <h2 style={s.cardTitle}>データエクスポート</h2>

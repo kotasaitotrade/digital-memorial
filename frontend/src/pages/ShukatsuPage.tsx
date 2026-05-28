@@ -127,17 +127,27 @@ export default function ShukatsuPage() {
         <div style={s.section}>
           <h2 style={s.sectionTitle}>終活チェックリスト</h2>
 
-          {/* カテゴリフィルター */}
+          {/* カテゴリフィルター（カテゴリ別完了率表示） */}
           <div style={s.tabs}>
-            {["すべて", ...CATEGORIES].map((cat) => (
-              <button
-                key={cat}
-                style={{ ...s.tab, ...(activeCategory === cat ? s.tabActive : {}) }}
-                onClick={() => setActiveCategory(cat)}
-              >
-                {cat}
-              </button>
-            ))}
+            {["すべて", ...CATEGORIES].map((cat) => {
+              const catItems = cat === "すべて" ? items : items.filter((i) => i.category === cat);
+              const catDone = catItems.filter((i) => i.is_completed).length;
+              const isActive = activeCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  style={{ ...s.tab, ...(isActive ? s.tabActive : {}) }}
+                  onClick={() => setActiveCategory(cat)}
+                >
+                  {cat}
+                  {catItems.length > 0 && (
+                    <span style={{ marginLeft: "0.3rem", fontSize: "0.68rem", opacity: 0.85 }}>
+                      {catDone}/{catItems.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {/* リスト */}
