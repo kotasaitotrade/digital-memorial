@@ -104,8 +104,13 @@ export default function EstatePlanListPage() {
                     <button style={s.iconBtn} onClick={() => startEdit(plan)} title="名前を変更">✏️</button>
                   </div>
                 )}
-                <div style={s.cardMeta}>
-                  家族: {plan.family_members.length}名 ／ 財産: {plan.assets.length}件
+                <div style={{ display: "flex", gap: "0.4rem", marginBottom: "0.4rem", flexWrap: "wrap" }}>
+                  <span style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 12, background: plan.family_members.length > 0 ? "#d1fae5" : "#f3f4f6", color: plan.family_members.length > 0 ? "#065f46" : "#9ca3af" }}>
+                    {plan.family_members.length > 0 ? `✓ 家族 ${plan.family_members.length}名` : "家族未入力"}
+                  </span>
+                  <span style={{ fontSize: "0.72rem", padding: "2px 8px", borderRadius: 12, background: plan.assets.length > 0 ? "#d1fae5" : "#f3f4f6", color: plan.assets.length > 0 ? "#065f46" : "#9ca3af" }}>
+                    {plan.assets.length > 0 ? `✓ 財産 ${plan.assets.length}件` : "財産未入力"}
+                  </span>
                 </div>
                 <div style={s.cardMeta}>更新: {new Date(plan.updated_at ?? plan.created_at).toLocaleDateString("ja-JP")}</div>
                 <div style={s.cardActions}>

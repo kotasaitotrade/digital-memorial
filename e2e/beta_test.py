@@ -3513,7 +3513,11 @@ def test_new_impl_features(page: Page):
         else:
             bug("解除条件ラジオなし", "解除条件のラジオボタンが表示されない", page, p)
 
-        # 信頼できる人を追加
+        # 信頼できる人を追加（+ 追加ボタンでフォーム表示）
+        add_trusted_btn = page.locator("button:has-text('+ 追加'), button:has-text('＋ 追加')").first
+        if add_trusted_btn.count() > 0:
+            add_trusted_btn.click()
+            page.wait_for_timeout(500)
         name_inp = page.locator("input[placeholder='山田 太郎']").first
         email_inp = page.locator("input[placeholder='taro@example.com']").first
         if name_inp.count() > 0 and email_inp.count() > 0:
@@ -4118,6 +4122,29 @@ def test_v3_persona_features(page: Page):
                 bug("CSVエクスポートAPI失敗", f"HTTP {res.status_code}", page, p)
     except Exception as e:
         fail("v3: CSVエクスポートAPIテスト", str(e), page, p)
+
+    # ─ ダッシュボード クイックスタッツ表示テスト ─
+    try:
+        page.goto(f"{BASE_URL}/dashboard")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        content = page.content()
+        # 墓誌数カード・相続計画数カード・終活完了率カードの存在確認
+        if "墓誌" in content and "相続計画" in content and "終活完了率" in content:
+            ok("v3: ダッシュボード クイックスタッツ（墓誌・相続計画・完了率）表示 ✓")
+        else:
+            # 個別確認
+            for label in ["墓誌", "相続計画", "終活完了率"]:
+                if label in content:
+                    ok(f"v3: ダッシュボード スタッツ「{label}」表示 ✓")
+                else:
+                    bug(f"ダッシュボード スタッツ「{label}」未表示", "クイックスタッツが表示されない", page, p)
+        # 相続計画リンクが機能するか確認
+        estate_link = page.locator("a[href='/estate']").first
+        if estate_link.count() > 0:
+            ok("v3: ダッシュボード 相続計画リンク存在 ✓")
+    except Exception as e:
+        fail("v3: ダッシュボード スタッツテスト", str(e), page, p)
 
     print(f"\n  ✨ v3機能テスト完了")
 
