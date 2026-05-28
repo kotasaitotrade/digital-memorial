@@ -63,23 +63,34 @@ export default function EndingNotePage() {
 
   return (
     <div style={s.page}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          header { display: none !important; }
+          @page { margin: 1.5cm; }
+        }
+        .print-only { display: none; }
+      ` }} />
       <header style={s.header}>
         <div style={s.headerInner}>
           <div style={s.headerLeft}>
-            <Link to="/shukatsu" style={s.backLink}>← 終活ノート</Link>
+            <Link to="/shukatsu" style={s.backLink} className="no-print">← 終活ノート</Link>
             <span style={s.headerLogo}>エンディングノート</span>
           </div>
           <div style={s.headerRight}>
             {savedLabel && <span style={saving ? s.savingLabel : s.savedLabel}>{savedLabel}</span>}
             <span style={s.headerUser}>{user?.name}</span>
-            <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
+            <button style={{ ...s.logoutBtn, background: "#0891b2", color: "#fff", border: "none" }} className="no-print" onClick={() => window.print()}>🖨 PDF出力</button>
+            <button style={s.logoutBtn} className="no-print" onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
           </div>
         </div>
       </header>
 
       <main style={s.main}>
-        {/* タブ */}
-        <div style={s.tabBar}>
+        {/* タブ（画面のみ） */}
+        <div style={s.tabBar} className="no-print">
           {TABS.map((tab) => (
             <button
               key={tab}
@@ -91,29 +102,147 @@ export default function EndingNotePage() {
           ))}
         </div>
 
-        {/* 各セクション */}
-        {activeTab === "医療・介護" && (
-          <MedicalSection draft={draft} onUpdate={updateDraft} />
-        )}
-        {activeTab === "葬儀" && (
-          <FuneralSection draft={draft} note={note} onUpdate={updateDraft} onRefresh={refreshNote} />
-        )}
-        {activeTab === "形見分け" && (
-          <BequestSection items={note.bequest_items} onRefresh={refreshNote} />
-        )}
-        {activeTab === "デジタル資産" && (
-          <DigitalSection items={note.digital_assets} subs={note.subscriptions} onRefresh={refreshNote} />
-        )}
-        {activeTab === "緊急連絡先" && (
-          <ContactSection items={note.emergency_contacts} onRefresh={refreshNote} />
-        )}
-        {activeTab === "ペット" && (
-          <PetSection items={note.pets} onRefresh={refreshNote} />
-        )}
-        {activeTab === "家族へのメッセージ" && (
-          <MessageSection draft={draft} onUpdate={updateDraft} />
-        )}
+        {/* 各セクション（画面のみ） */}
+        <div className="no-print">
+          {activeTab === "医療・介護" && (
+            <MedicalSection draft={draft} onUpdate={updateDraft} />
+          )}
+          {activeTab === "葬儀" && (
+            <FuneralSection draft={draft} note={note} onUpdate={updateDraft} onRefresh={refreshNote} />
+          )}
+          {activeTab === "形見分け" && (
+            <BequestSection items={note.bequest_items} onRefresh={refreshNote} />
+          )}
+          {activeTab === "デジタル資産" && (
+            <DigitalSection items={note.digital_assets} subs={note.subscriptions} onRefresh={refreshNote} />
+          )}
+          {activeTab === "緊急連絡先" && (
+            <ContactSection items={note.emergency_contacts} onRefresh={refreshNote} />
+          )}
+          {activeTab === "ペット" && (
+            <PetSection items={note.pets} onRefresh={refreshNote} />
+          )}
+          {activeTab === "家族へのメッセージ" && (
+            <MessageSection draft={draft} onUpdate={updateDraft} />
+          )}
+        </div>
+
+        {/* 印刷用: 全セクションを一覧表示 */}
+        <PrintAllView note={note} draft={draft} userName={user?.name ?? ""} />
       </main>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────
+// 印刷専用ビュー（@media print でのみ表示）
+// ─────────────────────────────────────────────────
+function PrintRow({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div style={{ display: "flex", gap: "1rem", padding: "0.3rem 0", borderBottom: "1px solid #f3f4f6", fontSize: "0.88rem" }}>
+      <span style={{ minWidth: 160, color: "#6b7280", flexShrink: 0 }}>{label}</span>
+      <span style={{ color: "#1a1a1a", whiteSpace: "pre-wrap" as const }}>{value}</span>
+    </div>
+  );
+}
+
+function PrintSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: "1.5rem", pageBreakInside: "avoid" as const }}>
+      <h2 style={{ fontSize: "1rem", fontWeight: 700, color: "#1a5c38", borderBottom: "2px solid #1a5c38", paddingBottom: 4, marginBottom: 8 }}>{title}</h2>
+      {children}
+    </div>
+  );
+}
+
+function PrintAllView({ note, draft, userName }: { note: EndingNote; draft: Partial<EndingNote>; userName: string }) {
+  const today = new Date().toLocaleDateString("ja-JP", { year: "numeric", month: "long", day: "numeric" });
+  return (
+    <div className="print-only" style={{ fontFamily: "sans-serif", lineHeight: 1.8 }}>
+      <h1 style={{ textAlign: "center" as const, fontSize: "1.4rem", marginBottom: "0.25rem" }}>エンディングノート</h1>
+      <p style={{ textAlign: "center" as const, fontSize: "0.85rem", color: "#6b7280", marginBottom: "2rem" }}>{userName}　{today}時点</p>
+
+      <PrintSection title="医療・介護の希望">
+        <PrintRow label="延命治療" value={draft.life_prolonging} />
+        <PrintRow label="心肺蘇生（CPR）" value={draft.cpr} />
+        <PrintRow label="胃ろう・経管栄養" value={draft.tube_feeding} />
+        <PrintRow label="臓器提供" value={draft.organ_donation} />
+        <PrintRow label="臓器提供詳細" value={draft.organ_donation_detail} />
+        <PrintRow label="介護の希望場所" value={draft.care_location} />
+        <PrintRow label="かかりつけ医" value={draft.primary_doctor} />
+        <PrintRow label="服用中の薬" value={draft.medications} />
+        <PrintRow label="その他備考" value={draft.medical_notes} />
+      </PrintSection>
+
+      <PrintSection title="葬儀の希望">
+        <PrintRow label="葬儀スタイル" value={draft.funeral_style} />
+        <PrintRow label="宗教・宗派" value={draft.religion} />
+        <PrintRow label="流したい音楽" value={draft.funeral_music} />
+        <PrintRow label="その他備考" value={draft.funeral_notes} />
+      </PrintSection>
+
+      {note.bequest_items.length > 0 && (
+        <PrintSection title="形見分けリスト">
+          {note.bequest_items.map(it => (
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.item_name}</strong> → {it.recipient}{it.notes ? `　（${it.notes}）` : ""}
+            </div>
+          ))}
+        </PrintSection>
+      )}
+
+      {(note.digital_assets.length > 0 || note.subscriptions.length > 0) && (
+        <PrintSection title="デジタル資産・サブスクリプション">
+          {note.digital_assets.map(it => (
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.service_name}</strong>{it.account ? ` (${it.account})` : ""}
+              {it.after_death_instruction ? `　死後処理: ${it.after_death_instruction}` : ""}
+            </div>
+          ))}
+          {note.subscriptions.map(it => (
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.service_name}</strong>
+              {it.monthly_fee ? ` 月額${it.monthly_fee.toLocaleString()}円` : ""}
+              {it.cancellation_method ? `　解約: ${it.cancellation_method}` : ""}
+            </div>
+          ))}
+        </PrintSection>
+      )}
+
+      {note.emergency_contacts.length > 0 && (
+        <PrintSection title="緊急連絡先">
+          {[...note.emergency_contacts].sort((a, b) => a.priority - b.priority).map(it => (
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.name}</strong>{it.relationship ? ` (${it.relationship})` : ""}
+              {it.phone ? `　📞 ${it.phone}` : ""}
+              {it.email ? `　✉ ${it.email}` : ""}
+            </div>
+          ))}
+        </PrintSection>
+      )}
+
+      {note.pets.length > 0 && (
+        <PrintSection title="ペット">
+          {note.pets.map(it => (
+            <div key={it.id} style={{ fontSize: "0.88rem", padding: "0.25rem 0", borderBottom: "1px solid #f3f4f6" }}>
+              <strong>{it.name}</strong>{it.species ? ` (${it.species})` : ""}
+              {it.caretaker ? `　引き継ぎ先: ${it.caretaker}` : ""}
+              {it.medical_info ? `　医療: ${it.medical_info}` : ""}
+            </div>
+          ))}
+        </PrintSection>
+      )}
+
+      {draft.family_message && (
+        <PrintSection title="家族へのメッセージ">
+          <p style={{ fontSize: "0.9rem", lineHeight: 2, whiteSpace: "pre-wrap" as const }}>{draft.family_message}</p>
+        </PrintSection>
+      )}
+
+      <p style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "2rem", textAlign: "center" as const }}>
+        ※ このドキュメントはデジタル墓誌サービスのエンディングノートから出力されました。
+      </p>
     </div>
   );
 }

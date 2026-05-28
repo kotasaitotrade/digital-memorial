@@ -655,6 +655,62 @@ class TestChecklist:
 
 
 # ═══════════════════════════════════════════════════════════════
+# 遺言書シミュレーター
+# ═══════════════════════════════════════════════════════════════
+
+class TestWillSimulator:
+    def _setup(self, client):
+        plan_id = client.post("/api/estate-plans", json={"title": "遺言テスト"}).json()["id"]
+        client.post(f"/api/estate-plans/{plan_id}/family", json={
+            "members": [
+                {"name": "配偶者", "relationship": "spouse"},
+                {"name": "長男", "relationship": "child"},
+            ]
+        })
+        return plan_id
+
+    def test_get_will_empty(self, auth_client):
+        plan_id = self._setup(auth_client)
+        res = auth_client.get(f"/api/estate-plans/{plan_id}/will")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["estate_plan_id"] == plan_id
+        assert data["allocations"] == {}
+        assert data["memo"] is None
+
+    def test_save_and_get_will(self, auth_client):
+        plan_id = self._setup(auth_client)
+        payload = {"allocations": {"1": 30000000, "2": 10000000}, "memo": "家族へのメッセージ"}
+        res = auth_client.put(f"/api/estate-plans/{plan_id}/will", json=payload)
+        assert res.status_code == 200
+        data = res.json()
+        assert data["allocations"] == {"1": 30000000, "2": 10000000}
+        assert data["memo"] == "家族へのメッセージ"
+
+        res2 = auth_client.get(f"/api/estate-plans/{plan_id}/will")
+        assert res2.status_code == 200
+        assert res2.json()["allocations"] == {"1": 30000000, "2": 10000000}
+
+    def test_update_will(self, auth_client):
+        plan_id = self._setup(auth_client)
+        auth_client.put(f"/api/estate-plans/{plan_id}/will", json={"allocations": {"1": 10000000}, "memo": None})
+        res = auth_client.put(f"/api/estate-plans/{plan_id}/will", json={"allocations": {"1": 20000000, "2": 5000000}, "memo": "更新"})
+        assert res.status_code == 200
+        assert res.json()["allocations"] == {"1": 20000000, "2": 5000000}
+        assert res.json()["memo"] == "更新"
+
+    def test_will_access_other_user_404(self, auth_client, second_auth_client):
+        plan_id = self._setup(auth_client)
+        auth_client.put(f"/api/estate-plans/{plan_id}/will", json={"allocations": {"1": 100}, "memo": None})
+        res = second_auth_client.get(f"/api/estate-plans/{plan_id}/will")
+        assert res.status_code == 404
+
+    def test_will_nonexistent_plan_404(self, auth_client):
+        res = auth_client.get("/api/estate-plans/99999/will")
+        assert res.status_code == 404
+
+
+# ═══════════════════════════════════════════════════════════════
 # 公開墓誌（パスワード保護）
 # ═══════════════════════════════════════════════════════════════
 

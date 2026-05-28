@@ -171,3 +171,17 @@ class ChecklistStatusResponse(BaseModel):
     completed_at: Optional[datetime]
     class Config:
         from_attributes = True
+
+
+# ─── 遺言書シミュレーター ─────────────────────────────────────
+
+class WillDraftSave(BaseModel):
+    allocations: dict = {}
+    memo: Optional[str] = None
+
+class WillDraftResponse(BaseModel):
+    estate_plan_id: int
+    allocations: dict
+    memo: Optional[str]
+    class Config:
+        from_attributes = True

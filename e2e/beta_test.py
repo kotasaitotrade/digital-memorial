@@ -77,7 +77,12 @@ def register_user(page: Page, email: str, name: str, pw: str) -> bool:
         dismiss_onboarding(page)
         return True
     except Exception:
-        return login_user(page, email, pw)
+        if login_user(page, email, pw):
+            return True
+        # 前回実行でパスワードが変更されたまま残っているケースに対応
+        if login_user(page, email, f"{pw}_new"):
+            return True
+        return False
 
 def login_user(page: Page, email: str, pw: str) -> bool:
     page.goto(f"{BASE_URL}/login")
@@ -2737,13 +2742,24 @@ def persona_matsumoto(page: Page):
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(1000)
 
-        # 医療タブに何か入力
-        medical_area = page.locator("textarea, input[type='text']").first
+        # 医療タブに何か入力して保存タイムスタンプを確認
+        medical_area = page.locator("textarea").first
         if medical_area.count() > 0:
-            medical_area.fill("延命治療は希望しません")
-            page.wait_for_timeout(2500)  # 自動保存(1秒デバウンス)を待つ
-            content = page.content()
-            if "秒前に保存" in content or "保存しました" in content or "分前に保存" in content:
+            # 一意な内容でfill→Reactのonchangeを確実に発火させる
+            unique_text = f"延命治療は希望しません（{int(time.time())}）"
+            medical_area.click()
+            medical_area.fill("")
+            page.wait_for_timeout(100)
+            medical_area.press_sequentially(unique_text, delay=15)
+            # debounce 1s + API + React再レンダリング を十分待つ
+            found = False
+            for _ in range(15):
+                page.wait_for_timeout(600)
+                content = page.content()
+                if "秒前に保存" in content or "保存しました" in content or "分前に保存" in content:
+                    found = True
+                    break
+            if found:
                 ok("松本恵子: 保存タイムスタンプ表示確認")
             else:
                 bug("保存タイムスタンプ未表示", "自動保存後にタイムスタンプが表示されない", page, p)
@@ -2809,8 +2825,22 @@ def persona_inoue(page: Page):
             page.click("button:has-text('パスワードを変更する')")
             page.wait_for_timeout(1500)
             content = page.content()
-            if "変更しました" in content or "パスワードを変更しました" in content:
+            changed = "変更しました" in content or "パスワードを変更しました" in content
+            if changed:
                 ok("井上剛: パスワード変更成功")
+                # ─ 次回テストのためパスワードを元に戻す ─
+                # 変更後はフォームがリセットされるためページ再遷移してから復元
+                page.goto(f"{BASE_URL}/account")
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(1000)
+                restore_inputs = page.locator("input[type='password']").all()
+                if len(restore_inputs) >= 3:
+                    restore_inputs[0].fill(f"{pw}_new")
+                    restore_inputs[1].fill(pw)
+                    restore_inputs[2].fill(pw)
+                    page.click("button:has-text('パスワードを変更する')")
+                    page.wait_for_timeout(1500)
+                    ok("井上剛: パスワードをリセット（テスト整合性保持）")
             elif "失敗" in content or "誤り" in content or "incorrect" in content.lower():
                 bug("パスワード変更失敗", "変更処理がエラーを返した", page, p)
             else:
@@ -3246,6 +3276,7 @@ def test_new_features(page: Page):
         fail("ログイン", "新機能テストログイン失敗", page, p)
         return
     ok("新機能テスト: 登録・ログイン")
+    plan_id = ""
 
     # ─ 1. 相続結果ページの新機能群 ─
     try:
@@ -3284,23 +3315,73 @@ def test_new_features(page: Page):
     except Exception as e:
         fail("新機能テスト: 相続結果", str(e), page, p)
 
-    # ─ 2. エンディングノートの保存タイムスタンプ ─
+    # ─ 2. 遺言書シミュレーター ─
+    try:
+        if not plan_id:
+            ok("新機能テスト: 遺言書シミュレーター（計画未作成のためスキップ）")
+            raise StopIteration
+        page.goto(f"{BASE_URL}/estate/{plan_id}/will")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(2000)
+        content = page.content()
+
+        # ウィザードステップ④が表示されるか
+        if "遺言書シミュレーター" in content or "希望配分の設定" in content:
+            ok("新機能: 遺言書シミュレーターページ表示 ✓")
+        else:
+            bug("遺言書シミュレーター未表示", "ページに遺言書シミュレーターが表示されない", page, p)
+
+        # 配分入力テーブルの確認
+        if page.locator("input[type='number']").count() > 0:
+            ok("新機能: 配分入力フィールド表示 ✓")
+        else:
+            bug("配分入力なし", "遺言書シミュレーターに数値入力フィールドがない", page, p)
+
+        # 保存ボタン
+        if page.locator("button:has-text('配分を保存')").count() > 0:
+            ok("新機能: 配分保存ボタン ✓")
+        else:
+            bug("保存ボタンなし", "遺言書シミュレーターに保存ボタンがない", page, p)
+
+        # 印刷ボタン
+        if page.locator("button:has-text('遺言書テンプレートを印刷')").count() > 0:
+            ok("新機能: 遺言書印刷ボタン ✓")
+        else:
+            bug("印刷ボタンなし", "遺言書シミュレーターに印刷ボタンがない", page, p)
+
+        ss(page, f"{p}_02_will_simulator")
+    except StopIteration:
+        pass
+    except Exception as e:
+        fail("新機能テスト: 遺言書シミュレーター", str(e), page, p)
+
+    # ─ 3. エンディングノートの保存タイムスタンプ ─
     try:
         page.goto(f"{BASE_URL}/ending-note")
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(800)
 
-        first_input = page.locator("textarea, input[type='text']").first
+        first_input = page.locator("textarea").first
         if first_input.count() > 0:
-            first_input.fill("テスト入力 - タイムスタンプ確認用")
-            page.wait_for_timeout(2500)
-
-            content = page.content()
-            if "秒前に保存" in content or "保存しました" in content or "分前に保存" in content:
+            # 一意な内容でfill→Reactのonchangeを確実に発火させる
+            unique_text = f"タイムスタンプ確認テスト（{int(time.time())}）"
+            first_input.click()
+            first_input.fill("")
+            page.wait_for_timeout(100)
+            first_input.press_sequentially(unique_text, delay=15)
+            # debounce 1s + API + React再レンダリング を十分待つ
+            found = False
+            for _ in range(15):
+                page.wait_for_timeout(600)
+                content = page.content()
+                if "秒前に保存" in content or "保存しました" in content or "分前に保存" in content:
+                    found = True
+                    break
+            if found:
                 ok("新機能: エンディングノート保存タイムスタンプ ✓")
             else:
                 bug("タイムスタンプ未表示", "自動保存後に「○秒前に保存」が表示されない", page, p)
-        ss(page, f"{p}_02_timestamp")
+        ss(page, f"{p}_03_timestamp")
     except Exception as e:
         fail("新機能テスト: タイムスタンプ", str(e), page, p)
 

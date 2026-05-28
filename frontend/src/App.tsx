@@ -11,6 +11,7 @@ import ShukatsuPage from "./pages/ShukatsuPage";
 import EstatePlanListPage, { FamilyInputPage, AssetInputPage, EstateResultPage } from "./pages/EstatePlanPage";
 import EndingNotePage from "./pages/EndingNotePage";
 import AccountSettingsPage from "./pages/AccountSettingsPage";
+import WillSimulatorPage from "./pages/WillSimulatorPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -40,6 +41,7 @@ export default function App() {
       <Route path="/estate/:planId/family" element={<PrivateRoute><FamilyInputPage /></PrivateRoute>} />
       <Route path="/estate/:planId/assets" element={<PrivateRoute><AssetInputPage /></PrivateRoute>} />
       <Route path="/estate/:planId/result" element={<PrivateRoute><EstateResultPage /></PrivateRoute>} />
+      <Route path="/estate/:planId/will" element={<PrivateRoute><WillSimulatorPage /></PrivateRoute>} />
       <Route path="/ending-note" element={<PrivateRoute><EndingNotePage /></PrivateRoute>} />
 
       <Route path="/account" element={<PrivateRoute><AccountSettingsPage /></PrivateRoute>} />

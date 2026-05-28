@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Float, UniqueConstraint, JSON
 from sqlalchemy.orm import relationship as db_relationship
 from sqlalchemy.sql import func
 from ..database import Base
@@ -172,3 +172,21 @@ class ChecklistCompletion(Base):
     task_key = Column(String, nullable=False)
     is_completed = Column(Boolean, default=False)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+
+
+# ─── 遺言書シミュレーター ─────────────────────────────────────
+
+class WillDraft(Base):
+    """相続計画ごとの遺言書シミュレーター（希望配分を保存）"""
+    __tablename__ = "will_drafts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    estate_plan_id = Column(Integer, ForeignKey("estate_plans.id"), unique=True, nullable=False)
+    # {family_member_id: desired_amount, ...}
+    allocations = Column(JSON, default=dict)
+    # 遺言者が書いたカスタム付言事項
+    memo = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    estate_plan = db_relationship("EstatePlan")

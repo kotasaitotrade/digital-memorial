@@ -418,14 +418,23 @@ export function EstateResultPage() {
 
   return (
     <div style={s.page}>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .no-print { display: none !important; }
+          header { display: none !important; }
+        }
+      ` }} />
       <Header user={user} logout={() => { logout(); navigate("/login"); }} backTo={`/estate/${planId}/assets`} backLabel="← 財産の棚卸し" />
       <main style={s.main}>
-        <div style={s.wizardHeader}>
+        <div style={s.wizardHeader} className="no-print">
           <div style={s.wizardStep}>① 家族構成</div>
           <div style={s.wizardArrow}>→</div>
           <div style={s.wizardStep}>② 財産の棚卸し</div>
           <div style={s.wizardArrow}>→</div>
           <div style={{ ...s.wizardStep, ...s.wizardStepActive }}>③ 計算結果</div>
+          <div style={s.wizardArrow}>→</div>
+          <div style={s.wizardStep}>④ 遺言書</div>
         </div>
 
         {result.message ? (
@@ -490,9 +499,11 @@ export function EstateResultPage() {
           ※ 本計算は民法の一般的な規定に基づく参考情報です。特別受益・寄与分・遺産分割協議等により異なる場合があります。正確な判断は専門家にご相談ください。
         </div>
 
-        <div style={s.btnRow}>
-          <Link to={`/estate/${planId}/family`} style={{ ...s.primaryBtn, background: "#64748b", marginRight: "1rem" }}>← 家族構成を修正する</Link>
-          <Link to="/shukatsu" style={s.primaryBtn}>チェックリストに戻る</Link>
+        <div style={s.btnRow} className="no-print">
+          <Link to={`/estate/${planId}/family`} style={{ ...s.primaryBtn, background: "#64748b" }}>← 家族構成を修正する</Link>
+          <Link to={`/estate/${planId}/will`} style={{ ...s.primaryBtn, background: "#7c3aed" }}>④ 遺言書シミュレーター →</Link>
+          <button style={{ ...s.primaryBtn, background: "#0891b2" }} onClick={() => window.print()}>🖨 PDF出力</button>
+          <Link to="/shukatsu" style={{ ...s.primaryBtn, background: "#64748b" }}>チェックリストに戻る</Link>
         </div>
       </main>
     </div>

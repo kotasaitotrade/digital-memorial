@@ -9,7 +9,7 @@ from ..models.user import User
 from ..models.shukatsu import (
     EstatePlan, FamilyMember, Asset,
     EndingNote, BequestItem, DigitalAsset, Subscription, EmergencyContact, Pet,
-    ChecklistCompletion,
+    ChecklistCompletion, WillDraft,
 )
 from ..schemas.shukatsu import (
     EstatePlanCreate, EstatePlanResponse,
@@ -22,6 +22,7 @@ from ..schemas.shukatsu import (
     EmergencyContactCreate, EmergencyContactResponse,
     PetCreate, PetResponse,
     ChecklistToggle, ChecklistStatusResponse,
+    WillDraftSave, WillDraftResponse,
 )
 from ..services.inheritance import calculate_inheritance
 from .auth import get_current_user
@@ -461,3 +462,40 @@ def _get_plan_or_404(db: Session, plan_id: int, user_id: int) -> EstatePlan:
     if not plan:
         raise HTTPException(status_code=404, detail="Estate plan not found")
     return plan
+
+
+# ═══════════════════════════════════════════════════════════
+# 遺言書シミュレーター
+# ═══════════════════════════════════════════════════════════
+
+@router.get("/estate-plans/{plan_id}/will", response_model=WillDraftResponse)
+def get_will(
+    plan_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_plan_or_404(db, plan_id, current_user.id)
+    draft = db.query(WillDraft).filter(WillDraft.estate_plan_id == plan_id).first()
+    if not draft:
+        return WillDraftResponse(estate_plan_id=plan_id, allocations={}, memo=None)
+    return draft
+
+
+@router.put("/estate-plans/{plan_id}/will", response_model=WillDraftResponse)
+def save_will(
+    plan_id: int,
+    data: WillDraftSave,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _get_plan_or_404(db, plan_id, current_user.id)
+    draft = db.query(WillDraft).filter(WillDraft.estate_plan_id == plan_id).first()
+    if draft:
+        draft.allocations = data.allocations
+        draft.memo = data.memo
+    else:
+        draft = WillDraft(estate_plan_id=plan_id, allocations=data.allocations or {}, memo=data.memo)
+        db.add(draft)
+    db.commit()
+    db.refresh(draft)
+    return draft

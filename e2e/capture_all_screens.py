@@ -553,6 +553,33 @@ def s19_ending_message(page: Page):
 # ─────────────────────────────────────────────────────────────
 # S20: 認証ガード・ログアウト
 # ─────────────────────────────────────────────────────────────
+def s21_will_simulator(page: Page, token: str, plan_id: int):
+    print("\n[S21] 遺言書シミュレーター")
+    ensure_login(page)
+    page.goto(f"{BASE_URL}/estate/{plan_id}/will")
+    page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(2000)
+    ss(page, "s21a_will_default")
+
+    # 希望配分を変更（最初の相続人に遺産の6割）
+    inputs = page.locator("input[type='number']")
+    if inputs.count() > 0:
+        first_val = inputs.first.input_value()
+        try:
+            inputs.first.fill(str(int(float(first_val or "0") * 1.2)))
+        except Exception:
+            pass
+        page.wait_for_timeout(800)
+    ss(page, "s21b_will_modified")
+
+    # 付言事項を記入
+    memo_area = page.locator("textarea").first
+    if memo_area.count() > 0:
+        memo_area.fill("家族への感謝を込めて、この遺言書を記します。どうか仲良く過ごしてください。")
+        page.wait_for_timeout(600)
+    ss(page, "s21c_will_memo")
+
+
 def s20_auth_guard(page: Page):
     print("\n[S20] 認証ガード・ログアウト")
     ensure_login(page)
@@ -612,6 +639,7 @@ def main():
         plan_id = s10_family_input(page, token)
         s11_asset_input(page, token, plan_id)
         s12_estate_result(page, token, plan_id)
+        s21_will_simulator(page, token, plan_id)
         s13_ending_medical(page)
         s14_ending_funeral(page)
         s15_ending_bequest(page)

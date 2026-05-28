@@ -1,29 +1,22 @@
 {
   "round": "1",
-  "timestamp": "2026-05-28T11:02:47.627270",
-  "pass": 229,
-  "fail": 1,
+  "timestamp": "2026-05-28T12:53:30.839793",
+  "pass": 236,
+  "fail": 0,
   "bugs": 2,
   "issues": [
     {
       "persona": "matsumoto",
-      "step": "松本恵子: 墓誌作成",
-      "severity": "FAIL",
-      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"textarea[placeholder*='ご家族からのメッセージ']\")\n",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1_fail_1.png"
-    },
-    {
-      "persona": "kobayashi",
-      "step": "公開URLコピーボタンなし",
+      "step": "保存タイムスタンプ未表示",
       "severity": "BUG",
-      "desc": "EditMemorialPageに公開URLコピーボタンがない",
+      "desc": "自動保存後にタイムスタンプが表示されない",
       "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1_bug_1.png"
     },
     {
       "persona": "newfeat",
-      "step": "公開URLコピーボタンなし",
+      "step": "タイムスタンプ未表示",
       "severity": "BUG",
-      "desc": "EditMemorialPageに公開URLをコピーボタンがない",
+      "desc": "自動保存後に「○秒前に保存」が表示されない",
       "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1_bug_2.png"
     }
   ]
