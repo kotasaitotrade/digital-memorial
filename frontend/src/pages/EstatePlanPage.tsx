@@ -299,7 +299,7 @@ export function AssetInputPage() {
         <p style={s.pageSub}>おおよその金額で構いません。正確な評価は専門家にご相談ください。</p>
 
         {/* 資産 */}
-        {["real_estate", "bank_account", "securities", "life_insurance", "retirement", "other"].map((type) => {
+        {["real_estate", "bank_account", "securities", "life_insurance", "retirement", "pension", "farmland", "other"].map((type) => {
           const typeAssets = assets.map((a, i) => ({ a, i })).filter(({ a }) => a.asset_type === type);
           return (
             <Section key={type} title={`${ASSET_TYPE_LABELS[type]}`}>
