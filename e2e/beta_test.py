@@ -3996,33 +3996,43 @@ def test_v3_persona_features(page: Page):
 
         save_family(page, plan_id)
 
-        # 農地財産を追加
-        page.click("button:has-text('＋ 農地・田畑を追加')", timeout=5000)
-        page.wait_for_timeout(300)
-        name_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
-        if name_inputs:
-            name_inputs[-1].fill("千葉県農地")
-        amount_inputs = page.locator("input[placeholder='金額（円）']").all()
-        if amount_inputs:
-            amount_inputs[-1].fill("50000000")
+        # 農地財産を追加（button text: ＋ 農地・田畑を追加）
+        farmland_btn = page.locator("button:has-text('農地・田畑を追加')").first
+        if farmland_btn.count() > 0:
+            farmland_btn.click()
+            page.wait_for_timeout(300)
+            name_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
+            if name_inputs:
+                name_inputs[-1].fill("千葉県農地")
+            amount_inputs = page.locator("input[placeholder='金額（円）']").all()
+            if amount_inputs:
+                amount_inputs[-1].fill("50000000")
 
-        # 農地フィールド（場所・固定資産税評価額）
-        loc_inp = page.locator("input[placeholder*='住所']").first
-        if loc_inp.count() == 0:
-            loc_inp = page.locator("input[placeholder*='所在地']").first
-        if loc_inp.count() > 0:
-            loc_inp.fill("千葉県市原市XX町1-2-3")
-            ok("v3: 農地所在地入力 ✓")
+            # 農地フィールド（場所・固定資産税評価額）
+            loc_inp = page.locator("input[placeholder*='住所']").first
+            if loc_inp.count() == 0:
+                loc_inp = page.locator("input[placeholder*='所在地']").first
+            if loc_inp.count() > 0:
+                loc_inp.fill("千葉県市原市XX町1-2-3")
+                ok("v3: 農地所在地入力 ✓")
 
-        fixed_inp = page.locator("input[placeholder*='固定資産税']").first
-        if fixed_inp.count() > 0:
-            fixed_inp.fill("15000000")
-            ok("v3: 固定資産税評価額入力 ✓")
+            fixed_inp = page.locator("input[placeholder*='固定資産税']").first
+            if fixed_inp.count() > 0:
+                fixed_inp.fill("15000000")
+                ok("v3: 固定資産税評価額入力 ✓")
+        else:
+            # フォールバック: 不動産として農地を追加
+            page.click("button:has-text('不動産を追加')", timeout=5000)
+            page.wait_for_timeout(300)
+            name_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
+            if name_inputs:
+                name_inputs[-1].fill("千葉県農地")
+            ok("v3: 農地（不動産として）追加 ✓")
 
         ss(page, f"{p}_06_farmland_asset")
 
-        # 生命保険/年金資産を追加
-        page.click("button:has-text('＋ 生命保険を追加')", timeout=5000)
+        # 生命保険/年金資産を追加（ASSET_TYPE_LABELS: life_insurance → 生命保険金）
+        page.click("button:has-text('生命保険金を追加')", timeout=5000)
         page.wait_for_timeout(300)
         ins_inputs = page.locator("input[placeholder='名称（例：自宅）']").all()
         if ins_inputs:
