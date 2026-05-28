@@ -2,7 +2,7 @@
 全画面スクリーンショット取得スクリプト（仕様書用）
 実際のコンポーネントの正確なセレクターを使用
 """
-import os
+import os, time
 import requests
 from playwright.sync_api import sync_playwright, Page
 
@@ -11,9 +11,11 @@ API_URL  = "http://localhost:8000/api"
 SS_DIR   = os.path.join(os.path.dirname(__file__), "screenshots")
 os.makedirs(SS_DIR, exist_ok=True)
 
-TEST_EMAIL    = "spec_capture@example.com"
+# 毎回フレッシュなユーザーを使うことでデータの蓄積を防ぐ
+_TS          = int(time.time())
+TEST_EMAIL    = f"spec_{_TS}@example.com"
 TEST_PASSWORD = "spectest123"
-TEST_NAME     = "仕様書撮影ユーザー"
+TEST_NAME     = "佐藤 恵子"
 
 def ss(page: Page, name: str, full: bool = True):
     path = os.path.join(SS_DIR, f"{name}.png")
@@ -79,8 +81,8 @@ def s02_register(page: Page):
     ss(page, "s02a_register")
 
     # 入力済み状態（placeholderから特定）
-    page.locator("input[placeholder='山田 花子']").fill("テスト 太郎")
-    page.locator("input[type='email']").fill("sample@example.com")
+    page.locator("input[placeholder='山田 花子']").fill("佐藤 恵子")
+    page.locator("input[type='email']").fill("sato.keiko@example.com")
     page.locator("input[type='password']").fill("password123")
     ss(page, "s02b_register_filled")
 
@@ -98,11 +100,11 @@ def s03_dashboard(page: Page, token: str):
     # 墓誌を作成
     h = {"Authorization": f"Bearer {token}"}
     res = requests.post(f"{API_URL}/memorials", headers=h, json={
-        "name": "山田 太郎",
-        "birth_date": "1940-03-15",
-        "death_date": "2024-01-10",
-        "biography": "東京都生まれ。会社員として40年間勤務。家族を愛した。",
-        "slug": f"yamada-taro-{TEST_EMAIL.split('@')[0]}"
+        "name": "田中 正雄",
+        "birth_date": "1938-05-22",
+        "death_date": "2024-03-08",
+        "biography": "大阪府生まれ。中学校の教師として38年間勤務。書道と囲碁を愛した。",
+        "slug": f"tanaka-masao-{_TS}"
     })
     if res.status_code in (200, 201):
         page.reload()
@@ -477,7 +479,7 @@ def s17_ending_contacts(page: Page):
     # 連絡先フォームを探して入力
     name_input = page.locator("input[placeholder*='名前'], input[placeholder*='氏名']").first
     if name_input.count() > 0:
-        name_input.fill("山田 次郎")
+        name_input.fill("鈴木 雄介")
     # 続柄
     rel_input = page.locator("input[placeholder*='続柄'], input[placeholder*='関係']").first
     if rel_input.count() > 0:
