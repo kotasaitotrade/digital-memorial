@@ -1,0 +1,23 @@
+{
+  "round": "1779961067",
+  "timestamp": "2026-05-28T18:43:12.315224",
+  "pass": 259,
+  "fail": 1,
+  "bugs": 1,
+  "issues": [
+    {
+      "persona": "newimpl",
+      "step": "リマインダートグルなし",
+      "severity": "BUG",
+      "desc": "リマインダー設定のチェックボックスが見つからない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779961067_bug_1.png"
+    },
+    {
+      "persona": "newimpl",
+      "step": "遺言書テキストプレビューテスト",
+      "severity": "FAIL",
+      "desc": "Locator.click: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('遺言書テキストをプレビュー'), button:has",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779961067_fail_1.png"
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "round": "1779978179",
+  "timestamp": "2026-05-28T23:28:51.998677",
+  "pass": 287,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "v3feat",
+      "step": "v3: 農地・保険フィールドテスト",
+      "severity": "FAIL",
+      "desc": "Page.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('＋ 生命保険を追加')\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779978179_fail_1.png"
+    }
+  ]
+}

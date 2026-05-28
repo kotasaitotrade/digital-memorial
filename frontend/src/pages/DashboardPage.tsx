@@ -122,6 +122,28 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 完了率に応じたコーチングメッセージ */}
+        {!isSimple && checklistTotal > 0 && (
+          <div style={{
+            background: completionPct >= 80 ? "#f0faf3" : completionPct >= 40 ? "#fffbeb" : "#fef2f2",
+            border: `1px solid ${completionPct >= 80 ? "var(--green-400)" : completionPct >= 40 ? "#fcd34d" : "#fca5a5"}`,
+            borderRadius: 10, padding: "0.85rem 1.1rem", marginBottom: "1.25rem",
+            display: "flex", alignItems: "center", gap: "0.75rem", fontSize: "0.875rem",
+          }}>
+            <span style={{ fontSize: "1.25rem", flexShrink: 0 }}>
+              {completionPct >= 80 ? "🎉" : completionPct >= 40 ? "💪" : "🌱"}
+            </span>
+            <div>
+              <span style={{ fontWeight: 600, color: completionPct >= 80 ? "var(--green-800)" : completionPct >= 40 ? "#92400e" : "#991b1b" }}>
+                {completionPct >= 80 ? "素晴らしい！終活の準備がよく進んでいます" : completionPct >= 40 ? "着実に前進中！引き続き終活を進めましょう" : "終活の第一歩を踏み出しましょう"}
+              </span>
+              <span style={{ color: "#6b7280", marginLeft: "0.4rem" }}>
+                {completionPct >= 80 ? "— 残り項目を確認して完成させましょう" : completionPct >= 40 ? `— あと${checklistTotal - checklistDone}項目が未完了です` : "— まずは「終活ノートを開く」からスタート"}
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* かんたんモード時のクイックアクション（田中幸子・藤田美香 要望） */}
         {isSimple && (
           <div style={s.quickActions}>

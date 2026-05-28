@@ -1,0 +1,16 @@
+{
+  "round": "1779961513",
+  "timestamp": "2026-05-28T18:50:37.562298",
+  "pass": 262,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "newimpl",
+      "step": "リマインダー設定テスト",
+      "severity": "FAIL",
+      "desc": "Locator.click: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('保存')\").first\n    - locator ",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779961513_fail_1.png"
+    }
+  ]
+}

@@ -1,23 +1,8 @@
 {
   "round": "1",
-  "timestamp": "2026-05-28T12:53:30.839793",
-  "pass": 236,
+  "timestamp": "2026-05-29T04:38:30.421006",
+  "pass": 293,
   "fail": 0,
-  "bugs": 2,
-  "issues": [
-    {
-      "persona": "matsumoto",
-      "step": "保存タイムスタンプ未表示",
-      "severity": "BUG",
-      "desc": "自動保存後にタイムスタンプが表示されない",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1_bug_1.png"
-    },
-    {
-      "persona": "newfeat",
-      "step": "タイムスタンプ未表示",
-      "severity": "BUG",
-      "desc": "自動保存後に「○秒前に保存」が表示されない",
-      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1_bug_2.png"
-    }
-  ]
+  "bugs": 0,
+  "issues": []
 }
