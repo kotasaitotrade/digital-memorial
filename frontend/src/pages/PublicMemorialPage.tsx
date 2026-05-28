@@ -36,6 +36,15 @@ export default function PublicMemorialPage() {
 
   useEffect(() => { fetchMemorial(); }, [slug]);
 
+  useEffect(() => {
+    if (memorial) {
+      document.title = `${memorial.name} | Digital Memorial`;
+    } else {
+      document.title = "Digital Memorial";
+    }
+    return () => { document.title = "Digital Memorial"; };
+  }, [memorial]);
+
   // キーボードで lightbox を閉じる
   useEffect(() => {
     if (!lightbox) return;
@@ -91,6 +100,17 @@ export default function PublicMemorialPage() {
 
   const images = memorial.media.filter((m) => m.media_type === "image");
 
+  // アルバム名でグルーピング（未設定はデフォルトグループへ）
+  const albumGroups: Record<string, typeof images> = {};
+  images.forEach((m) => {
+    const key = m.album_name || "__default__";
+    if (!albumGroups[key]) albumGroups[key] = [];
+    albumGroups[key].push(m);
+  });
+  const albumKeys = Object.keys(albumGroups).sort((a, b) =>
+    a === "__default__" ? 1 : b === "__default__" ? -1 : a.localeCompare(b, "ja")
+  );
+
   return (
     <>
       <div style={s.page}>
@@ -125,23 +145,43 @@ export default function PublicMemorialPage() {
           {images.length > 0 && (
             <section style={s.section}>
               <SectionTitle>思い出</SectionTitle>
-              <div style={{ ...s.gallery, ...(images.length === 1 ? s.gallerySingle : {}) }}>
-                {images.map((m) => (
-                  <div
-                    key={m.id}
-                    style={s.galleryItem}
-                    onClick={() => setLightbox(m.file_path)}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <img src={m.file_path} alt={m.caption ?? ""} style={s.galleryImg} loading="lazy" />
-                    <div style={s.galleryOverlay}>
-                      <span style={s.galleryZoom}>🔍</span>
+              {albumKeys.map((key) => {
+                const group = albumGroups[key];
+                const isDefault = key === "__default__";
+                const hasMultipleAlbums = albumKeys.length > 1 || !isDefault;
+                return (
+                  <div key={key} style={hasMultipleAlbums && !isDefault ? s.albumGroup : {}}>
+                    {!isDefault && <h3 style={s.albumTitle}>{key}</h3>}
+                    <div style={{ ...s.gallery, ...(group.length === 1 ? s.gallerySingle : {}) }}>
+                      {group.map((m) => (
+                        <div
+                          key={m.id}
+                          style={s.galleryItem}
+                          onClick={() => setLightbox(m.file_path)}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <img src={m.file_path} alt={m.caption ?? ""} style={s.galleryImg} loading="lazy" />
+                          <div style={s.galleryOverlay}>
+                            <span style={s.galleryZoom}>🔍</span>
+                          </div>
+                          {(m.caption || m.taken_at || m.location || m.episode) && (
+                            <div style={s.galleryMeta}>
+                              {m.caption && <p style={s.galleryCaption}>{m.caption}</p>}
+                              {(m.taken_at || m.location) && (
+                                <p style={s.gallerySubMeta}>
+                                  {[m.taken_at, m.location].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
+                              {m.episode && <p style={s.galleryEpisode}>{m.episode}</p>}
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
-                    {m.caption && <p style={s.galleryCaption}>{m.caption}</p>}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </section>
           )}
 
@@ -218,7 +258,12 @@ const s: Record<string, React.CSSProperties> = {
   galleryImg: { width: "100%", aspectRatio: "1", objectFit: "cover", display: "block", transition: "transform 0.3s ease" },
   galleryOverlay: { position: "absolute", inset: 0, background: "rgba(0,0,0,0)", display: "flex", alignItems: "center", justifyContent: "center", transition: "background 0.2s ease" },
   galleryZoom: { fontSize: "1.5rem", opacity: 0, transition: "opacity 0.2s" },
-  galleryCaption: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.5rem", background: "linear-gradient(transparent, rgba(0,0,0,0.5))", fontSize: "0.75rem", color: "#fff", textAlign: "center" },
+  galleryMeta: { position: "absolute", bottom: 0, left: 0, right: 0, padding: "0.4rem 0.5rem 0.5rem", background: "linear-gradient(transparent, rgba(0,0,0,0.65))" },
+  galleryCaption: { fontSize: "0.75rem", color: "#fff", textAlign: "center", margin: 0 },
+  gallerySubMeta: { fontSize: "0.65rem", color: "rgba(255,255,255,0.75)", textAlign: "center", margin: "0.15rem 0 0" },
+  galleryEpisode: { fontSize: "0.68rem", color: "rgba(255,255,255,0.7)", textAlign: "center", margin: "0.15rem 0 0", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" as const, overflow: "hidden" },
+  albumGroup: { marginBottom: "2rem" },
+  albumTitle: { fontSize: "0.85rem", fontWeight: 600, color: "var(--gray-600)", letterSpacing: "0.05em", marginBottom: "0.75rem", borderLeft: "3px solid var(--green-700)", paddingLeft: "0.6rem" },
 
   footer: { textAlign: "center", padding: "3rem 2rem 4rem", borderTop: "1px solid var(--sand-300)", marginTop: "1rem" },
   footerLogo: { fontFamily: "var(--font-serif)", fontSize: "1rem", fontWeight: 700, color: "var(--green-900)", marginBottom: "0.3rem" },
