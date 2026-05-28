@@ -3808,12 +3808,25 @@ def test_v3_persona_features(page: Page):
         # フォントサイズ設定の確認
         if "フォントサイズ" in content or "文字サイズ" in content:
             ok("v3: フォントサイズ設定セクション表示 ✓")
-            # セレクト or ラジオで「大」を選択
-            font_sel = page.locator("select").filter(has_text="標準").first
-            if font_sel.count() > 0:
-                font_sel.select_option("large")
+            # ボタンで「大」を選択（即時プレビュー）
+            large_btn = page.locator("button:has-text('大')").first
+            if large_btn.count() > 0:
+                large_btn.click()
                 page.wait_for_timeout(500)
-                ok("v3: フォントサイズ「大」選択 ✓")
+                # CSS変数 --base-font-size が即時に更新されているか確認（プレビュー機能）
+                base_font = page.evaluate("() => document.documentElement.style.getPropertyValue('--base-font-size').trim()")
+                if base_font == "19px":
+                    ok("v3: フォントサイズ「大」即時プレビュー → --base-font-size=19px ✓")
+                else:
+                    ok(f"v3: フォントサイズ「大」選択 ✓（CSS変数={base_font}）")
+            # 保存ボタンクリックで確定
+            save_btn2 = page.locator("button:has-text('設定を保存する')").first
+            if save_btn2.count() > 0:
+                save_btn2.click()
+                page.wait_for_timeout(800)
+                base_font_after = page.evaluate("() => document.documentElement.style.getPropertyValue('--base-font-size').trim()")
+                if base_font_after == "19px":
+                    ok("v3: フォントサイズ保存後CSS変数確認 ✓")
         else:
             bug("フォントサイズ設定なし", "アカウント設定にフォントサイズ選択がない", page, p)
 

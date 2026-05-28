@@ -59,6 +59,11 @@ export default function AccountSettingsPage() {
     }
   }, [user]);
 
+  // フォントサイズ変更時に即時プレビュー
+  useEffect(() => {
+    applyFontSize(fontSize);
+  }, [fontSize]);
+
   // ─── パスワード変更 ───
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
