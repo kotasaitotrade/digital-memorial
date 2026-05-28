@@ -81,6 +81,19 @@ def register_user(page: Page, email: str, name: str, pw: str) -> bool:
             return True
         # 前回実行でパスワードが変更されたまま残っているケースに対応
         if login_user(page, email, f"{pw}_new"):
+            # API経由でパスワードを元に戻しておく（以降のテストで正しいPWを使えるように）
+            try:
+                token = api_login(email, f"{pw}_new")
+                if token:
+                    requests.patch(
+                        f"{API_URL}/auth/password",
+                        json={"current_password": f"{pw}_new", "new_password": pw},
+                        headers={"Authorization": f"Bearer {token}"},
+                        timeout=5
+                    )
+                    print(f"    ℹ️ 汚染パスワードをAPIでリセット: {pw}")
+            except Exception:
+                pass
             return True
         return False
 
