@@ -35,6 +35,7 @@ export interface Memorial {
   qr_code_path?: string;
   created_at: string;
   media: MemorialMedia[];
+  view_count?: number;
 }
 
 export interface MemorialPublic {

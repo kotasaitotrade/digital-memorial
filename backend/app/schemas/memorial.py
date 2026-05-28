@@ -50,6 +50,7 @@ class MemorialResponse(BaseModel):
     qr_code_path: Optional[str]
     created_at: datetime
     media: List[MemorialMediaResponse] = []
+    view_count: Optional[int] = 0
 
     class Config:
         from_attributes = True

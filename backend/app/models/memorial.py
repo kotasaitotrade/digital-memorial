@@ -56,3 +56,11 @@ class MemorialMedia(Base):
     media_is_public = Column(Boolean, default=True)               # 写真単位の公開/非公開
 
     memorial = relationship("Memorial", back_populates="media")
+
+
+class MemorialView(Base):
+    __tablename__ = "memorial_views"
+
+    id = Column(Integer, primary_key=True, index=True)
+    memorial_id = Column(Integer, ForeignKey("memorials.id"), nullable=False)
+    viewed_at = Column(DateTime(timezone=True), server_default=func.now())

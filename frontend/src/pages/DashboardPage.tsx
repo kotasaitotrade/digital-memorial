@@ -288,6 +288,7 @@ function MemorialCard({ memorial: m, onQR, onDelete }: { memorial: Memorial; onQ
         <h3 style={s.cardName}>{m.name}</h3>
         {m.birth_date && m.death_date && <p style={s.cardDates}>{m.birth_date} 〜 {m.death_date}</p>}
         {m.biography && <p style={s.cardBio}>{m.biography.slice(0, 55)}{m.biography.length > 55 && "…"}</p>}
+        {(m.view_count ?? 0) > 0 && <p style={s.viewCount}>👁 {m.view_count}回閲覧</p>}
       </div>
       <div style={s.cardFooter}>
         <a href={`/m/${m.slug}`} target="_blank" rel="noreferrer" style={s.btnView}>閲覧</a>
@@ -350,6 +351,7 @@ const s: Record<string, React.CSSProperties> = {
   cardName: { fontFamily: "var(--font-serif)", fontSize: "1.1rem", fontWeight: 700, marginBottom: "0.3rem" },
   cardDates: { fontSize: "0.78rem", color: "var(--gray-500)", marginBottom: "0.5rem" },
   cardBio: { fontSize: "0.82rem", color: "var(--gray-500)", lineHeight: 1.6 },
+  viewCount: { fontSize: "0.75rem", color: "var(--gray-400)", marginTop: "0.4rem" },
   cardFooter: { padding: "0.75rem 1.25rem", borderTop: "1px solid var(--sand-200)", display: "flex", gap: "0.5rem", flexWrap: "wrap" },
   btnView: { padding: "0.3rem 0.8rem", background: "var(--green-800)", color: "#fff", borderRadius: 6, fontSize: "0.78rem", fontWeight: 500 },
   btnEdit: { padding: "0.3rem 0.8rem", background: "var(--sand-200)", color: "var(--gray-700)", borderRadius: 6, fontSize: "0.78rem" },

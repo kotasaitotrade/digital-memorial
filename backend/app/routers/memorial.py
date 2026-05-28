@@ -4,7 +4,7 @@ from typing import List
 import shutil
 import os
 from ..database import get_db
-from ..models.memorial import Memorial, MemorialMedia
+from ..models.memorial import Memorial, MemorialMedia, MemorialView
 from ..models.user import User
 from ..schemas.memorial import MemorialCreate, MemorialUpdate, MemorialResponse, MemorialPublic
 from ..services.auth import get_password_hash, pwd_context
@@ -38,7 +38,14 @@ def create_memorial(data: MemorialCreate, db: Session = Depends(get_db), current
 
 @router.get("/memorials", response_model=List[MemorialResponse])
 def list_memorials(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return db.query(Memorial).filter(Memorial.owner_id == current_user.id).all()
+    memorials = db.query(Memorial).filter(Memorial.owner_id == current_user.id).all()
+    result = []
+    for m in memorials:
+        count = db.query(MemorialView).filter(MemorialView.memorial_id == m.id).count()
+        d = MemorialResponse.model_validate(m).model_dump()
+        d["view_count"] = count
+        result.append(d)
+    return result
 
 
 @router.get("/memorials/{memorial_id}", response_model=MemorialResponse)
@@ -46,7 +53,10 @@ def get_memorial(memorial_id: int, db: Session = Depends(get_db), current_user: 
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
-    return memorial
+    count = db.query(MemorialView).filter(MemorialView.memorial_id == memorial_id).count()
+    d = MemorialResponse.model_validate(memorial).model_dump()
+    d["view_count"] = count
+    return d
 
 
 @router.put("/memorials/{memorial_id}", response_model=MemorialResponse)
@@ -82,7 +92,18 @@ def view_memorial_public(slug: str, password: str = None, db: Session = Depends(
     if not memorial.is_public:
         if not memorial.password_hash or not password or not pwd_context.verify(password, memorial.password_hash):
             raise HTTPException(status_code=403, detail="Password required")
+    db.add(MemorialView(memorial_id=memorial.id))
+    db.commit()
     return memorial
+
+
+@router.get("/memorials/{memorial_id}/view-count")
+def get_view_count(memorial_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
+    if not memorial:
+        raise HTTPException(status_code=404, detail="Memorial not found")
+    count = db.query(MemorialView).filter(MemorialView.memorial_id == memorial_id).count()
+    return {"view_count": count}
 
 
 @router.post("/memorials/{memorial_id}/media")
