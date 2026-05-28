@@ -3514,8 +3514,8 @@ def test_new_impl_features(page: Page):
             bug("解除条件ラジオなし", "解除条件のラジオボタンが表示されない", page, p)
 
         # 信頼できる人を追加
-        name_inp = page.locator("input[placeholder='お名前']").first
-        email_inp = page.locator("input[placeholder='メールアドレス']").first
+        name_inp = page.locator("input[placeholder='山田 太郎']").first
+        email_inp = page.locator("input[placeholder='taro@example.com']").first
         if name_inp.count() > 0 and email_inp.count() > 0:
             name_inp.fill("テスト 信頼人")
             email_inp.fill("trusted_test@example.com")

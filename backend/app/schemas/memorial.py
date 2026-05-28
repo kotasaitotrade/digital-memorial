@@ -8,6 +8,10 @@ class MemorialMediaResponse(BaseModel):
     file_path: str
     media_type: str
     caption: Optional[str]
+    album_name: Optional[str]
+    taken_at: Optional[str]
+    location: Optional[str]
+    episode: Optional[str]
     order: int
 
     class Config:

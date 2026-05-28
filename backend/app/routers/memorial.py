@@ -113,14 +113,16 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
 
 
 @router.patch("/memorials/{memorial_id}/media/{media_id}")
-def update_media_caption(memorial_id: int, media_id: int, caption: str = Body(..., embed=True), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_media(memorial_id: int, media_id: int, body: dict = Body(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     memorial = db.query(Memorial).filter(Memorial.id == memorial_id, Memorial.owner_id == current_user.id).first()
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
     media = db.query(MemorialMedia).filter(MemorialMedia.id == media_id, MemorialMedia.memorial_id == memorial_id).first()
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
-    media.caption = caption
+    for field in ("caption", "album_name", "taken_at", "location", "episode"):
+        if field in body:
+            setattr(media, field, body[field])
     db.commit()
     db.refresh(media)
     return media

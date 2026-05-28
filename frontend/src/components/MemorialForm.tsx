@@ -37,6 +37,10 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
   const [captions, setCaptions] = useState<Record<number, string>>(
     Object.fromEntries((initial?.media ?? []).map((m) => [m.id, m.caption ?? ""]))
   );
+  const [albumMeta, setAlbumMeta] = useState<Record<number, { album_name: string; taken_at: string; location: string; episode: string; }>>(
+    Object.fromEntries((initial?.media ?? []).map((m) => [m.id, { album_name: m.album_name ?? "", taken_at: m.taken_at ?? "", location: m.location ?? "", episode: m.episode ?? "" }]))
+  );
+  const [expandedMedia, setExpandedMedia] = useState<Record<number, boolean>>({});
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -80,6 +84,7 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
         const newMedia = res.data;
       setMediaList((prev) => [...prev, newMedia]);
       setCaptions((prev) => ({ ...prev, [newMedia.id]: newMedia.caption ?? "" }));
+      setAlbumMeta((prev) => ({ ...prev, [newMedia.id]: { album_name: "", taken_at: "", location: "", episode: "" } }));
       }
     } catch {
       setError("写真のアップロードに失敗しました");
@@ -96,9 +101,13 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
     setCaptions((prev) => { const n = { ...prev }; delete n[mediaId]; return n; });
   };
 
-  const handleCaptionBlur = async (mediaId: number) => {
+  const handleMediaMetaBlur = async (mediaId: number) => {
     if (!savedId) return;
-    await api.patch(`/memorials/${savedId}/media/${mediaId}`, { caption: captions[mediaId] ?? "" });
+    const meta = albumMeta[mediaId] ?? {};
+    await api.patch(`/memorials/${savedId}/media/${mediaId}`, {
+      caption: captions[mediaId] ?? "",
+      ...meta,
+    });
   };
 
   return (
@@ -162,14 +171,40 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
                       onClick={() => handleDeleteMedia(m.id)}
                       title="削除"
                     >✕</button>
+                    <button
+                      type="button"
+                      style={s.mediaEditBtn}
+                      onClick={() => setExpandedMedia((prev) => ({ ...prev, [m.id]: !prev[m.id] }))}
+                      title="詳細編集"
+                    >{expandedMedia[m.id] ? "▲" : "✎"}</button>
                     <input
                       type="text"
                       value={captions[m.id] ?? ""}
                       onChange={(e) => setCaptions((prev) => ({ ...prev, [m.id]: e.target.value }))}
-                      onBlur={() => handleCaptionBlur(m.id)}
+                      onBlur={() => handleMediaMetaBlur(m.id)}
                       placeholder="キャプションを追加"
                       style={s.captionInput}
                     />
+                    {expandedMedia[m.id] && (
+                      <div style={s.metaExpand}>
+                        <input type="text" placeholder="アルバム名（例：家族旅行）" style={s.metaInput}
+                          value={albumMeta[m.id]?.album_name ?? ""}
+                          onChange={(e) => setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], album_name: e.target.value } }))}
+                          onBlur={() => handleMediaMetaBlur(m.id)} />
+                        <input type="text" placeholder="撮影日（例：2010-04-01）" style={s.metaInput}
+                          value={albumMeta[m.id]?.taken_at ?? ""}
+                          onChange={(e) => setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], taken_at: e.target.value } }))}
+                          onBlur={() => handleMediaMetaBlur(m.id)} />
+                        <input type="text" placeholder="撮影場所（例：東京タワー）" style={s.metaInput}
+                          value={albumMeta[m.id]?.location ?? ""}
+                          onChange={(e) => setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], location: e.target.value } }))}
+                          onBlur={() => handleMediaMetaBlur(m.id)} />
+                        <textarea placeholder="エピソード・思い出" style={s.metaTextarea}
+                          value={albumMeta[m.id]?.episode ?? ""}
+                          onChange={(e) => setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], episode: e.target.value } }))}
+                          onBlur={() => handleMediaMetaBlur(m.id)} rows={2} />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -260,8 +295,12 @@ const s: Record<string, React.CSSProperties> = {
   mediaItem: { position: "relative", borderRadius: "var(--radius-sm)", overflow: "hidden" },
   mediaThumb: { width: "100%", aspectRatio: "1", objectFit: "cover", display: "block" },
   mediaDeleteBtn: { position: "absolute", top: 5, right: 5, width: 24, height: 24, background: "rgba(0,0,0,0.55)", color: "#fff", border: "none", borderRadius: "50%", fontSize: "0.65rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
+  mediaEditBtn: { position: "absolute", top: 5, right: 34, width: 24, height: 24, background: "rgba(0,0,0,0.45)", color: "#fff", border: "none", borderRadius: "50%", fontSize: "0.7rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" },
   mediaEmpty: { fontSize: "0.85rem", color: "var(--gray-500)", textAlign: "center", padding: "1rem" },
   captionInput: { width: "100%", padding: "0.3rem 0.4rem", fontSize: "0.72rem", border: "1px solid var(--sand-300)", borderRadius: "0 0 var(--radius-sm) var(--radius-sm)", background: "rgba(255,255,255,0.9)", outline: "none", boxSizing: "border-box" as const },
+  metaExpand: { padding: "0.4rem", background: "#f8f7f4", borderTop: "1px solid var(--sand-300)", display: "flex", flexDirection: "column" as const, gap: "0.3rem" },
+  metaInput: { width: "100%", padding: "0.25rem 0.4rem", fontSize: "0.7rem", border: "1px solid var(--sand-300)", borderRadius: "4px", background: "#fff", outline: "none", boxSizing: "border-box" as const },
+  metaTextarea: { width: "100%", padding: "0.25rem 0.4rem", fontSize: "0.7rem", border: "1px solid var(--sand-300)", borderRadius: "4px", background: "#fff", outline: "none", resize: "none" as const, boxSizing: "border-box" as const },
 
   toggleRow: { display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" },
   toggle: { width: 44, height: 24, borderRadius: 12, position: "relative", transition: "background var(--transition)", cursor: "pointer", flexShrink: 0 },
