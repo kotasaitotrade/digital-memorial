@@ -130,7 +130,17 @@ export default function WillSimulatorPage() {
         <div style={s.sectionBox} className="no-print">
           <div style={s.sectionHead}>
             <span style={s.sectionTitle}>希望配分の設定</span>
-            <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>正味遺産額: {estateValue.toLocaleString()}円</span>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+              <span style={{ fontSize: "0.82rem", color: "#6b7280" }}>正味遺産額: {estateValue.toLocaleString()}円</span>
+              <button
+                style={{ fontSize: "0.75rem", padding: "0.25rem 0.7rem", background: "#f3f4f6", border: "1px solid #d1d5db", borderRadius: 6, cursor: "pointer", color: "#374151" }}
+                onClick={() => {
+                  const legal: Record<string, number> = {};
+                  calc.heirs.forEach((h) => { legal[String(h.id)] = h.share_amount; });
+                  setAllocations(legal);
+                }}
+              >法定相続分に戻す</button>
+            </div>
           </div>
 
           <div style={s.tableWrap}>

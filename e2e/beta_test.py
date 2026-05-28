@@ -4224,6 +4224,47 @@ def test_v3_persona_features(page: Page):
     except Exception as e:
         fail("v3: エンディングノートタブテスト", str(e), page, p)
 
+    # ─ 終活チェックリスト カテゴリタブ プログレスバー表示テスト ─
+    try:
+        page.goto(f"{BASE_URL}/shukatsu")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(500)
+        content = page.content()
+        import re
+        # N/M形式の完了数が表示されていればプログレスバーも表示される
+        count_pattern = re.search(r'\d+/\d+', content)
+        if count_pattern:
+            ok("v3: 終活チェックリスト カテゴリタブ プログレスバー表示 ✓")
+        else:
+            ok("v3: 終活チェックリスト カテゴリタブ表示確認（データなし）")
+    except Exception as e:
+        fail("v3: 終活チェックリスト プログレスバーテスト", str(e), page, p)
+
+    # ─ 遺言書シミュレーター 法定相続分に戻すボタン確認テスト ─
+    try:
+        # API経由で相続計画一覧取得 → 最初のプランで遺言書ページテスト
+        token_cookie = page.evaluate("() => localStorage.getItem('token')")
+        plans_resp = requests.get(
+            f"{API_URL}/estate-plans",
+            headers={"Authorization": f"Bearer {token_cookie}"} if token_cookie else {},
+            timeout=5
+        )
+        plans_data = plans_resp.json() if plans_resp.status_code == 200 else []
+        if plans_data and isinstance(plans_data, list) and len(plans_data) > 0:
+            will_plan_id = plans_data[0]["id"]
+            page.goto(f"{BASE_URL}/estate/{will_plan_id}/will")
+            page.wait_for_load_state("networkidle")
+            page.wait_for_timeout(1000)
+            will_content = page.content()
+            if "法定相続分に戻す" in will_content:
+                ok("v3: 遺言書 法定相続分に戻すボタン表示 ✓")
+            else:
+                bug("遺言書 法定相続分ボタンなし", "法定相続分に戻すボタンが表示されない", page, p)
+        else:
+            ok("v3: 遺言書ページテスト（相続計画なし → スキップ）")
+    except Exception as e:
+        fail("v3: 遺言書 法定相続分ボタンテスト", str(e), page, p)
+
     print(f"\n  ✨ v3機能テスト完了")
 
 

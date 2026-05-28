@@ -132,11 +132,12 @@ export default function ShukatsuPage() {
             {["すべて", ...CATEGORIES].map((cat) => {
               const catItems = cat === "すべて" ? items : items.filter((i) => i.category === cat);
               const catDone = catItems.filter((i) => i.is_completed).length;
+              const catPct = catItems.length > 0 ? Math.round((catDone / catItems.length) * 100) : 0;
               const isActive = activeCategory === cat;
               return (
                 <button
                   key={cat}
-                  style={{ ...s.tab, ...(isActive ? s.tabActive : {}) }}
+                  style={{ ...s.tab, ...(isActive ? s.tabActive : {}), position: "relative", overflow: "hidden", paddingBottom: catItems.length > 0 ? "0.5rem" : undefined }}
                   onClick={() => setActiveCategory(cat)}
                 >
                   {cat}
@@ -144,6 +145,15 @@ export default function ShukatsuPage() {
                     <span style={{ marginLeft: "0.3rem", fontSize: "0.68rem", opacity: 0.85 }}>
                       {catDone}/{catItems.length}
                     </span>
+                  )}
+                  {catItems.length > 0 && (
+                    <span style={{
+                      position: "absolute", bottom: 0, left: 0, height: 3,
+                      width: `${catPct}%`,
+                      background: isActive ? "rgba(255,255,255,0.7)" : GREEN,
+                      borderRadius: "0 2px 2px 0",
+                      transition: "width 0.4s ease",
+                    }} />
                   )}
                 </button>
               );
