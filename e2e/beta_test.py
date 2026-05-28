@@ -3568,16 +3568,17 @@ def test_new_impl_features(page: Page):
         if toggle_divs:
             ok(f"リマインダー設定: トグル {len(toggle_divs)}個確認 ✓")
             toggle_divs[0].click()
-            page.wait_for_timeout(500)
+            # API応答 + React再レンダリング（pointerEvents更新）を十分待つ
+            page.wait_for_timeout(1500)
             ok("リマインダー設定: トグル操作 ✓")
         else:
             bug("リマインダートグルなし", "リマインダー設定のdivトグルが見つからない", page, p)
 
-        # 保存ボタン確認
+        # 保存ボタン確認（通知OFF時はpointerEvents:noneのためforce=True）
         save_btn = page.locator("button:has-text('保存')").first
         if save_btn.count() > 0:
-            save_btn.click()
-            page.wait_for_timeout(1000)
+            save_btn.click(force=True)
+            page.wait_for_timeout(800)
             ok("リマインダー設定: 保存ボタン動作確認 ✓")
         else:
             bug("リマインダー保存ボタンなし", "リマインダー設定に保存ボタンがない", page, p)
