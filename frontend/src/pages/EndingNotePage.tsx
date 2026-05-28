@@ -28,6 +28,23 @@ interface VideoMessage {
 
 const GREEN = "#1a5c38";
 
+function tabHasContent(tab: Tab, draft: Partial<EndingNote>, note: EndingNote | null): boolean {
+  if (!note) return false;
+  switch (tab) {
+    case "医療・介護": return !!(draft.life_prolonging || draft.cpr || draft.organ_donation || draft.care_location || draft.medications || draft.medical_notes);
+    case "葬儀": return !!(draft.funeral_style || draft.funeral_notes || draft.funeral_music || draft.burial_preference || draft.kaimyo_preference);
+    case "形見分け": return (note.bequest_items?.length ?? 0) > 0;
+    case "デジタル資産": return (note.digital_assets?.length ?? 0) > 0 || (note.subscriptions?.length ?? 0) > 0;
+    case "緊急連絡先": return (note.emergency_contacts?.length ?? 0) > 0;
+    case "ペット": return (note.pets?.length ?? 0) > 0;
+    case "お気に入り": return !!(draft.favorite_music || draft.favorite_movies || draft.favorite_foods);
+    case "家族へのメッセージ": return !!(draft.family_message);
+    case "追悼メッセージ": return false;
+    case "ビデオメッセージ": return false;
+    default: return false;
+  }
+}
+
 export default function EndingNotePage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -111,15 +128,19 @@ export default function EndingNotePage() {
       <main style={s.main}>
         {/* タブ（画面のみ） */}
         <div style={s.tabBar} className="no-print">
-          {TABS.map((tab) => (
-            <button
-              key={tab}
-              style={{ ...s.tab, ...(activeTab === tab ? s.tabActive : {}) }}
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
+          {TABS.map((tab) => {
+            const done = tabHasContent(tab, draft, note);
+            return (
+              <button
+                key={tab}
+                style={{ ...s.tab, ...(activeTab === tab ? s.tabActive : {}) }}
+                onClick={() => setActiveTab(tab)}
+              >
+                {done && <span style={{ display: "inline-block", width: 6, height: 6, borderRadius: "50%", background: activeTab === tab ? "#fff" : GREEN, marginRight: "0.3rem", verticalAlign: "middle", flexShrink: 0 }} />}
+                {tab}
+              </button>
+            );
+          })}
         </div>
 
         {/* 各セクション（画面のみ） */}
