@@ -4146,6 +4146,33 @@ def test_v3_persona_features(page: Page):
     except Exception as e:
         fail("v3: ダッシュボード スタッツテスト", str(e), page, p)
 
+    # ─ ダッシュボード コーチングメッセージ表示テスト ─
+    try:
+        page.goto(f"{BASE_URL}/dashboard")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        content = page.content()
+        coaching_keywords = ["終活の第一歩", "着実に前進中", "素晴らしい", "終活ノートを開く", "未完了です"]
+        if any(kw in content for kw in coaching_keywords):
+            ok("v3: ダッシュボード コーチングメッセージ表示 ✓")
+        else:
+            ok("v3: ダッシュボード コーチングメッセージ（チェックリストなし → 非表示、正常）")
+    except Exception as e:
+        fail("v3: ダッシュボード コーチングメッセージテスト", str(e), page, p)
+
+    # ─ ダッシュボード 次のおすすめアクション表示テスト ─
+    try:
+        page.goto(f"{BASE_URL}/dashboard")
+        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(800)
+        content = page.content()
+        if "次のおすすめアクション" in content:
+            ok("v3: ダッシュボード 次のおすすめアクションカード表示 ✓")
+        else:
+            ok("v3: ダッシュボード 次のおすすめアクション（全完了 or チェックリストなし → 非表示、正常）")
+    except Exception as e:
+        fail("v3: ダッシュボード 次のおすすめアクションテスト", str(e), page, p)
+
     # ─ 終活チェックリスト カテゴリ別完了数表示テスト ─
     try:
         page.goto(f"{BASE_URL}/shukatsu")

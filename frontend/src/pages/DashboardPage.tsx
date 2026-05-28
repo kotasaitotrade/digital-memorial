@@ -144,6 +144,20 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 次のおすすめアクション（最優先の未完了タスク） */}
+        {!isSimple && todoItems.length > 0 && completionPct < 100 && (() => {
+          const top = todoItems[0];
+          return (
+            <Link to={top.link} style={s.nextActionCard}>
+              <div style={s.nextActionLeft}>
+                <span style={s.nextActionBadge}>次のおすすめアクション</span>
+                <div style={s.nextActionLabel}>{top.label}</div>
+              </div>
+              <span style={s.nextActionArrow}>→</span>
+            </Link>
+          );
+        })()}
+
         {/* かんたんモード時のクイックアクション（田中幸子・藤田美香 要望） */}
         {isSimple && (
           <div style={s.quickActions}>
@@ -308,6 +322,11 @@ const s: Record<string, React.CSSProperties> = {
   statUnit: { fontSize: "0.72rem", fontWeight: 400, color: "var(--gray-500)", marginLeft: "0.15rem" },
   progressBar: { marginTop: "0.3rem", height: 4, background: "var(--sand-200)", borderRadius: 2, overflow: "hidden" },
   progressFill: { height: "100%", background: "var(--green-700)", borderRadius: 2, transition: "width 0.5s ease" },
+  nextActionCard: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.75rem", background: "var(--white)", border: "2px solid var(--green-400)", borderRadius: 10, padding: "0.9rem 1.1rem", marginBottom: "1.25rem", textDecoration: "none", boxShadow: "0 2px 6px rgba(116,198,157,.2)", transition: "box-shadow var(--transition)" },
+  nextActionLeft: { flex: 1 },
+  nextActionBadge: { display: "inline-block", fontSize: "0.67rem", fontWeight: 700, color: "var(--green-800)", background: "var(--green-100)", borderRadius: 10, padding: "2px 8px", marginBottom: "0.3rem", letterSpacing: "0.03em" },
+  nextActionLabel: { fontSize: "0.9rem", fontWeight: 600, color: "var(--gray-800)" },
+  nextActionArrow: { fontSize: "1.2rem", color: "var(--green-700)", flexShrink: 0 },
   todoCard: { background: "var(--white)", borderRadius: 10, padding: "1.25rem", boxShadow: "var(--shadow-sm)", marginBottom: "1.25rem", border: "1px solid var(--sand-300)" },
   titleRow: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "2rem" },
   pageTitle: { fontFamily: "var(--font-serif)", fontSize: "1.5rem", fontWeight: 700, marginBottom: "0.2rem" },
