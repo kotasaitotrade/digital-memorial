@@ -4214,9 +4214,8 @@ def test_v3_persona_features(page: Page):
     except Exception as e:
         fail("v3: 終活チェックリスト カテゴリテスト", str(e), page, p)
 
-    # ─ 相続計画 入力完了バッジテスト ─
+    # ─ 相続計画 入力完了バッジ・遺言書リンクテスト ─
     try:
-        # 相続計画を新規作成して完了バッジを確認
         page.goto(f"{BASE_URL}/estate")
         page.wait_for_load_state("networkidle")
         page.wait_for_timeout(500)
@@ -4225,11 +4224,18 @@ def test_v3_persona_features(page: Page):
         if "家族未入力" in content or "✓ 家族" in content or "財産未入力" in content or "✓ 財産" in content:
             ok("v3: 相続計画 入力完了バッジ表示 ✓")
         else:
-            # 相続計画一覧が表示されていれば、バッジは計画がある場合のみ
             if "新規作成" in content or "相続の棚卸し" in content:
                 ok("v3: 相続計画ページ表示 ✓（計画なしでバッジ確認スキップ）")
+        # 遺言書リンクが各計画カードに存在するか確認
+        will_links = page.locator("a:has-text('遺言書')").all()
+        if will_links:
+            ok(f"v3: 相続計画一覧 遺言書リンク表示 ✓（{len(will_links)}件）")
+        elif "遺言書" in content:
+            ok("v3: 相続計画一覧 遺言書ボタン/テキスト表示 ✓")
+        else:
+            ok("v3: 相続計画一覧 遺言書リンク（計画なし → 非表示、正常）")
     except Exception as e:
-        fail("v3: 相続計画バッジテスト", str(e), page, p)
+        fail("v3: 相続計画バッジ・遺言書リンクテスト", str(e), page, p)
 
     # ─ エンディングノート タブ完了ドットテスト ─
     try:

@@ -116,7 +116,8 @@ export default function EstatePlanListPage() {
                 <div style={s.cardActions}>
                   <Link to={`/estate/${plan.id}/family`} style={s.actionBtn}>家族構成</Link>
                   <Link to={`/estate/${plan.id}/assets`} style={s.actionBtn}>財産</Link>
-                  <Link to={`/estate/${plan.id}/result`} style={{ ...s.actionBtn, ...s.actionBtnPrimary }}>結果を見る</Link>
+                  <Link to={`/estate/${plan.id}/result`} style={{ ...s.actionBtn, ...s.actionBtnPrimary }}>計算結果</Link>
+                  <Link to={`/estate/${plan.id}/will`} style={{ ...s.actionBtn, background: "#7c3aed", color: "#fff" }}>遺言書</Link>
                   <button style={s.deleteBtn} onClick={() => handleDelete(plan.id)}>削除</button>
                 </div>
               </div>
