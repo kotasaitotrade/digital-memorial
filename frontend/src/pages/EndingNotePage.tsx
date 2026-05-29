@@ -23,6 +23,7 @@ interface VideoMessage {
   description: string | null;
   file_path: string;
   file_size: number | null;
+  duration_seconds: number | null;
   created_at: string;
 }
 
@@ -702,8 +703,7 @@ function ScheduledMessageSection({ messages, onRefresh }: { messages: ScheduledM
     <div style={s.sectionWrap}>
       <h2 style={s.sectionTitle}>追悼メッセージ（予約送信）</h2>
       <p style={s.sectionNote}>
-        あなたが亡くなった後、デジタル遺品鍵が開錠されたタイミングで送信されるメッセージを事前に作成できます。
-        <br />※ メール送信機能は準備中です。メッセージは保存されています。
+        あなたが亡くなった後、デジタル遺品鍵が開錠されたタイミングで自動的にメールが送信されます。大切な方へのメッセージを事前に作成しておきましょう。
       </p>
       {messages.map((msg) => (
         <div key={msg.id} style={s.listCard}>
@@ -772,7 +772,11 @@ function VideoMessageSection({ videos, onRefresh }: { videos: VideoMessage[]; on
           <div style={{ flex: 1 }}>
             <span style={s.listCardTitle}>{v.title}</span>
             {v.description && <div style={s.listCardNote}>{v.description}</div>}
-            {v.file_size && <div style={s.listCardNote}>{(v.file_size / (1024 * 1024)).toFixed(1)} MB · {new Date(v.created_at).toLocaleDateString("ja-JP")}</div>}
+            <div style={s.listCardNote}>
+              {v.file_size ? `${(v.file_size / (1024 * 1024)).toFixed(1)} MB` : ""}
+              {v.duration_seconds ? ` · ${Math.floor(v.duration_seconds / 60)}分${v.duration_seconds % 60}秒` : ""}
+              {" · " + new Date(v.created_at).toLocaleDateString("ja-JP")}
+            </div>
           </div>
           <button style={s.delBtn} onClick={async () => { await api.delete(`/video-messages/${v.id}`); onRefresh(); }}>削除</button>
         </div>

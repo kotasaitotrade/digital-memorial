@@ -32,6 +32,11 @@ from ..schemas.shukatsu import (
     VideoMessageResponse,
 )
 from ..services.inheritance import calculate_inheritance
+from ..services.email import (
+    send_email,
+    make_verification_email,
+    make_scheduled_message_email,
+)
 from .auth import get_current_user
 from ..config import settings
 
@@ -572,7 +577,33 @@ def add_trusted_person(
     db.add(person)
     db.commit()
     db.refresh(person)
+    # メールアドレス確認メールを送信
+    verify_url = (
+        f"{settings.base_url}/api/digital-key/trusted-persons/{person.id}/verify-email"
+        f"?token={person.access_token}"
+    )
+    subj, html, text = make_verification_email(person.name, verify_url)
+    send_email(person.email, subj, html, text)
     return person
+
+
+@router.get("/digital-key/trusted-persons/{person_id}/verify-email")
+def verify_trusted_person_email(person_id: int, token: str, db: Session = Depends(get_db)):
+    """信頼者がメールのリンクをクリックしてアドレスを確認する（認証不要）"""
+    from fastapi.responses import HTMLResponse
+    person = db.query(TrustedPerson).filter(TrustedPerson.id == person_id).first()
+    if not person or person.access_token != token:
+        raise HTTPException(status_code=403, detail="無効なリンクです")
+    if not person.email_verified:
+        person.email_verified = True
+        db.commit()
+    html = """<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#f5f5f5}
+.card{background:#fff;border-radius:12px;padding:40px;text-align:center;box-shadow:0 2px 12px rgba(0,0,0,.1)}
+h2{color:#2d6a4f}p{color:#555}</style></head>
+<body><div class="card"><h2>✅ メールアドレスが確認されました</h2>
+<p>Digital Memorial の信頼者として登録が完了しました。<br>このページは閉じてください。</p></div></body></html>"""
+    return HTMLResponse(content=html)
 
 
 @router.delete("/digital-key/trusted-persons/{person_id}", status_code=204)
@@ -614,8 +645,25 @@ def request_unlock(
             key.is_unlocked = True
             key.unlocked_at = datetime.now(timezone.utc)
             db.commit()
+            # 解除成立：予約メッセージを全件送信
+            _send_scheduled_messages_on_unlock(db, key.user_id)
     db.refresh(person)
     return {"message": "申請を受け付けました", "is_unlocked": person.digital_key.is_unlocked}
+
+
+def _send_scheduled_messages_on_unlock(db: Session, user_id: int) -> None:
+    """デジタル鍵解除時に未送信の予約メッセージを一括送信"""
+    messages = db.query(ScheduledMessage).filter(
+        ScheduledMessage.user_id == user_id,
+        ScheduledMessage.is_sent == False,
+    ).all()
+    for msg in messages:
+        subj, html, text = make_scheduled_message_email(msg.recipient_name, msg.subject, msg.body)
+        ok = send_email(msg.recipient_email, subj, html, text)
+        if ok:
+            msg.is_sent = True
+            msg.sent_at = datetime.now(timezone.utc)
+    db.commit()
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -648,6 +696,27 @@ def update_reminder_settings(
     db.commit()
     db.refresh(setting)
     return setting
+
+
+@router.post("/reminder-settings/test-send")
+def send_test_reminder(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """リマインダーのテスト送信（設定確認用）"""
+    from ..services.email import make_reminder_email
+    setting = db.query(ReminderSetting).filter(ReminderSetting.user_id == current_user.id).first()
+    to_email = (setting.email if setting else None) or current_user.email
+    user_name = current_user.name or current_user.email
+    from ..models.shukatsu import ShukatsuCheckItem
+    incomplete = db.query(ShukatsuCheckItem).filter(
+        ShukatsuCheckItem.user_id == current_user.id,
+        ShukatsuCheckItem.is_done == False,
+    ).count()
+    review_month = setting.review_month if setting else 1
+    subj, html, text = make_reminder_email(user_name, review_month, incomplete)
+    ok = send_email(to_email, subj, html, text)
+    return {"ok": ok, "sent_to": to_email}
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -735,14 +804,28 @@ def upload_video_message(
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
     size = os.path.getsize(dest)
+    duration_seconds = _extract_video_duration(dest)
     video = VideoMessage(
         user_id=current_user.id, title=title, description=description or None,
         file_path=f"/api/video-messages/{filename}", file_size=size,
+        duration_seconds=duration_seconds,
     )
     db.add(video)
     db.commit()
     db.refresh(video)
     return video
+
+
+def _extract_video_duration(filepath: str) -> int | None:
+    """mutagen で動画の再生時間を秒単位で取得する"""
+    try:
+        from mutagen import File as MutagenFile
+        audio = MutagenFile(filepath)
+        if audio and audio.info and hasattr(audio.info, "length"):
+            return int(audio.info.length)
+    except Exception:
+        pass
+    return None
 
 
 @router.delete("/video-messages/{video_id}", status_code=204)

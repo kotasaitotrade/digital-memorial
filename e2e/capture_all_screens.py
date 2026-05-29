@@ -944,6 +944,14 @@ def capture_reminders(page: Page):
     wait(page)
     ss(page, "reminders_05_email_input")
 
+    # テスト送信ボタン
+    try:
+        test_btn = page.locator("button:has-text('テストメールを送信')").first
+        if test_btn.is_visible(timeout=2000):
+            ss(page, "reminders_06_test_send_button")
+    except Exception:
+        pass
+
 # ═══════════════════════════════════════════════════════════════
 # S18: デジタル遺品鍵 解除申請ページ  → unlock_*.png
 # ═══════════════════════════════════════════════════════════════

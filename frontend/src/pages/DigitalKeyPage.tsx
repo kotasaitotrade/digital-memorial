@@ -245,7 +245,10 @@ export default function DigitalKeyPage() {
                   <span style={{ color: "#666", fontSize: "0.85rem", marginLeft: "0.75rem" }}>{p.email}</span>
                 </div>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-                  {p.has_requested && <span style={{ background: "#d4edda", color: "#155724", fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px" }}>申請済み</span>}
+                  {p.email_verified
+                    ? <span style={{ background: "#d4edda", color: "#155724", fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px" }}>✅ メール確認済み</span>
+                    : <span style={{ background: "#fff3cd", color: "#856404", fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px" }}>⏳ メール未確認</span>}
+                  {p.has_requested && <span style={{ background: "#cce5ff", color: "#004085", fontSize: "0.75rem", padding: "0.2rem 0.6rem", borderRadius: "12px" }}>申請済み</span>}
                   <button onClick={() => deletePerson(p.id)} style={{ background: "none", border: "1px solid #ddd", color: "#e74c3c", padding: "0.2rem 0.6rem", borderRadius: "4px", cursor: "pointer", fontSize: "0.8rem" }}>削除</button>
                 </div>
               </div>

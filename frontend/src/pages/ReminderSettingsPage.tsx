@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
+import type { AxiosError } from "axios";
 
 const GREEN = "#1a5c38";
 
@@ -23,6 +24,8 @@ export default function ReminderSettingsPage() {
   const [setting, setSetting] = useState<ReminderSetting | null>(null);
   const [saved, setSaved] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
 
   useEffect(() => {
     api.get("/reminder-settings").then((r) => {
@@ -41,6 +44,20 @@ export default function ReminderSettingsPage() {
   const toggle = (field: keyof ReminderSetting, val: boolean) => {
     setSetting((p) => p ? { ...p, [field]: val } : p);
     update({ [field]: val });
+  };
+
+  const sendTestEmail = async () => {
+    setTestSending(true);
+    setTestResult(null);
+    try {
+      const r = await api.post("/reminder-settings/test-send");
+      setTestResult(`✅ テストメールを ${r.data.sent_to} に送信しました`);
+    } catch (e) {
+      const err = e as AxiosError<{ detail: string }>;
+      setTestResult(`❌ 送信失敗: ${err.response?.data?.detail ?? "不明なエラー"}`);
+    } finally {
+      setTestSending(false);
+    }
   };
 
   if (!setting) return <div style={{ textAlign: "center", padding: "4rem", color: "#6b6b6b" }}>読み込み中...</div>;
@@ -167,13 +184,23 @@ export default function ReminderSettingsPage() {
           </section>
         </div>
 
-        {/* 備考 */}
-        <div style={{ background: "#f0f7f4", border: "1px solid #b2dfdb", borderRadius: "8px", padding: "1rem 1.25rem", color: "#2e7d32", fontSize: "0.85rem" }}>
-          <strong>📌 ご注意</strong>
-          <p style={{ margin: "0.5rem 0 0", lineHeight: 1.6 }}>
-            メール送信機能は現在準備中です。設定内容は保存されており、送信機能が有効になり次第、
-            設定に従った通知が送信されます。
+        {/* テスト送信 */}
+        <div style={{ background: "#f0f7f4", border: "1px solid #b2dfdb", borderRadius: "8px", padding: "1rem 1.25rem" }}>
+          <strong style={{ color: "#2e7d32", fontSize: "0.9rem" }}>📧 メール送信テスト</strong>
+          <p style={{ margin: "0.5rem 0 0.75rem", color: "#555", fontSize: "0.85rem", lineHeight: 1.6 }}>
+            現在の設定でリマインダーメールが届くか確認できます。登録済みのメールアドレスに即座に送信されます。
           </p>
+          <button
+            onClick={sendTestEmail}
+            disabled={testSending}
+            style={{ background: GREEN, color: "white", border: "none", padding: "0.5rem 1.25rem", borderRadius: "6px", cursor: testSending ? "not-allowed" : "pointer", fontSize: "0.9rem", opacity: testSending ? 0.7 : 1 }}>
+            {testSending ? "送信中..." : "テストメールを送信"}
+          </button>
+          {testResult && (
+            <p style={{ marginTop: "0.6rem", fontSize: "0.85rem", color: testResult.startsWith("✅") ? "#2e7d32" : "#c62828" }}>
+              {testResult}
+            </p>
+          )}
         </div>
       </main>
     </div>

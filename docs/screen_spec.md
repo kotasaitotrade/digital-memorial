@@ -1,6 +1,6 @@
 # digital-memorial 画面仕様書
 
-> 自動生成: 2026-05-29 13:14:53
+> 自動生成: 2026-05-29 16:46:51
 
 ## 目次
 
@@ -523,6 +523,7 @@ QRコードでアクセス可能な故人の追悼ページ（ログイン不要
 ![reminders_03_notification_toggles.png](../e2e/screenshots/reminders_03_notification_toggles.png)
 ![reminders_04_disabled.png](../e2e/screenshots/reminders_04_disabled.png)
 ![reminders_05_email_input.png](../e2e/screenshots/reminders_05_email_input.png)
+![reminders_06_test_send_button.png](../e2e/screenshots/reminders_06_test_send_button.png)
 
 ---
 
