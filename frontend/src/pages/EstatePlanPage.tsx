@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
-import type { EstatePlan, FamilyMember, Asset, InheritanceCalculation, HeirResult } from "../types";
+import type { EstatePlan, FamilyMember, Asset, InheritanceCalculation, HeirResult, User } from "../types";
 
 const REL_LABELS: Record<string, string> = {
   spouse: "配偶者", child: "子", grandchild: "孫（代襲）",
@@ -522,7 +522,7 @@ export function EstateResultPage() {
 // 共通コンポーネント
 // ─────────────────────────────────────────────────
 
-function Header({ user, logout, backTo, backLabel }: { user: any; logout: () => void; backTo?: string; backLabel?: string }) {
+function Header({ user, logout, backTo, backLabel }: { user: User | null; logout: () => void; backTo?: string; backLabel?: string }) {
   return (
     <header style={s.header}>
       <div style={s.headerInner}>

@@ -3,6 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
 
+interface ActivityLogEntry {
+  id: number;
+  action: string;
+  detail: string | null;
+  created_at: string | null;
+}
+
 // フォントサイズ設定をCSSへ反映するユーティリティ
 export function applyFontSize(size: string) {
   const map: Record<string, string> = {
@@ -29,7 +36,7 @@ export default function AccountSettingsPage() {
   const [prefMsg, setPrefMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   // ─── 活動ログ ───
-  const [activityLog, setActivityLog] = useState<any[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [logLoading, setLogLoading] = useState(false);
   const [showLog, setShowLog] = useState(false);
 
@@ -231,7 +238,7 @@ export default function AccountSettingsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "1rem" }}>
             <div>
               <div style={s.label}>かんたんモード</div>
-              <div style={{ fontSize: "0.78rem", color: "var(--gray-500)" }}>必要最低限の項目だけ表示（田中・藤田 要望）</div>
+              <div style={{ fontSize: "0.78rem", color: "var(--gray-500)" }}>必要最低限の項目だけ表示します</div>
             </div>
             <div
               onClick={() => setSimpleMode(!simpleMode)}

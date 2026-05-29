@@ -172,7 +172,7 @@ export default function DigitalKeyPage() {
         <section style={{ background: "white", borderRadius: "12px", padding: "1.5rem", marginBottom: "1.5rem", boxShadow: "0 2px 8px rgba(0,0,0,0.07)" }}>
           <h2 style={{ color: GREEN, fontSize: "1.1rem", marginTop: 0 }}>⏰ 生存確認スイッチ（デッドマンスイッチ）</h2>
           <p style={{ color: "#666", fontSize: "0.9rem", marginBottom: "1rem", lineHeight: 1.7 }}>
-            設定した日数の間ログインがなかった場合、信頼者へ通知が送られる機能です（山田花子 要望）。<br />
+            設定した日数の間ログインがなかった場合、信頼者へ通知が送られる機能です。<br />
             定期的に「生存確認」ボタンを押すことでリセットされます。
           </p>
 

@@ -571,7 +571,7 @@ function PetSection({ items, onRefresh }: { items: PetItem[]; onRefresh: () => v
   return (
     <div style={s.sectionWrap}>
       <h2 style={s.sectionTitle}>ペット</h2>
-      <p style={s.sectionNote}>大切なペットの引き継ぎ情報を詳しく記録しておきましょう（山田花子 要望）。</p>
+      <p style={s.sectionNote}>大切なペットの引き継ぎ情報を詳しく記録しておきましょう。</p>
       {items.map((it) => (
         <div key={it.id} style={s.listCard}>
           <div style={{ flex: 1 }}>
