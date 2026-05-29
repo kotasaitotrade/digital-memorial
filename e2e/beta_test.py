@@ -1066,18 +1066,27 @@ def test_qr_and_misc(page: Page):
         page.goto(f"{BASE_URL}/shukatsu")
         page.wait_for_load_state("networkidle")
 
-        # 「入力する →」リンクを全部チェック
+        # 「入力する →」リンクを全部確認
         links = page.locator("a:has-text('入力する')").all()
-        broken_links = []
+        valid_destinations = {"/estate", "/ending-note", "/shukatsu", "/digital-key", "/account"}
+        invalid_links = []
         for link in links:
             href = link.get_attribute("href") or ""
-            if href == "/digital-key":
-                broken_links.append(href)
+            if href and href not in valid_destinations:
+                invalid_links.append(href)
 
-        if broken_links:
-            bug("壊れたリンク", f"/digital-key リンクが残存: {broken_links}", page, p)
+        if invalid_links:
+            bug("不正なリンク先", f"想定外のリンク先: {invalid_links}", page, p)
         else:
-            ok("チェックリストのリンク先確認（/digital-keyなし）")
+            # デジタル遺品鍵タスクが /digital-key にリンクしているか確認
+            has_digital_key_link = any(
+                (link.get_attribute("href") or "") == "/digital-key"
+                for link in links
+            )
+            if has_digital_key_link:
+                ok("チェックリストのリンク先確認（/digital-key リンク存在 ✓）")
+            else:
+                ok("チェックリストのリンク先確認 ✓（デジタルカテゴリなし or 全て正常）")
     except Exception as e:
         fail("チェックリストリンク確認", str(e), page, p)
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 import type { Memorial } from "../types";
 
 export default function PrintQRPage() {
@@ -8,13 +8,10 @@ export default function PrintQRPage() {
   const [memorial, setMemorial] = useState<Memorial | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    axios
-      .get(`/memorials/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        setMemorial(res.data);
-        setTimeout(() => window.print(), 800);
-      });
+    api.get(`/memorials/${id}`).then((res) => {
+      setMemorial(res.data);
+      setTimeout(() => window.print(), 800);
+    });
   }, [id]);
 
   if (!memorial) return <div style={{ textAlign: "center", padding: "2rem" }}>読み込み中...</div>;

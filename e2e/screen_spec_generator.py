@@ -66,7 +66,7 @@ SCREENS = [
             "チェックボックスで完了登録（即時保存）",
             "スコアカード（達成率%・SVGプログレスリング）",
             "優先度バッジ（必須/推奨/任意）・星評価",
-            "各タスクへの直接リンク（入力するボタン）",
+            "各タスクへの直接リンク（入力するボタン・デジタル遺品鍵は/digital-keyへ直結）",
         ],
         "api": ["GET /checklist", "POST /checklist/{task_key}/complete", "DELETE /checklist/{task_key}/complete"],
     },
@@ -246,7 +246,7 @@ SCREENS = [
         "path": "/settings/reminders",
         "desc": "定期的なリマインダー通知の設定。",
         "features": [
-            "通知有効/無効トグル",
+            "通知有効/無効トグル（デジタル遺品鍵タスクは/digital-keyへ直接リンク）",
             "リマインダー頻度選択（月次/四半期/年次）",
             "通知タイプ選択（メール/ブラウザ）",
             "保存ボタン",
