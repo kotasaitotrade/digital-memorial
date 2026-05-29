@@ -1,6 +1,6 @@
 # digital-memorial 画面仕様書
 
-> 自動生成: 2026-05-29 12:13:47
+> 自動生成: 2026-05-29 13:14:53
 
 ## 目次
 
@@ -43,9 +43,10 @@
 
 ### スクリーンショット
 
-![ログイン画面](../e2e/screenshots/01_login_page.png)
-![ログイン画面](../e2e/screenshots/01b_login_error.png)
-![ログイン画面](../e2e/screenshots/03a_login_filled.png)
+![login_01_empty.png](../e2e/screenshots/login_01_empty.png)
+![login_02_error.png](../e2e/screenshots/login_02_error.png)
+![login_02_filled.png](../e2e/screenshots/login_02_filled.png)
+![login_03_error.png](../e2e/screenshots/login_03_error.png)
 
 ---
 
@@ -67,9 +68,9 @@
 
 ### スクリーンショット
 
-![新規登録画面](../e2e/screenshots/02_register_page.png)
-![新規登録画面](../e2e/screenshots/s02_register.png)
-![新規登録画面](../e2e/screenshots/s02a_register.png)
+![register_01_empty.png](../e2e/screenshots/register_01_empty.png)
+![register_02_filled.png](../e2e/screenshots/register_02_filled.png)
+![register_03_duplicate_error.png](../e2e/screenshots/register_03_duplicate_error.png)
 
 ---
 
@@ -98,9 +99,12 @@
 
 ### スクリーンショット
 
-![ダッシュボード](../e2e/screenshots/03b_dashboard_after_login.png)
-![ダッシュボード](../e2e/screenshots/04_dashboard.png)
-![ダッシュボード](../e2e/screenshots/05_shukatsu_dashboard.png)
+![dashboard_01_onboarding_modal.png](../e2e/screenshots/dashboard_01_onboarding_modal.png)
+![dashboard_02_empty.png](../e2e/screenshots/dashboard_02_empty.png)
+![dashboard_03_with_memorial.png](../e2e/screenshots/dashboard_03_with_memorial.png)
+![dashboard_04_qr_modal.png](../e2e/screenshots/dashboard_04_qr_modal.png)
+![dashboard_06_full_page.png](../e2e/screenshots/dashboard_06_full_page.png)
+![dashboard_07_auth_redirect_to_login.png](../e2e/screenshots/dashboard_07_auth_redirect_to_login.png)
 
 ---
 
@@ -127,9 +131,13 @@
 
 ### スクリーンショット
 
-![終活チェックリスト](../e2e/screenshots/05_shukatsu_dashboard.png)
-![終活チェックリスト](../e2e/screenshots/05b_shukatsu_checklist.png)
-![終活チェックリスト](../e2e/screenshots/s08a_shukatsu_scorecard.png)
+![shukatsu_01_scorecard_top.png](../e2e/screenshots/shukatsu_01_scorecard_top.png)
+![shukatsu_02_quick_links.png](../e2e/screenshots/shukatsu_02_quick_links.png)
+![shukatsu_03_checklist_all.png](../e2e/screenshots/shukatsu_03_checklist_all.png)
+![shukatsu_04_category_filter.png](../e2e/screenshots/shukatsu_04_category_filter.png)
+![shukatsu_05_item_checked.png](../e2e/screenshots/shukatsu_05_item_checked.png)
+![shukatsu_06_bottom_disclaimer.png](../e2e/screenshots/shukatsu_06_bottom_disclaimer.png)
+![shukatsu_07_auth_redirect.png](../e2e/screenshots/shukatsu_07_auth_redirect.png)
 
 ---
 
@@ -156,8 +164,10 @@
 
 ### スクリーンショット
 
-![相続計画一覧](../e2e/screenshots/08a_estate_list.png)
-![相続計画一覧](../e2e/screenshots/s09a_estate_list.png)
+![estate_list_01_empty.png](../e2e/screenshots/estate_list_01_empty.png)
+![estate_list_02_create_modal.png](../e2e/screenshots/estate_list_02_create_modal.png)
+![estate_list_03_with_plan.png](../e2e/screenshots/estate_list_03_with_plan.png)
+![estate_list_04_rename_inline.png](../e2e/screenshots/estate_list_04_rename_inline.png)
 
 ---
 
@@ -182,6 +192,13 @@
 - `POST /estate-plans/{id}/family`
 - `DELETE /family-members/{id}`
 
+### スクリーンショット
+
+![estate_family_01_empty.png](../e2e/screenshots/estate_family_01_empty.png)
+![estate_family_02_with_members.png](../e2e/screenshots/estate_family_02_with_members.png)
+![estate_family_04_scrolled.png](../e2e/screenshots/estate_family_04_scrolled.png)
+![estate_family_05_save_button.png](../e2e/screenshots/estate_family_05_save_button.png)
+
 ---
 
 ## 相続計画 - 財産・負債 {#estate_assets}
@@ -204,6 +221,13 @@
 - `GET /estate-plans/{id}/assets`
 - `POST /estate-plans/{id}/assets`
 - `DELETE /assets/{id}`
+
+### スクリーンショット
+
+![estate_assets_01_empty.png](../e2e/screenshots/estate_assets_01_empty.png)
+![estate_assets_02_with_assets.png](../e2e/screenshots/estate_assets_02_with_assets.png)
+![estate_assets_03_add_form.png](../e2e/screenshots/estate_assets_03_add_form.png)
+![estate_assets_04_total_and_save.png](../e2e/screenshots/estate_assets_04_total_and_save.png)
 
 ---
 
@@ -230,7 +254,10 @@
 
 ### スクリーンショット
 
-![相続計画 - 計算結果](../e2e/screenshots/09_estate_result.png)
+![estate_result_01_top.png](../e2e/screenshots/estate_result_01_top.png)
+![estate_result_02_heirs_table.png](../e2e/screenshots/estate_result_02_heirs_table.png)
+![estate_result_03_reserved_rights.png](../e2e/screenshots/estate_result_03_reserved_rights.png)
+![estate_result_04_disclaimer.png](../e2e/screenshots/estate_result_04_disclaimer.png)
 
 ---
 
@@ -254,6 +281,14 @@
 ### 使用API
 
 - `POST /estate-plans/{id}/will`
+
+### スクリーンショット
+
+![estate_will_01_default.png](../e2e/screenshots/estate_will_01_default.png)
+![estate_will_02_allocation_set.png](../e2e/screenshots/estate_will_02_allocation_set.png)
+![estate_will_03_reset_button.png](../e2e/screenshots/estate_will_03_reset_button.png)
+![estate_will_04_text_preview.png](../e2e/screenshots/estate_will_04_text_preview.png)
+![estate_will_05_print_button.png](../e2e/screenshots/estate_will_05_print_button.png)
 
 ---
 
@@ -287,9 +322,16 @@
 
 ### スクリーンショット
 
-![エンディングノート](../e2e/screenshots/10_ending_note_initial.png)
-![エンディングノート](../e2e/screenshots/11_ending_note_medical.png)
-![エンディングノート](../e2e/screenshots/12_ending_note_funeral.png)
+![ending_note_01_overview_tabs.png](../e2e/screenshots/ending_note_01_overview_tabs.png)
+![ending_note_02_medical_default.png](../e2e/screenshots/ending_note_02_medical_default.png)
+![ending_note_04_funeral_default.png](../e2e/screenshots/ending_note_04_funeral_default.png)
+![ending_note_05_funeral_filled.png](../e2e/screenshots/ending_note_05_funeral_filled.png)
+![ending_note_06_bequest_empty.png](../e2e/screenshots/ending_note_06_bequest_empty.png)
+![ending_note_08_digital_empty.png](../e2e/screenshots/ending_note_08_digital_empty.png)
+![ending_note_10_contacts_empty.png](../e2e/screenshots/ending_note_10_contacts_empty.png)
+![ending_note_12_pets_empty.png](../e2e/screenshots/ending_note_12_pets_empty.png)
+![ending_note_14_favorites_empty.png](../e2e/screenshots/ending_note_14_favorites_empty.png)
+![ending_note_15_favorites_filled.png](../e2e/screenshots/ending_note_15_favorites_filled.png)
 
 ---
 
@@ -320,9 +362,15 @@
 
 ### スクリーンショット
 
-![デジタルカギ設定](../e2e/screenshots/s16a_digital_key_empty.png)
-![デジタルカギ設定](../e2e/screenshots/s16b_digital_key_added.png)
-![デジタルカギ設定](../e2e/screenshots/s16c_digital_key_token.png)
+![digital_key_01_top.png](../e2e/screenshots/digital_key_01_top.png)
+![digital_key_02_unlock_condition.png](../e2e/screenshots/digital_key_02_unlock_condition.png)
+![digital_key_03_deadman_enabled.png](../e2e/screenshots/digital_key_03_deadman_enabled.png)
+![digital_key_04_deadman_checkin.png](../e2e/screenshots/digital_key_04_deadman_checkin.png)
+![digital_key_05_trusted_persons_empty.png](../e2e/screenshots/digital_key_05_trusted_persons_empty.png)
+![digital_key_06_add_person_form.png](../e2e/screenshots/digital_key_06_add_person_form.png)
+![digital_key_07_person_added.png](../e2e/screenshots/digital_key_07_person_added.png)
+![digital_key_08_token_url_visible.png](../e2e/screenshots/digital_key_08_token_url_visible.png)
+![digital_key_09_usage_guide.png](../e2e/screenshots/digital_key_09_usage_guide.png)
 
 ---
 
@@ -353,6 +401,15 @@
 - `GET /auth/activity-log`
 - `GET /auth/export/csv`
 
+### スクリーンショット
+
+![account_01_top.png](../e2e/screenshots/account_01_top.png)
+![account_02_password_section.png](../e2e/screenshots/account_02_password_section.png)
+![account_04_font_large_preview.png](../e2e/screenshots/account_04_font_large_preview.png)
+![account_05_activity_log.png](../e2e/screenshots/account_05_activity_log.png)
+![account_08_delete_section.png](../e2e/screenshots/account_08_delete_section.png)
+![account_09_full_top.png](../e2e/screenshots/account_09_full_top.png)
+
 ---
 
 ## 墓誌作成画面 {#memorial_new}
@@ -372,6 +429,12 @@
 ### 使用API
 
 - `POST /memorials`
+
+### スクリーンショット
+
+![memorial_new_01_empty.png](../e2e/screenshots/memorial_new_01_empty.png)
+![memorial_new_02_filled.png](../e2e/screenshots/memorial_new_02_filled.png)
+![memorial_new_03_public_options.png](../e2e/screenshots/memorial_new_03_public_options.png)
 
 ---
 
@@ -399,8 +462,10 @@
 
 ### スクリーンショット
 
-![墓誌編集画面](../e2e/screenshots/s05a_memorial_edit.png)
-![墓誌編集画面](../e2e/screenshots/s05b_memorial_edit_photo.png)
+![memorial_edit_01_form.png](../e2e/screenshots/memorial_edit_01_form.png)
+![memorial_edit_02_photo_section.png](../e2e/screenshots/memorial_edit_02_photo_section.png)
+![memorial_edit_03_public_controls.png](../e2e/screenshots/memorial_edit_03_public_controls.png)
+![memorial_edit_04_bottom.png](../e2e/screenshots/memorial_edit_04_bottom.png)
 
 ---
 
@@ -420,6 +485,15 @@ QRコードでアクセス可能な故人の追悼ページ（ログイン不要
 ### 使用API
 
 - `GET /m/{slug}`
+
+### スクリーンショット
+
+![memorial_public_01_top.png](../e2e/screenshots/memorial_public_01_top.png)
+![memorial_public_02_middle.png](../e2e/screenshots/memorial_public_02_middle.png)
+![memorial_public_03_bottom.png](../e2e/screenshots/memorial_public_03_bottom.png)
+![memorial_public_04_password_gate.png](../e2e/screenshots/memorial_public_04_password_gate.png)
+![memorial_public_05_password_wrong.png](../e2e/screenshots/memorial_public_05_password_wrong.png)
+![memorial_public_06_not_found.png](../e2e/screenshots/memorial_public_06_not_found.png)
 
 ---
 
@@ -442,6 +516,14 @@ QRコードでアクセス可能な故人の追悼ページ（ログイン不要
 - `GET /reminder-settings`
 - `PUT /reminder-settings`
 
+### スクリーンショット
+
+![reminders_01_enabled.png](../e2e/screenshots/reminders_01_enabled.png)
+![reminders_02_month_selected.png](../e2e/screenshots/reminders_02_month_selected.png)
+![reminders_03_notification_toggles.png](../e2e/screenshots/reminders_03_notification_toggles.png)
+![reminders_04_disabled.png](../e2e/screenshots/reminders_04_disabled.png)
+![reminders_05_email_input.png](../e2e/screenshots/reminders_05_email_input.png)
+
 ---
 
 ## デジタル遺品鍵 解除申請ページ {#unlock}
@@ -461,5 +543,12 @@ QRコードでアクセス可能な故人の追悼ページ（ログイン不要
 ### 使用API
 
 - `POST /digital-key/trusted-persons/{id}/request?token=...`
+
+### スクリーンショット
+
+![unlock_01_ready.png](../e2e/screenshots/unlock_01_ready.png)
+![unlock_02_success_unlocked.png](../e2e/screenshots/unlock_02_success_unlocked.png)
+![unlock_03_invalid_url_error.png](../e2e/screenshots/unlock_03_invalid_url_error.png)
+![unlock_04_missing_token_error.png](../e2e/screenshots/unlock_04_missing_token_error.png)
 
 ---

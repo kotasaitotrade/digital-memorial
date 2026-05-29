@@ -310,14 +310,17 @@ def generate_markdown():
             lines.append(f"- `{api}`")
         lines.append("")
 
-        # スクリーンショットを探す
-        ss_files = sorted(glob.glob(os.path.join(SS_DIR, f"*{sc['id']}*.png")))
+        # スクリーンショットを探す（新形式: {id}_*.png を優先、旧形式もフォールバック）
+        ss_files = sorted(glob.glob(os.path.join(SS_DIR, f"{sc['id']}_*.png")))
+        if not ss_files:
+            ss_files = sorted(glob.glob(os.path.join(SS_DIR, f"*{sc['id']}*.png")))
         if ss_files:
             lines.append("### スクリーンショット")
             lines.append("")
-            for f in ss_files[:3]:
+            for f in ss_files[:10]:
                 rel = os.path.relpath(f, os.path.dirname(OUTPUT))
-                lines.append(f"![{sc['name']}]({rel})")
+                fname = os.path.basename(f)
+                lines.append(f"![{fname}]({rel})")
             lines.append("")
 
         lines.append("---")

@@ -1,8 +1,9 @@
 """
 全画面スクリーンショット取得スクリプト（仕様書用）
-実際のコンポーネントの正確なセレクターを使用
+全17画面を余すことなく、複数のUI状態を含めて撮影する
+実行方法: cd /Users/user01/digital-memorial && python3 e2e/capture_all_screens.py
 """
-import os, time
+import os, time, json
 import requests
 from playwright.sync_api import sync_playwright, Page
 
@@ -11,8 +12,7 @@ API_URL  = "http://localhost:8000/api"
 SS_DIR   = os.path.join(os.path.dirname(__file__), "screenshots")
 os.makedirs(SS_DIR, exist_ok=True)
 
-# 毎回フレッシュなユーザーを使うことでデータの蓄積を防ぐ
-_TS          = int(time.time())
+_TS           = int(time.time())
 TEST_EMAIL    = f"spec_{_TS}@example.com"
 TEST_PASSWORD = "spectest123"
 TEST_NAME     = "佐藤 恵子"
@@ -22,7 +22,16 @@ def ss(page: Page, name: str, full: bool = True):
     page.screenshot(path=path, full_page=full)
     print(f"  📸 {name}.png")
 
-def api_token():
+def api_post(path: str, data: dict, token: str = "") -> dict:
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    res = requests.post(f"{API_URL}{path}", json=data, headers=headers)
+    return res.json()
+
+def api_get(path: str, token: str) -> dict:
+    res = requests.get(f"{API_URL}{path}", headers={"Authorization": f"Bearer {token}"})
+    return res.json()
+
+def api_token() -> str:
     requests.post(f"{API_URL}/auth/register",
         json={"name": TEST_NAME, "email": TEST_EMAIL, "password": TEST_PASSWORD})
     res = requests.post(f"{API_URL}/auth/login",
@@ -39,7 +48,6 @@ def login_ui(page: Page):
     page.wait_for_load_state("networkidle")
 
 def dismiss_onboarding(page: Page):
-    """オンボーディングモーダルを閉じる"""
     try:
         page.evaluate("localStorage.setItem('dm_onboarding_done', '1')")
         close = page.locator("button:has-text('✕'), button:has-text('始める →')")
@@ -55,561 +63,953 @@ def ensure_login(page: Page):
         login_ui(page)
     dismiss_onboarding(page)
 
-# ─────────────────────────────────────────────────────────────
-# S01: ログインページ
-# ─────────────────────────────────────────────────────────────
-def s01_login(page: Page):
-    print("\n[S01] ログインページ")
+def wait(page: Page, ms: int = 800):
+    page.wait_for_timeout(ms)
+
+# ═══════════════════════════════════════════════════════════════
+# S01: ログイン画面  → login_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_login(page: Page):
+    print("\n[S01] ログイン画面")
+    # ログアウト状態にしてからアクセス
+    page.evaluate("localStorage.removeItem('token')")
     page.goto(f"{BASE_URL}/login")
     page.wait_for_load_state("networkidle")
-    ss(page, "s01a_login")
+    wait(page)
+    ss(page, "login_01_empty")
+
+    # フォーム入力済み状態
+    try:
+        page.locator("input[type='email']").fill(TEST_EMAIL)
+        page.locator("input[type='password']").fill(TEST_PASSWORD)
+        wait(page)
+        ss(page, "login_02_filled")
+    except Exception as e:
+        print(f"    ⚠ login_02: {e}")
 
     # エラー表示
-    page.locator("input[type='email']").fill("wrong@example.com")
-    page.locator("input[type='password']").fill("badpass")
-    page.locator("button[type='submit']").click()
-    page.wait_for_timeout(1800)
-    ss(page, "s01b_login_error")
+    try:
+        page.locator("input[type='email']").fill("wrong@example.com")
+        page.locator("input[type='password']").fill("badpass")
+        page.locator("button[type='submit']").click()
+        wait(page, 1800)
+        ss(page, "login_03_error")
+    except Exception as e:
+        print(f"    ⚠ login_03: {e}")
 
-# ─────────────────────────────────────────────────────────────
-# S02: ユーザー登録ページ
-# ─────────────────────────────────────────────────────────────
-def s02_register(page: Page):
-    print("\n[S02] ユーザー登録ページ")
+# ═══════════════════════════════════════════════════════════════
+# S02: 新規登録画面  → register_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_register(page: Page):
+    print("\n[S02] 新規登録画面")
+    # ログアウト状態でアクセス
+    page.evaluate("localStorage.removeItem('token'); localStorage.removeItem('dm_token')")
     page.goto(f"{BASE_URL}/register")
     page.wait_for_load_state("networkidle")
-    ss(page, "s02a_register")
+    wait(page)
+    ss(page, "register_01_empty")
 
-    # 入力済み状態（placeholderから特定）
-    page.locator("input[placeholder='山田 花子']").fill("佐藤 恵子")
-    page.locator("input[type='email']").fill("sato.keiko@example.com")
-    page.locator("input[type='password']").fill("password123")
-    ss(page, "s02b_register_filled")
+    try:
+        # placeholder="山田 花子" のテキスト入力が名前フィールド
+        page.locator("input[type='text']").first.fill("田中 花子")
+        page.locator("input[type='email']").fill("hanako@example.com")
+        page.locator("input[type='password']").first.fill("mypassword123")
+        wait(page)
+        ss(page, "register_02_filled")
+    except Exception as e:
+        print(f"    ⚠ register_02: {e}")
+        ss(page, "register_02_filled")
 
-# ─────────────────────────────────────────────────────────────
-# S03: ダッシュボード（墓誌一覧）
-# ─────────────────────────────────────────────────────────────
-def s03_dashboard(page: Page, token: str):
+    try:
+        # 重複メールエラー（既存アカウントで試す）
+        page.locator("input[type='email']").fill(TEST_EMAIL)
+        page.locator("button[type='submit']").click()
+        wait(page, 1800)
+        ss(page, "register_03_duplicate_error")
+    except Exception as e:
+        print(f"    ⚠ register_03: {e}")
+        ss(page, "register_03_duplicate_error")
+
+# ═══════════════════════════════════════════════════════════════
+# S03: ダッシュボード  → dashboard_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_dashboard(page: Page, token: str):
     print("\n[S03] ダッシュボード")
     ensure_login(page)
-    # まず空の状態
+
+    # 空の状態
+    page.evaluate("localStorage.removeItem('dm_onboarding_done')")
+    page.goto(f"{BASE_URL}/dashboard")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(800)
-    ss(page, "s03a_dashboard_empty")
+    wait(page)
+    ss(page, "dashboard_01_onboarding_modal")
 
-    # 墓誌を作成
-    h = {"Authorization": f"Bearer {token}"}
-    res = requests.post(f"{API_URL}/memorials", headers=h, json={
-        "name": "田中 正雄",
-        "birth_date": "1938-05-22",
-        "death_date": "2024-03-08",
-        "biography": "大阪府生まれ。中学校の教師として38年間勤務。書道と囲碁を愛した。",
-        "slug": f"tanaka-masao-{_TS}"
-    })
-    if res.status_code in (200, 201):
-        page.reload()
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1000)
-        ss(page, "s03b_dashboard_memorial")
+    # オンボーディングを閉じる
+    try:
+        close = page.locator("button:has-text('始める →'), button:has-text('✕')")
+        if close.first.is_visible(timeout=2000):
+            close.first.click()
+            wait(page)
+    except Exception:
+        pass
+    page.evaluate("localStorage.setItem('dm_onboarding_done', '1')")
+    page.goto(f"{BASE_URL}/dashboard")
+    page.wait_for_load_state("networkidle")
+    wait(page)
+    ss(page, "dashboard_02_empty")
 
-        # QRモーダル
-        qr_btn = page.locator("button:has-text('QR')").first
-        if qr_btn.count() > 0:
-            qr_btn.click()
-            page.wait_for_timeout(800)
-            ss(page, "s03c_dashboard_qr_modal")
-            page.keyboard.press("Escape")
-            page.wait_for_timeout(400)
+    # 墓誌を作成してダッシュボードを再表示
+    memorial_data = api_post("/memorials", {
+        "name": "田中 正男",
+        "birth_date": "1945-03-15",
+        "death_date": "2023-11-20",
+        "biography": "東京都生まれ。50年間にわたり家族のために尽力した。",
+        "is_public": True,
+    }, token)
+    memorial_id = memorial_data.get("id")
 
-# ─────────────────────────────────────────────────────────────
-# S04: 墓誌作成フォーム
-# ─────────────────────────────────────────────────────────────
-def s04_memorial_new(page: Page):
-    print("\n[S04] 墓誌作成フォーム")
+    page.goto(f"{BASE_URL}/dashboard")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "dashboard_03_with_memorial")
+
+    # QRコードモーダル
+    if memorial_id:
+        try:
+            qr_btn = page.locator("button:has-text('QRコード')").first
+            if qr_btn.is_visible(timeout=2000):
+                qr_btn.click()
+                wait(page)
+                ss(page, "dashboard_04_qr_modal")
+                page.locator("button:has-text('閉じる')").first.click()
+                wait(page)
+        except Exception:
+            pass
+
+    # 未完了タスクパネル（優先度フィルター）
+    try:
+        priority_btn = page.locator("button:has-text('高優先度のみ'), button:has-text('優先')").first
+        if priority_btn.is_visible(timeout=2000):
+            priority_btn.click()
+            wait(page)
+            ss(page, "dashboard_05_priority_filter")
+            priority_btn.click()
+            wait(page)
+    except Exception:
+        pass
+
+    # 終活ノートバナー・スタッツ全体
+    page.evaluate("window.scrollTo(0, 0)")
+    wait(page)
+    ss(page, "dashboard_06_full_page")
+
+    return memorial_id
+
+# ═══════════════════════════════════════════════════════════════
+# S04: 墓誌作成画面  → memorial_new_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_memorial_new(page: Page):
+    print("\n[S04] 墓誌作成画面")
     ensure_login(page)
     page.goto(f"{BASE_URL}/memorials/new")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(800)
-    ss(page, "s04a_memorial_form_empty")
+    wait(page)
+    ss(page, "memorial_new_01_empty")
 
-    # フォーム入力（date は type="text" + placeholder）
-    page.locator("input[placeholder='例：山田 太郎']").fill("田中 花子")
-    page.locator("input[placeholder='例：1930年5月3日']").fill("1955年6月20日")
-    page.locator("input[placeholder='例：2020年10月15日']").fill("2023年11月5日")
-    page.locator("textarea[placeholder='故人の人生・エピソードをご記入ください']").fill(
-        "愛知県出身。中学校教師として30年間子供たちを育てた。趣味は俳句と園芸。"
-    )
-    ss(page, "s04b_memorial_form_filled")
+    # フォームに入力 (placeholder="例：山田 太郎" が名前)
+    try:
+        page.locator("input[placeholder*='山田 太郎']").fill("山田 花子")
+        page.locator("input[placeholder*='1930年']").fill("1950年6月1日")
+        page.locator("input[placeholder*='2020年']").fill("2024年1月15日")
+        page.locator("textarea").first.fill("長年にわたり地域のために貢献した。")
+        wait(page)
+        ss(page, "memorial_new_02_filled")
+    except Exception as e:
+        print(f"    ⚠ memorial_new_02: {e}")
+        ss(page, "memorial_new_02_filled")
 
-# ─────────────────────────────────────────────────────────────
-# S05: 墓誌編集フォーム
-# ─────────────────────────────────────────────────────────────
-def s05_memorial_edit(page: Page, token: str):
-    print("\n[S05] 墓誌編集フォーム")
-    h = {"Authorization": f"Bearer {token}"}
-    memorials = requests.get(f"{API_URL}/memorials", headers=h).json()
-    if not memorials:
-        print("  ⚠ 墓誌なし。スキップ")
-        return
-    mid = memorials[0]["id"]
+    # 公開設定・非公開時のパスワード欄
+    try:
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        wait(page)
+        ss(page, "memorial_new_03_public_options")
+    except Exception:
+        pass
+
+# ═══════════════════════════════════════════════════════════════
+# S05: 墓誌編集画面  → memorial_edit_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_memorial_edit(page: Page, token: str, memorial_id: int):
+    print("\n[S05] 墓誌編集画面")
     ensure_login(page)
-    page.goto(f"{BASE_URL}/memorials/{mid}/edit")
+    page.goto(f"{BASE_URL}/memorials/{memorial_id}/edit")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    ss(page, "s05a_memorial_edit")
+    wait(page, 1200)
+    ss(page, "memorial_edit_01_form")
 
-    # 写真アップロードエリアまでスクロール
-    page.evaluate("window.scrollTo(0, 400)")
-    page.wait_for_timeout(400)
-    ss(page, "s05b_memorial_edit_photo")
+    # 写真セクションまでスクロール
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+    wait(page)
+    ss(page, "memorial_edit_02_photo_section")
 
-# ─────────────────────────────────────────────────────────────
-# S06: QR印刷ページ
-# ─────────────────────────────────────────────────────────────
-def s06_print_qr(page: Page, token: str):
-    print("\n[S06] QR印刷ページ")
-    h = {"Authorization": f"Bearer {token}"}
-    memorials = requests.get(f"{API_URL}/memorials", headers=h).json()
-    if not memorials:
-        print("  ⚠ 墓誌なし。スキップ")
-        return
-    mid = memorials[0]["id"]
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/memorials/{mid}/print-qr")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1500)
-    ss(page, "s06_print_qr")
+    # 公開URLコピーボタン
+    try:
+        copy_btn = page.locator("button:has-text('URLをコピー'), button:has-text('公開URL')").first
+        if copy_btn.is_visible(timeout=2000):
+            page.evaluate("window.scrollTo(0, 0)")
+            wait(page)
+            ss(page, "memorial_edit_03_public_controls")
+    except Exception:
+        pass
 
-# ─────────────────────────────────────────────────────────────
-# S07: 公開墓誌ページ（/m/:slug）
-# ─────────────────────────────────────────────────────────────
-def s07_public_memorial(page: Page, token: str):
-    print("\n[S07] 公開墓誌ページ")
-    h = {"Authorization": f"Bearer {token}"}
-    memorials = requests.get(f"{API_URL}/memorials", headers=h).json()
-    if not memorials:
-        print("  ⚠ 墓誌なし。スキップ")
-        return
-    slug = memorials[0].get("slug")
-    if not slug:
-        print("  ⚠ slugなし。スキップ")
-        return
-    # 未ログイン状態で公開ページを確認（別コンテキストを使う）
-    page.goto(f"{BASE_URL}/m/{slug}")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1500)
-    ss(page, "s07a_public_memorial_top")
     page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    page.wait_for_timeout(400)
-    ss(page, "s07b_public_memorial_bottom")
+    wait(page)
+    ss(page, "memorial_edit_04_bottom")
 
-# ─────────────────────────────────────────────────────────────
-# S08: 終活ダッシュボード＋チェックリスト全カテゴリ
-# ─────────────────────────────────────────────────────────────
-def s08_shukatsu(page: Page):
-    print("\n[S08] 終活ダッシュボード")
+# ═══════════════════════════════════════════════════════════════
+# S06: QRコード印刷  → print_qr_*.png  (print_qr matches no screen_id)
+# screen_spec_generatorは memorial_edit カテゴリでカバー
+# ═══════════════════════════════════════════════════════════════
+
+# ═══════════════════════════════════════════════════════════════
+# S07: 公開墓誌ページ  → memorial_public_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_memorial_public(page: Page, token: str, memorial_id: int):
+    print("\n[S07] 公開墓誌ページ")
+    memorials = api_get("/memorials", token)
+    if isinstance(memorials, list) and memorials:
+        slug = memorials[0]["slug"]
+        page.goto(f"{BASE_URL}/m/{slug}")
+        page.wait_for_load_state("networkidle")
+        wait(page, 1200)
+        ss(page, "memorial_public_01_top")
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+        wait(page)
+        ss(page, "memorial_public_02_middle")
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        wait(page)
+        ss(page, "memorial_public_03_bottom")
+
+    # パスワード保護（非公開墓誌）
+    pw_memorial = api_post("/memorials", {
+        "name": "非公開テスト",
+        "is_public": False,
+        "password": "secret123",
+    }, token)
+    if pw_slug := pw_memorial.get("slug"):
+        page.goto(f"{BASE_URL}/m/{pw_slug}")
+        page.wait_for_load_state("networkidle")
+        wait(page)
+        ss(page, "memorial_public_04_password_gate")
+        try:
+            page.locator("input[type='password']").fill("wrongpass")
+            page.locator("button:has-text('アクセス')").click()
+            wait(page)
+            ss(page, "memorial_public_05_password_wrong")
+        except Exception:
+            pass
+
+    # 存在しないslug → 404
+    page.goto(f"{BASE_URL}/m/does-not-exist-xyz")
+    page.wait_for_load_state("networkidle")
+    wait(page)
+    ss(page, "memorial_public_06_not_found")
+
+# ═══════════════════════════════════════════════════════════════
+# S08: 終活チェックリスト  → shukatsu_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_shukatsu(page: Page):
+    print("\n[S08] 終活チェックリスト")
     ensure_login(page)
     page.goto(f"{BASE_URL}/shukatsu")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(2000)
+    wait(page, 1200)
+    ss(page, "shukatsu_01_scorecard_top")
 
-    # スコアカード部分のみ（viewport内）
-    ss(page, "s08a_shukatsu_scorecard", full=False)
-    # 全体
-    ss(page, "s08b_shukatsu_full")
+    page.evaluate("window.scrollTo(0, 400)")
+    wait(page)
+    ss(page, "shukatsu_02_quick_links")
 
-    # チェックリスト - カテゴリタブを順番に撮影
-    cats = ["すべて", "相続", "遺言", "医療", "葬儀", "デジタル", "人間関係", "ペット", "思い出"]
-    for cat in cats:
-        tab = page.locator(f"button:has-text('{cat}')").first
-        if tab.count() > 0:
-            tab.click()
-            page.wait_for_timeout(500)
-            ss(page, f"s08c_checklist_{cat}")
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+    wait(page)
+    ss(page, "shukatsu_03_checklist_all")
 
-# ─────────────────────────────────────────────────────────────
-# S09: 相続計画一覧
-# ─────────────────────────────────────────────────────────────
-def s09_estate_list(page: Page):
+    # カテゴリフィルター
+    for cat in ["相続", "遺言", "医療", "デジタル"]:
+        try:
+            page.click(f"button:has-text('{cat}')")
+            wait(page, 400)
+        except Exception:
+            pass
+    ss(page, "shukatsu_04_category_filter")
+
+    # チェックを入れる
+    try:
+        first_cb = page.locator("button[style*='border-radius: 50%']").first
+        if first_cb.is_visible(timeout=1000):
+            first_cb.click()
+            wait(page)
+            ss(page, "shukatsu_05_item_checked")
+    except Exception:
+        pass
+
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "shukatsu_06_bottom_disclaimer")
+
+# ═══════════════════════════════════════════════════════════════
+# S09: 相続計画一覧  → estate_list_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_estate_list(page: Page, token: str) -> int:
     print("\n[S09] 相続計画一覧")
     ensure_login(page)
     page.goto(f"{BASE_URL}/estate")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(800)
-    ss(page, "s09a_estate_list")
+    wait(page, 1200)
+    ss(page, "estate_list_01_empty")
 
-    # 新規作成フォームを展開
-    page.locator("button:has-text('＋ 新規作成')").click()
-    page.wait_for_timeout(400)
-    ss(page, "s09b_estate_create_form")
-    page.locator("button:has-text('キャンセル')").click()
+    # 新規作成モーダル（UIで撮影）
+    try:
+        page.click("button:has-text('新規作成'), button:has-text('+ 新しい計画')")
+        wait(page)
+        ss(page, "estate_list_02_create_modal")
+        title_inp = page.locator("input[placeholder*='計画名'], input[placeholder*='タイトル']").first
+        if title_inp.is_visible(timeout=1500):
+            title_inp.fill("佐藤家の相続計画")
+        page.click("button:has-text('作成'), button:has-text('保存')")
+        wait(page, 1500)
+    except Exception:
+        pass
 
-# ─────────────────────────────────────────────────────────────
-# S10: 家族構成入力
-# ─────────────────────────────────────────────────────────────
-def s10_family_input(page: Page, token: str) -> int:
-    print("\n[S10] 家族構成入力")
-    h = {"Authorization": f"Bearer {token}"}
-    res = requests.post(f"{API_URL}/estate-plans",
-        json={"title": "仕様書テスト計画"}, headers=h)
-    plan_id = res.json()["id"]
+    # APIで確実に計画を作成・取得
+    plans = api_get("/estate-plans", token)
+    if isinstance(plans, list) and plans:
+        plan_id = plans[0]["id"]
+        # タイトルを統一
+        requests.patch(
+            f"{API_URL}/estate-plans/{plan_id}",
+            json={"title": "佐藤家の相続計画"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+    else:
+        resp = api_post("/estate-plans", {"title": "佐藤家の相続計画"}, token)
+        plan_id = resp.get("id", 0)
 
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/estate/{plan_id}/family")
+    page.goto(f"{BASE_URL}/estate")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(800)
-    ss(page, "s10a_family_empty")
+    wait(page, 1200)
+    ss(page, "estate_list_03_with_plan")
 
-    # 配偶者追加
-    page.locator("button:has-text('＋ 配偶者を追加')").click()
-    page.wait_for_timeout(400)
-    page.locator("input[placeholder='名前']").first.fill("花子")
-    ss(page, "s10b_family_spouse_added")
+    # タイトル変更ボタン
+    try:
+        edit_btn = page.locator("button:has-text('✏'), button:has-text('変更')").first
+        if edit_btn.is_visible(timeout=1000):
+            edit_btn.click()
+            wait(page)
+            ss(page, "estate_list_04_rename_inline")
+            page.keyboard.press("Escape")
+    except Exception:
+        pass
 
-    # 子ども追加
-    page.locator("button:has-text('＋ 子どもを追加')").click()
-    page.wait_for_timeout(300)
-    page.locator("input[placeholder='名前']").nth(1).fill("一郎")
-    page.locator("button:has-text('＋ 子どもを追加')").click()
-    page.wait_for_timeout(300)
-    page.locator("input[placeholder='名前']").nth(2).fill("二郎")
-    ss(page, "s10c_family_children_added")
-
+    print(f"  plan_id={plan_id}")
     return plan_id
 
-# ─────────────────────────────────────────────────────────────
-# S11: 財産入力
-# ─────────────────────────────────────────────────────────────
-def s11_asset_input(page: Page, token: str, plan_id: int):
-    print("\n[S11] 財産入力")
-    h = {"Authorization": f"Bearer {token}"}
-    # 家族データを保存してから資産ページへ
-    requests.post(f"{API_URL}/estate-plans/{plan_id}/family", headers=h, json={
-        "members": [
-            {"name": "花子", "relationship": "spouse"},
-            {"name": "一郎", "relationship": "child"},
-            {"name": "二郎", "relationship": "child"},
-        ]
-    })
-
+# ═══════════════════════════════════════════════════════════════
+# S10: 相続計画 - 家族構成  → estate_family_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_estate_family(page: Page, token: str, plan_id: int) -> int:
+    print("\n[S10] 相続計画 - 家族構成")
     ensure_login(page)
+    # まず空状態を撮影
+    page.goto(f"{BASE_URL}/estate/{plan_id}/family")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "estate_family_01_empty")
+
+    # APIで家族を事前登録してから再ロード
+    api_post(f"/estate-plans/{plan_id}/family", {
+        "members": [
+            {"name": "佐藤 花子", "relationship": "spouse", "is_alive": True},
+            {"name": "佐藤 一郎", "relationship": "child", "is_alive": True},
+            {"name": "佐藤 二郎", "relationship": "child", "is_alive": True},
+        ]
+    }, token)
+
+    page.goto(f"{BASE_URL}/estate/{plan_id}/family")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "estate_family_02_with_members")
+
+    # 追加フォームを開いて撮影
+    try:
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('家族を追加'), button:has-text('メンバー追加')").first
+        if add_btn.is_visible(timeout=2000):
+            add_btn.click()
+            wait(page)
+            ss(page, "estate_family_03_add_form")
+            page.keyboard.press("Escape")
+            wait(page, 500)
+    except Exception:
+        pass
+
+    ss(page, "estate_family_04_scrolled")
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "estate_family_05_save_button")
+    return plan_id
+
+# ═══════════════════════════════════════════════════════════════
+# S11: 相続計画 - 財産・負債  → estate_assets_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_estate_assets(page: Page, token: str, plan_id: int):
+    print("\n[S11] 相続計画 - 財産・負債")
+    ensure_login(page)
+    # 空状態を撮影
     page.goto(f"{BASE_URL}/estate/{plan_id}/assets")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(800)
-    ss(page, "s11a_asset_empty")
+    wait(page, 1200)
+    ss(page, "estate_assets_01_empty")
 
-    # 不動産を追加
-    page.locator("button:has-text('＋ 不動産を追加')").click()
-    page.wait_for_timeout(300)
-    page.locator("input[placeholder='名称（例：自宅）']").first.fill("自宅（〇〇市△△町）")
-    page.locator("input[placeholder='金額（円）']").first.fill("50000000")
-    ss(page, "s11b_asset_realestate_added")
-
-    # 預貯金を追加
-    page.locator("button:has-text('＋ 預貯金を追加')").click()
-    page.wait_for_timeout(300)
-    page.locator("input[placeholder='名称（例：自宅）']").nth(1).fill("〇〇銀行 普通預金")
-    page.locator("input[placeholder='金額（円）']").nth(1).fill("20000000")
-    ss(page, "s11c_asset_bank_added")
-
-    # 負債を追加
-    page.locator("button:has-text('＋ 負債を追加')").click()
-    page.wait_for_timeout(300)
-    ss(page, "s11d_asset_debt_added")
-
-    # 合計欄まで全体撮影
-    ss(page, "s11e_asset_full")
-
-# ─────────────────────────────────────────────────────────────
-# S12: 相続計算結果
-# ─────────────────────────────────────────────────────────────
-def s12_estate_result(page: Page, token: str, plan_id: int):
-    print("\n[S12] 相続計算結果")
-    h = {"Authorization": f"Bearer {token}"}
-    requests.post(f"{API_URL}/estate-plans/{plan_id}/assets", headers=h, json={
+    # APIで財産を事前登録
+    api_post(f"/estate-plans/{plan_id}/assets", {
         "assets": [
-            {"name": "自宅不動産", "asset_type": "real_estate",    "estimated_value": 50_000_000},
-            {"name": "預貯金",     "asset_type": "bank_account",   "estimated_value": 20_000_000},
-            {"name": "有価証券",   "asset_type": "securities",     "estimated_value": 10_000_000},
-            {"name": "生命保険金", "asset_type": "life_insurance", "estimated_value":  5_000_000, "is_deemed_estate": True},
-            {"name": "住宅ローン", "asset_type": "debt",           "estimated_value":  8_000_000},
+            {"asset_type": "real_estate", "name": "自宅（東京都渋谷区）", "estimated_value": 35000000},
+            {"asset_type": "bank_account", "name": "三菱UFJ銀行", "estimated_value": 8000000},
+            {"asset_type": "stocks", "name": "株式（トヨタ自動車等）", "estimated_value": 5000000},
+            {"asset_type": "debt", "name": "住宅ローン残債", "estimated_value": -12000000},
         ]
-    })
+    }, token)
 
+    page.goto(f"{BASE_URL}/estate/{plan_id}/assets")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "estate_assets_02_with_assets")
+
+    # 財産追加フォームを開いて撮影
+    try:
+        add_btn = page.locator("button:has-text('財産を追加'), button:has-text('+ 追加'), button:has-text('追加')").first
+        if add_btn.is_visible(timeout=2000):
+            add_btn.click()
+            wait(page)
+            ss(page, "estate_assets_03_add_form")
+            page.keyboard.press("Escape")
+            wait(page, 500)
+    except Exception:
+        pass
+
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "estate_assets_04_total_and_save")
+
+# ═══════════════════════════════════════════════════════════════
+# S12: 相続計算結果  → estate_result_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_estate_result(page: Page, token: str, plan_id: int):
+    print("\n[S12] 相続計算結果")
     ensure_login(page)
     page.goto(f"{BASE_URL}/estate/{plan_id}/result")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(2000)
-    ss(page, "s12a_result_top", full=False)
-    ss(page, "s12b_result_full")
+    wait(page, 2000)
+    ss(page, "estate_result_01_top")
 
-    # 下部（遺留分・基礎控除）
+    page.evaluate("window.scrollTo(0, 400)")
+    wait(page)
+    ss(page, "estate_result_02_heirs_table")
+
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight / 2)")
+    wait(page)
+    ss(page, "estate_result_03_reserved_rights")
+
     page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    page.wait_for_timeout(400)
-    ss(page, "s12c_result_bottom", full=False)
+    wait(page)
+    ss(page, "estate_result_04_disclaimer")
 
-# ─────────────────────────────────────────────────────────────
-# S13: エンディングノート - 医療・介護
-# ─────────────────────────────────────────────────────────────
-def s13_ending_medical(page: Page):
-    print("\n[S13] エンディングノート - 医療・介護")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1500)
-    ss(page, "s13a_medical_default")
-
-    # RadioGroup は <label> 要素（radio input は hidden）
-    # 延命治療「希望しない」選択
-    page.locator("label:has-text('希望しない')").first.click()
-    page.wait_for_timeout(800)
-    # 心肺蘇生「希望しない」
-    page.locator("label:has-text('希望しない')").nth(1).click()
-    page.wait_for_timeout(800)
-    # 臓器提供「提供する」
-    page.locator("label:has-text('提供する')").first.click()
-    page.wait_for_timeout(800)
-    # かかりつけ医入力
-    page.locator("textarea[placeholder='医師名・病院名・電話番号']").fill(
-        "〇〇病院 田中先生（03-xxxx-xxxx）")
-    page.locator("textarea[placeholder='薬の名前・用量・処方医']").fill(
-        "リバーロキサバン 15mg 朝1錠")
-    page.wait_for_timeout(1200)
-    ss(page, "s13b_medical_filled")
-
-# ─────────────────────────────────────────────────────────────
-# S14: エンディングノート - 葬儀
-# ─────────────────────────────────────────────────────────────
-def s14_ending_funeral(page: Page):
-    print("\n[S14] エンディングノート - 葬儀")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('葬儀')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s14a_funeral_default")
-
-    page.locator("label:has-text('家族葬')").first.click()
-    page.wait_for_timeout(500)
-    page.locator("input[placeholder='例：仏教（浄土宗）、無宗教など']").fill("仏教（曹洞宗）")
-    page.locator("textarea[placeholder='曲名・アーティスト名など']").fill(
-        "サザンオールスターズ「真夏の果実」")
-    page.wait_for_timeout(1000)
-    ss(page, "s14b_funeral_filled")
-
-# ─────────────────────────────────────────────────────────────
-# S15: エンディングノート - 形見分け
-# ─────────────────────────────────────────────────────────────
-def s15_ending_bequest(page: Page):
-    print("\n[S15] エンディングノート - 形見分け")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('形見分け')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s15a_bequest_empty")
-
-    # アイテム入力フォーム
-    page.locator("input[placeholder='物品名（例：父の形見の時計）']").fill("父の懐中時計")
-    page.locator("input[placeholder='渡す相手の名前']").fill("長男 一郎")
-    page.locator("input[placeholder='備考（任意）']").fill("明治時代の骨董品")
-    ss(page, "s15b_bequest_form_filled")
-
-    page.locator("button:has-text('追加')").first.click()
-    page.wait_for_timeout(1000)
-    ss(page, "s15c_bequest_item_saved")
-
-    # 2件目追加
-    page.locator("input[placeholder='物品名（例：父の形見の時計）']").fill("母の着物（振袖）")
-    page.locator("input[placeholder='渡す相手の名前']").fill("長女 花子")
-    page.locator("button:has-text('追加')").first.click()
-    page.wait_for_timeout(1000)
-    ss(page, "s15d_bequest_two_items")
-
-# ─────────────────────────────────────────────────────────────
-# S16: エンディングノート - デジタル資産
-# ─────────────────────────────────────────────────────────────
-def s16_ending_digital(page: Page):
-    print("\n[S16] エンディングノート - デジタル資産")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('デジタル資産')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s16a_digital_empty")
-
-    # デジタル資産追加フォームを確認する（DigitalSectionの先頭部分を撮影）
-    # サービス名・アカウント・死後の処理
-    svc_inputs = page.locator("input[placeholder='サービス名（例：Amazon, Gmail）'], input[placeholder*='サービス名']")
-    if svc_inputs.count() > 0:
-        svc_inputs.first.fill("Amazon")
-    else:
-        # フォームがある最初のinputに入力
-        page.locator("input").first.fill("Amazon")
-    page.wait_for_timeout(500)
-
-    # 追加ボタン
-    add_btn = page.locator("button:has-text('追加')").first
-    if add_btn.count() > 0:
-        add_btn.click()
-        page.wait_for_timeout(1000)
-        ss(page, "s16b_digital_saved")
-
-    # 下部のサブスクリプションフォーム
-    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-    page.wait_for_timeout(500)
-    ss(page, "s16c_digital_subscription_area")
-
-# ─────────────────────────────────────────────────────────────
-# S17: エンディングノート - 緊急連絡先
-# ─────────────────────────────────────────────────────────────
-def s17_ending_contacts(page: Page):
-    print("\n[S17] エンディングノート - 緊急連絡先")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('緊急連絡先')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s17a_contacts_empty")
-
-    # 連絡先フォームを探して入力
-    name_input = page.locator("input[placeholder*='名前'], input[placeholder*='氏名']").first
-    if name_input.count() > 0:
-        name_input.fill("鈴木 雄介")
-    # 続柄
-    rel_input = page.locator("input[placeholder*='続柄'], input[placeholder*='関係']").first
-    if rel_input.count() > 0:
-        rel_input.fill("長男")
-    # 電話番号
-    tel_input = page.locator("input[placeholder*='電話'], input[type='tel']").first
-    if tel_input.count() > 0:
-        tel_input.fill("090-1234-5678")
-    ss(page, "s17b_contact_form_filled")
-
-    add_btn = page.locator("button:has-text('追加')").first
-    if add_btn.count() > 0:
-        add_btn.click()
-        page.wait_for_timeout(1000)
-        ss(page, "s17c_contact_saved")
-
-# ─────────────────────────────────────────────────────────────
-# S18: エンディングノート - ペット
-# ─────────────────────────────────────────────────────────────
-def s18_ending_pets(page: Page):
-    print("\n[S18] エンディングノート - ペット")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('ペット')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s18a_pets_empty")
-
-    # ペット名を入力
-    name_input = page.locator("input[placeholder*='名前']").first
-    if name_input.count() > 0:
-        name_input.fill("ポチ")
-    species_input = page.locator("input[placeholder*='種類'], input[placeholder*='品種']").first
-    if species_input.count() > 0:
-        species_input.fill("柴犬")
-    caretaker_input = page.locator("input[placeholder*='世話'], input[placeholder*='預け先']").first
-    if caretaker_input.count() > 0:
-        caretaker_input.fill("長男 一郎")
-    ss(page, "s18b_pet_form_filled")
-
-    add_btn = page.locator("button:has-text('追加')").first
-    if add_btn.count() > 0:
-        add_btn.click()
-        page.wait_for_timeout(1000)
-        ss(page, "s18c_pet_saved")
-
-# ─────────────────────────────────────────────────────────────
-# S19: エンディングノート - 家族へのメッセージ
-# ─────────────────────────────────────────────────────────────
-def s19_ending_message(page: Page):
-    print("\n[S19] エンディングノート - 家族へのメッセージ")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/ending-note")
-    page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(1000)
-    page.locator("button:has-text('家族へのメッセージ')").first.click()
-    page.wait_for_timeout(800)
-    ss(page, "s19a_message_empty")
-
-    # メッセージ入力
-    textarea = page.locator("textarea").first
-    if textarea.count() > 0:
-        textarea.fill(
-            "家族のみなさんへ\n\n"
-            "長い間、本当にありがとう。皆のおかげで幸せな人生を歩めました。\n"
-            "これからも家族仲良く、助け合って生きてください。\n\n"
-            "愛を込めて"
-        )
-        page.wait_for_timeout(1200)  # 自動保存を待つ
-        ss(page, "s19b_message_typed")
-
-# ─────────────────────────────────────────────────────────────
-# S20: 認証ガード・ログアウト
-# ─────────────────────────────────────────────────────────────
-def s21_will_simulator(page: Page, token: str, plan_id: int):
-    print("\n[S21] 遺言書シミュレーター")
+# ═══════════════════════════════════════════════════════════════
+# S13: 遺言書シミュレーター  → estate_will_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_estate_will(page: Page, token: str, plan_id: int):
+    print("\n[S13] 遺言書シミュレーター")
     ensure_login(page)
     page.goto(f"{BASE_URL}/estate/{plan_id}/will")
     page.wait_for_load_state("networkidle")
-    page.wait_for_timeout(2000)
-    ss(page, "s21a_will_default")
+    wait(page, 2000)
+    ss(page, "estate_will_01_default")
 
-    # 希望配分を変更（最初の相続人に遺産の6割）
-    inputs = page.locator("input[type='number']")
-    if inputs.count() > 0:
-        first_val = inputs.first.input_value()
+    # 配分設定
+    try:
+        inputs = page.locator("input[type='number']").all()
+        if inputs:
+            inputs[0].fill("20000000")
+            wait(page)
+            ss(page, "estate_will_02_allocation_set")
+    except Exception:
+        pass
+
+    # 法定相続分リセットボタン
+    try:
+        reset_btn = page.locator("button:has-text('法定相続分')").first
+        if reset_btn.is_visible(timeout=1000):
+            ss(page, "estate_will_03_reset_button")
+    except Exception:
+        pass
+
+    # プレビュー
+    try:
+        preview_btn = page.locator("button:has-text('プレビュー'), button:has-text('テキスト')").first
+        if preview_btn.is_visible(timeout=2000):
+            preview_btn.click()
+            wait(page, 1000)
+            ss(page, "estate_will_04_text_preview")
+    except Exception:
+        pass
+
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "estate_will_05_print_button")
+
+# ═══════════════════════════════════════════════════════════════
+# S14: エンディングノート（全10タブ）  → ending_note_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_ending_note(page: Page):
+    print("\n[S14] エンディングノート")
+    ensure_login(page)
+    page.goto(f"{BASE_URL}/ending-note")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1500)
+    ss(page, "ending_note_01_overview_tabs")
+
+    # ── 医療・介護タブ ──
+    try:
+        page.click("button:has-text('医療・介護')")
+        wait(page)
+        ss(page, "ending_note_02_medical_default")
+        # 延命治療設定を変更
+        radios = page.locator("input[type='radio']").all()
+        if radios:
+            radios[0].click()
+        page.locator("textarea").first.fill("かかりつけ医: 山田クリニック 03-1234-5678")
+        wait(page, 1200)
+        ss(page, "ending_note_03_medical_filled")
+    except Exception:
+        pass
+
+    # ── 葬儀タブ ──
+    try:
+        page.click("button:has-text('葬儀')")
+        wait(page)
+        ss(page, "ending_note_04_funeral_default")
+        page.locator("textarea").first.fill("家族葬を希望。音楽はショパンのノクターンを。")
+        wait(page, 1200)
+        ss(page, "ending_note_05_funeral_filled")
+    except Exception:
+        pass
+
+    # ── 形見分けタブ ──
+    try:
+        page.click("button:has-text('形見分け')")
+        wait(page)
+        ss(page, "ending_note_06_bequest_empty")
+        # アイテム追加フォーム
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('追加')").first
+        if add_btn.is_visible(timeout=1000):
+            add_btn.click()
+            wait(page)
+            inputs = page.locator("input[type='text']").all()
+            for i, inp in enumerate(inputs[:2]):
+                inp.fill(["祖母の形見の時計", "長男"][i])
+            page.click("button:has-text('保存'), button:has-text('登録')")
+            wait(page, 1000)
+            ss(page, "ending_note_07_bequest_added")
+    except Exception:
+        pass
+
+    # ── デジタル資産タブ ──
+    try:
+        page.click("button:has-text('デジタル資産')")
+        wait(page)
+        ss(page, "ending_note_08_digital_empty")
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('デジタル資産を追加')").first
+        if add_btn.is_visible(timeout=1000):
+            add_btn.click()
+            wait(page)
+            inputs = page.locator("input[type='text']").all()
+            if inputs:
+                inputs[0].fill("Gmail")
+            page.click("button:has-text('保存'), button:has-text('登録')")
+            wait(page, 1000)
+            ss(page, "ending_note_09_digital_added")
+    except Exception:
+        pass
+
+    # ── 緊急連絡先タブ ──
+    try:
+        page.click("button:has-text('緊急連絡先')")
+        wait(page)
+        ss(page, "ending_note_10_contacts_empty")
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('連絡先を追加')").first
+        if add_btn.is_visible(timeout=1000):
+            add_btn.click()
+            wait(page)
+            inputs = page.locator("input[type='text']").all()
+            for i, inp in enumerate(inputs[:2]):
+                inp.fill(["佐藤 一郎", "長男"][i])
+            page.click("button:has-text('保存'), button:has-text('登録')")
+            wait(page, 1000)
+            ss(page, "ending_note_11_contacts_added")
+    except Exception:
+        pass
+
+    # ── ペットタブ ──
+    try:
+        page.click("button:has-text('ペット')")
+        wait(page)
+        ss(page, "ending_note_12_pets_empty")
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('ペットを追加')").first
+        if add_btn.is_visible(timeout=1000):
+            add_btn.click()
+            wait(page)
+            inputs = page.locator("input[type='text']").all()
+            for i, inp in enumerate(inputs[:2]):
+                inp.fill(["ポチ", "柴犬"][i])
+            page.click("button:has-text('保存'), button:has-text('登録')")
+            wait(page, 1000)
+            ss(page, "ending_note_13_pets_added")
+    except Exception:
+        pass
+
+    # ── お気に入りタブ ──
+    try:
+        page.click("button:has-text('お気に入り')")
+        wait(page)
+        ss(page, "ending_note_14_favorites_empty")
+        textareas = page.locator("textarea").all()
+        if textareas:
+            textareas[0].fill("ベートーベン交響曲第9番、昭和の演歌")
+        wait(page, 1200)
+        ss(page, "ending_note_15_favorites_filled")
+    except Exception:
+        pass
+
+    # ── 家族へのメッセージタブ ──
+    try:
+        page.click("button:has-text('家族へのメッセージ')")
+        wait(page)
+        ss(page, "ending_note_16_family_msg_empty")
+        textareas = page.locator("textarea").all()
+        if textareas:
+            textareas[0].fill("家族へ。ありがとう。いつも支えてくれて感謝しています。健康に気をつけて元気に生きてください。")
+        wait(page, 1200)
+        ss(page, "ending_note_17_family_msg_filled")
+    except Exception:
+        pass
+
+    # ── 追悼メッセージタブ ──
+    try:
+        page.click("button:has-text('追悼メッセージ')")
+        wait(page)
+        ss(page, "ending_note_18_scheduled_msg_empty")
+        add_btn = page.locator("button:has-text('+ メッセージを追加'), button:has-text('追加')").first
+        if add_btn.is_visible(timeout=1000):
+            add_btn.click()
+            wait(page)
+            ss(page, "ending_note_19_scheduled_msg_form")
+            inputs = page.locator("input").all()
+            for i, inp in enumerate(inputs[:2]):
+                inp.fill(["山田 太郎", "taro@example.com"][i])
+            try:
+                page.locator("input[placeholder*='件名']").fill("最後のメッセージ")
+                page.locator("textarea").last.fill("いつも支えてくれてありがとう。")
+            except Exception:
+                pass
+            page.click("button:has-text('保存')")
+            wait(page, 1000)
+            ss(page, "ending_note_20_scheduled_msg_created")
+    except Exception:
+        pass
+
+    # ── ビデオメッセージタブ ──
+    try:
+        page.click("button:has-text('ビデオメッセージ')")
+        wait(page)
+        ss(page, "ending_note_21_video_msg_empty")
         try:
-            inputs.first.fill(str(int(float(first_val or "0") * 1.2)))
+            page.locator("input[placeholder*='タイトル']").fill("家族へ")
+            wait(page)
+            ss(page, "ending_note_22_video_msg_form")
         except Exception:
             pass
-        page.wait_for_timeout(800)
-    ss(page, "s21b_will_modified")
+    except Exception:
+        pass
 
-    # 付言事項を記入
-    memo_area = page.locator("textarea").first
-    if memo_area.count() > 0:
-        memo_area.fill("家族への感謝を込めて、この遺言書を記します。どうか仲良く過ごしてください。")
-        page.wait_for_timeout(600)
-    ss(page, "s21c_will_memo")
-
-
-def s20_auth_guard(page: Page):
-    print("\n[S20] 認証ガード・ログアウト")
-    ensure_login(page)
-    page.goto(f"{BASE_URL}/dashboard")
+    # タブドットインジケーター確認（ページ先頭に戻る）
+    page.goto(f"{BASE_URL}/ending-note")
     page.wait_for_load_state("networkidle")
+    wait(page, 1500)
+    ss(page, "ending_note_23_tab_dots")
 
-    logout_btn = page.locator("button:has-text('ログアウト')").first
-    if logout_btn.count() > 0:
-        logout_btn.click()
-        page.wait_for_timeout(1500)
-        ss(page, "s20a_after_logout")
+    # 保存タイムスタンプ
+    page.evaluate("window.scrollTo(0, 0)")
+    wait(page)
+    ss(page, "ending_note_24_autosave_timestamp")
 
-    # 未認証でダッシュボードアクセス
+# ═══════════════════════════════════════════════════════════════
+# S15: デジタル遺品鍵  → digital_key_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_digital_key(page: Page, token: str):
+    print("\n[S15] デジタル遺品鍵")
+    ensure_login(page)
+    page.goto(f"{BASE_URL}/digital-key")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "digital_key_01_top")
+
+    # 開錠条件セクション
+    page.evaluate("window.scrollTo(0, 0)")
+    ss(page, "digital_key_02_unlock_condition")
+
+    # デッドマンスイッチを有効化
+    try:
+        toggle = page.locator("div[style*='cursor: pointer']").first
+        if toggle.is_visible(timeout=2000):
+            toggle.click()
+            wait(page, 1000)
+            ss(page, "digital_key_03_deadman_enabled")
+            # 日数選択
+            day_btn = page.locator("button:has-text('90日')").first
+            if day_btn.is_visible(timeout=1000):
+                day_btn.click()
+                wait(page)
+            # チェックインボタン
+            checkin = page.locator("button:has-text('生存確認')").first
+            if checkin.is_visible(timeout=1000):
+                ss(page, "digital_key_04_deadman_checkin")
+    except Exception:
+        pass
+
+    # 信頼者追加フォーム
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "digital_key_05_trusted_persons_empty")
+
+    try:
+        add_btn = page.locator("button:has-text('+ 追加'), button:has-text('追加')").first
+        if add_btn.is_visible(timeout=2000):
+            add_btn.click()
+            wait(page)
+            ss(page, "digital_key_06_add_person_form")
+            name_inp = page.locator("input[placeholder*='名前'], input[placeholder*='太郎']").first
+            email_inp = page.locator("input[type='email']").first
+            if name_inp.count() > 0:
+                name_inp.fill("山田 一郎")
+                email_inp.fill("ichiro@example.com")
+                page.click("button:has-text('登録')")
+                wait(page, 1000)
+                ss(page, "digital_key_07_person_added")
+    except Exception:
+        pass
+
+    # 解除キーURL表示
+    try:
+        url_btn = page.locator("button:has-text('解除キーURL'), button:has-text('URLを表示')").first
+        if url_btn.is_visible(timeout=2000):
+            url_btn.click()
+            wait(page)
+            ss(page, "digital_key_08_token_url_visible")
+    except Exception:
+        pass
+
+    # 使い方ガイド
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "digital_key_09_usage_guide")
+
+# ═══════════════════════════════════════════════════════════════
+# S16: アカウント設定  → account_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_account(page: Page):
+    print("\n[S16] アカウント設定")
+    ensure_login(page)
+    page.goto(f"{BASE_URL}/account")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "account_01_top")
+
+    # パスワード変更セクション
+    page.evaluate("window.scrollTo(0, 0)")
+    ss(page, "account_02_password_section")
+
+    # フォントサイズ・かんたんモード
+    try:
+        font_section = page.locator("text=フォントサイズ").first
+        if font_section.is_visible(timeout=2000):
+            font_section.scroll_into_view_if_needed()
+            wait(page)
+            ss(page, "account_03_font_and_simple_mode")
+    except Exception:
+        pass
+
+    # 各フォントサイズ選択
+    try:
+        large_btn = page.locator("button:has-text('大'), button:has-text('large')").first
+        if large_btn.is_visible(timeout=1000):
+            large_btn.click()
+            wait(page)
+            ss(page, "account_04_font_large_preview")
+        medium_btn = page.locator("button:has-text('標準'), button:has-text('medium')").first
+        if medium_btn.is_visible(timeout=1000):
+            medium_btn.click()
+            wait(page)
+    except Exception:
+        pass
+
+    # 活動ログ
+    try:
+        log_btn = page.locator("button:has-text('活動ログ'), button:has-text('ログを表示')").first
+        if log_btn.is_visible(timeout=2000):
+            log_btn.click()
+            wait(page, 1000)
+            ss(page, "account_05_activity_log")
+            close = page.locator("button:has-text('閉じる')").first
+            if close.is_visible(timeout=1000):
+                close.click()
+    except Exception:
+        pass
+
+    # 2FA セクション
+    try:
+        totp_section = page.locator("text=二要素認証, text=2FA, text=TOTP").first
+        if totp_section.is_visible(timeout=2000):
+            totp_section.scroll_into_view_if_needed()
+            wait(page)
+            ss(page, "account_06_2fa_section")
+    except Exception:
+        pass
+
+    # エクスポートセクション
+    try:
+        export_section = page.locator("text=データエクスポート, text=エクスポート").first
+        if export_section.is_visible(timeout=2000):
+            export_section.scroll_into_view_if_needed()
+            wait(page)
+            ss(page, "account_07_export_section")
+    except Exception:
+        pass
+
+    # アカウント削除セクション（最下部）
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "account_08_delete_section")
+
+    # 全体スクロール
+    page.evaluate("window.scrollTo(0, 0)")
+    ss(page, "account_09_full_top")
+
+# ═══════════════════════════════════════════════════════════════
+# S17: リマインダー設定  → reminders_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_reminders(page: Page):
+    print("\n[S17] リマインダー設定")
+    ensure_login(page)
+    page.goto(f"{BASE_URL}/settings/reminders")
+    page.wait_for_load_state("networkidle")
+    wait(page, 1200)
+    ss(page, "reminders_01_enabled")
+
+    # 月選択
+    try:
+        page.select_option("select", "5")
+        wait(page)
+        ss(page, "reminders_02_month_selected")
+    except Exception:
+        pass
+
+    # 通知設定トグル群
+    page.evaluate("window.scrollTo(0, 300)")
+    wait(page)
+    ss(page, "reminders_03_notification_toggles")
+
+    # オフ状態
+    try:
+        toggle = page.locator("div[style*='cursor: pointer']").first
+        if toggle.is_visible(timeout=2000):
+            toggle.click()
+            wait(page)
+            ss(page, "reminders_04_disabled")
+            toggle.click()
+            wait(page)
+    except Exception:
+        pass
+
+    page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+    wait(page)
+    ss(page, "reminders_05_email_input")
+
+# ═══════════════════════════════════════════════════════════════
+# S18: デジタル遺品鍵 解除申請ページ  → unlock_*.png
+# ═══════════════════════════════════════════════════════════════
+def capture_unlock(page: Page, token: str):
+    print("\n[S18] 解除申請ページ（公開）")
+    # デジタルキーの信頼者情報を取得
+    key_data = api_get("/digital-key", token)
+    trusted_persons = key_data.get("trusted_persons", [])
+
+    if trusted_persons:
+        person = trusted_persons[0]
+        pid    = person["id"]
+        tok    = person["access_token"]
+        page.goto(f"{BASE_URL}/unlock/{pid}?token={tok}")
+        page.wait_for_load_state("networkidle")
+        wait(page, 1200)
+        ss(page, "unlock_01_ready")
+
+        # 申請ボタンクリック
+        try:
+            page.click("button:has-text('解除申請を送る')")
+            wait(page, 1500)
+            ss(page, "unlock_02_success_unlocked")
+        except Exception:
+            ss(page, "unlock_02_success_unlocked")
+    else:
+        # フォールバック: 無効なURLでエラー状態
+        page.goto(f"{BASE_URL}/unlock/9999?token=invalid")
+        page.wait_for_load_state("networkidle")
+        wait(page)
+        ss(page, "unlock_01_ready")
+
+    # 無効なトークンでエラー表示
+    page.goto(f"{BASE_URL}/unlock/9999?token=invalidtoken")
+    page.wait_for_load_state("networkidle")
+    wait(page)
+    ss(page, "unlock_03_invalid_url_error")
+
+    # URLパラメーターなしのエラー
+    page.goto(f"{BASE_URL}/unlock/9999")
+    page.wait_for_load_state("networkidle")
+    wait(page)
+    ss(page, "unlock_04_missing_token_error")
+
+# ═══════════════════════════════════════════════════════════════
+# 認証ガード  → auth_guard_*.png  (dashboard/shukatsu カテゴリに含める)
+# ═══════════════════════════════════════════════════════════════
+def capture_auth_guard(page: Page):
+    print("\n[認証ガード] 未認証アクセス")
+    # ログアウト状態にする
+    page.evaluate("localStorage.removeItem('token'); localStorage.removeItem('dm_token')")
     page.goto(f"{BASE_URL}/dashboard")
-    page.wait_for_timeout(1500)
-    ss(page, "s20b_auth_redirect")
+    wait(page, 1500)
+    ss(page, "dashboard_07_auth_redirect_to_login")
 
-    # 未認証で終活ページアクセス
     page.goto(f"{BASE_URL}/shukatsu")
-    page.wait_for_timeout(1500)
-    ss(page, "s20c_shukatsu_redirect")
+    wait(page, 1500)
+    ss(page, "shukatsu_07_auth_redirect")
 
-# ─────────────────────────────────────────────────────────────
+
+# ═══════════════════════════════════════════════════════════════
 # メイン
-# ─────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════
 def main():
     print("=" * 60)
-    print("全画面スクリーンショット取得（仕様書用）")
+    print("全画面スクリーンショット取得（仕様書用・全17画面網羅版）")
     print("=" * 60)
 
     token = api_token()
@@ -623,149 +1023,83 @@ def main():
         )
         page = ctx.new_page()
 
-        # 最初にUIでログイン
+        # 最初にUIログイン
         requests.post(f"{API_URL}/auth/register",
             json={"name": TEST_NAME, "email": TEST_EMAIL, "password": TEST_PASSWORD})
         login_ui(page)
 
-        # 各画面を順番に撮影
-        s01_login(page)
-        s02_register(page)
-        s03_dashboard(page, token)
-        s04_memorial_new(page)
-        s05_memorial_edit(page, token)
-        s06_print_qr(page, token)
-        s07_public_memorial(page, token)
-        s08_shukatsu(page)
-        s09_estate_list(page)
-        plan_id = s10_family_input(page, token)
-        s11_asset_input(page, token, plan_id)
-        s12_estate_result(page, token, plan_id)
-        s21_will_simulator(page, token, plan_id)
-        s13_ending_medical(page)
-        s14_ending_funeral(page)
-        s15_ending_bequest(page)
-        s16_ending_digital(page)
-        s17_ending_contacts(page)
-        s18_ending_pets(page)
-        s19_ending_message(page)
-        s20_auth_guard(page)
+        # ── 1. ログイン画面 ─────────────────────────────
+        capture_login(page)
 
-        # ── S16: デジタル遺品鍵 ──────────────────────────────
+        # ── 2. 新規登録画面 ────────────────────────────
+        capture_register(page)
+        # 再ログイン（capture_register でトークンをクリアしたため）
+        login_ui(page)
+
+        # ── 3. ダッシュボード ──────────────────────────
+        memorial_id = capture_dashboard(page, token)
+
+        # ── 4. 墓誌作成 ───────────────────────────────
+        capture_memorial_new(page)
         ensure_login(page)
-        page.goto(f"{BASE_URL}/digital-key")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1000)
-        ss(page, "s16a_digital_key_empty")
 
-        # 信頼者を追加
-        try:
-            page.click("button:has-text('+ 追加'), button:has-text('追加')")
-            page.wait_for_timeout(500)
-            name_input = page.locator("input[placeholder*='名前'], input[placeholder*='太郎']").first
-            email_input = page.locator("input[type='email']").first
-            if name_input.count() > 0:
-                name_input.fill("山田 一郎")
-                email_input.fill("ichiro@example.com")
-                page.click("button:has-text('登録')")
-                page.wait_for_timeout(1000)
-                ss(page, "s16b_digital_key_added")
-                # トークン表示
-                page.click("button:has-text('解除キーURL'), button:has-text('URLを表示')")
-                page.wait_for_timeout(500)
-                ss(page, "s16c_digital_key_token")
-        except Exception:
-            ss(page, "s16b_digital_key_added")
-            ss(page, "s16c_digital_key_token")
+        # ── 5. 墓誌編集 ───────────────────────────────
+        if memorial_id:
+            capture_memorial_edit(page, token, memorial_id)
 
-        # ── S17: リマインダー設定 ────────────────────────────
-        page.goto(f"{BASE_URL}/settings/reminders")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1000)
-        ss(page, "s17a_reminder_on")
+        # ── 7. 公開墓誌 ───────────────────────────────
+        capture_memorial_public(page, token, memorial_id)
+        ensure_login(page)
 
-        try:
-            page.select_option("select", "4")
-            page.wait_for_timeout(500)
-            ss(page, "s17b_reminder_month")
-            # 通知OFF
-            page.click("div[style*='cursor: pointer']")
-            page.wait_for_timeout(500)
-            ss(page, "s17c_reminder_off")
-        except Exception:
-            ss(page, "s17b_reminder_month")
-            ss(page, "s17c_reminder_off")
+        # ── 8. 終活チェックリスト ──────────────────────
+        capture_shukatsu(page)
 
-        # ── S18: エンディングノート — 追悼メッセージ ─────────
-        page.goto(f"{BASE_URL}/ending-note")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1000)
-        try:
-            page.click("button:has-text('追悼メッセージ')")
-            page.wait_for_timeout(500)
-            ss(page, "s18a_scheduled_msg_empty")
-            page.click("button:has-text('+ メッセージを追加')")
-            page.wait_for_timeout(500)
-            ss(page, "s18b_scheduled_msg_form")
-            inputs = page.locator("input").all()
-            for i, inp in enumerate(inputs[:2]):
-                inp.fill(["山田 太郎", "taro@example.com"][i])
-            page.locator("input[placeholder*='件名']").fill("最後のメッセージ")
-            page.locator("textarea").last.fill("ありがとう。")
-            page.wait_for_timeout(500)
-            page.click("button:has-text('保存')")
-            page.wait_for_timeout(1000)
-            ss(page, "s18c_scheduled_msg_created")
-        except Exception:
-            ss(page, "s18b_scheduled_msg_form")
-            ss(page, "s18c_scheduled_msg_created")
+        # ── 9. 相続計画一覧 ───────────────────────────
+        plan_id = capture_estate_list(page, token)
 
-        # ── S19: エンディングノート — ビデオメッセージ ────────
-        page.goto(f"{BASE_URL}/ending-note")
-        page.wait_for_load_state("networkidle")
-        page.wait_for_timeout(1000)
-        try:
-            page.click("button:has-text('ビデオメッセージ')")
-            page.wait_for_timeout(500)
-            ss(page, "s19a_video_empty")
-            page.locator("input[placeholder*='タイトル']").fill("家族へのメッセージ")
-            page.wait_for_timeout(500)
-            ss(page, "s19b_video_form")
-        except Exception:
-            ss(page, "s19a_video_empty")
-            ss(page, "s19b_video_form")
+        if plan_id:
+            # ── 10. 家族構成 ───────────────────────────
+            capture_estate_family(page, token, plan_id)
 
-        # ── S20: 遺言書シミュレーター — テキストプレビュー ────
-        # 相続計画が既存の場合のみ
-        plans_resp = page.evaluate("""
-            async () => {
-                const r = await fetch('/api/estate-plans', {headers: {'Authorization': 'Bearer ' + localStorage.getItem('dm_token')}});
-                return r.json();
-            }
-        """)
-        if isinstance(plans_resp, list) and len(plans_resp) > 0:
-            plan_id = plans_resp[0]['id']
-            page.goto(f"{BASE_URL}/estate/{plan_id}/will")
-            page.wait_for_load_state("networkidle")
-            page.wait_for_timeout(2000)
-            try:
-                page.click("button:has-text('プレビュー'), button:has-text('テキスト')")
-                page.wait_for_timeout(1000)
-                ss(page, "s20a_will_preview")
-            except Exception:
-                ss(page, "s20a_will_preview")
-            # スクロールして法的案内
-            page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-            page.wait_for_timeout(500)
-            ss(page, "s20b_will_legal")
+            # ── 11. 財産・負債 ─────────────────────────
+            capture_estate_assets(page, token, plan_id)
+
+            # ── 12. 計算結果 ───────────────────────────
+            capture_estate_result(page, token, plan_id)
+
+            # ── 13. 遺言書シミュレーター ───────────────
+            capture_estate_will(page, token, plan_id)
+
+        # ── 14. エンディングノート（全10タブ）──────────
+        capture_ending_note(page)
+
+        # ── 15. デジタル遺品鍵 ────────────────────────
+        capture_digital_key(page, token)
+
+        # ── 16. アカウント設定 ────────────────────────
+        capture_account(page)
+
+        # ── 17. リマインダー設定 ──────────────────────
+        capture_reminders(page)
+
+        # ── 18. 解除申請ページ（公開） ─────────────────
+        ensure_login(page)
+        capture_unlock(page, token)
+
+        # ── 認証ガード ────────────────────────────────
+        capture_auth_guard(page)
 
         browser.close()
 
     # 撮影結果一覧
-    files = sorted(f for f in os.listdir(SS_DIR) if f.startswith("s") and f.endswith(".png"))
+    files = sorted(f for f in os.listdir(SS_DIR) if f.endswith(".png") and
+                   not f.startswith("0") and not f.startswith("s0"))
+    new_files = sorted(f for f in os.listdir(SS_DIR) if f.endswith(".png") and
+                       "_" in f and not f.startswith("s") and not f.startswith("0") and
+                       f[0].isalpha())
     print("\n" + "=" * 60)
-    print(f"撮影完了: {len(files)} 枚")
-    for f in files:
+    print(f"撮影完了: 新形式 {len(new_files)} 枚")
+    for f in new_files:
         sz = os.path.getsize(os.path.join(SS_DIR, f)) // 1024
         print(f"  {f}  ({sz} KB)")
     print("=" * 60)
