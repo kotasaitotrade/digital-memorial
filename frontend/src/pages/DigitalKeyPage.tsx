@@ -207,6 +207,23 @@ export default function DigitalKeyPage() {
                   </button>
                 ))}
               </div>
+              {(() => {
+                const baseDate = key.last_checkin_at ? new Date(key.last_checkin_at) : null;
+                if (!baseDate) return null;
+                const daysSince = Math.floor((Date.now() - baseDate.getTime()) / 86400000);
+                const daysLeft = key.deadman_interval_days - daysSince;
+                const isUrgent = daysLeft <= 7;
+                const isOverdue = daysLeft <= 0;
+                return (
+                  <div style={{ marginBottom: "1rem", padding: "0.65rem 1rem", borderRadius: 8, background: isOverdue ? "#fef2f2" : isUrgent ? "#fffbeb" : "#f0f7f4", border: `1px solid ${isOverdue ? "#fecaca" : isUrgent ? "#fde68a" : "#bbf7d0"}` }}>
+                    <span style={{ fontSize: "0.85rem", fontWeight: 600, color: isOverdue ? "#dc2626" : isUrgent ? "#d97706" : GREEN }}>
+                      {isOverdue
+                        ? `⚠️ ${Math.abs(daysLeft)}日超過 — 信頼者へ通知済みの可能性があります`
+                        : `🕐 次の通知まで残り ${daysLeft} 日`}
+                    </span>
+                  </div>
+                );
+              })()}
               <button
                 onClick={doCheckin}
                 style={{ background: checkinDone ? "#16a34a" : GREEN, color: "#fff", border: "none", padding: "0.6rem 1.5rem", borderRadius: 8, cursor: "pointer", fontWeight: 600, fontSize: "0.9rem" }}

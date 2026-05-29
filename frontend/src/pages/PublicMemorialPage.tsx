@@ -99,6 +99,7 @@ export default function PublicMemorialPage() {
   if (!memorial) return null;
 
   const images = memorial.media.filter((m) => m.media_type === "image");
+  const videos = memorial.media.filter((m) => m.media_type === "video");
 
   // アルバム名でグルーピング（未設定はデフォルトグループへ）
   const albumGroups: Record<string, typeof images> = {};
@@ -185,6 +186,35 @@ export default function PublicMemorialPage() {
             </section>
           )}
 
+          {/* 動画 */}
+          {videos.length > 0 && (
+            <section style={s.section}>
+              <SectionTitle>動画の思い出</SectionTitle>
+              <div style={s.videoGrid}>
+                {videos.map((v) => (
+                  <div key={v.id} style={s.videoCard}>
+                    <video
+                      src={v.file_path}
+                      controls
+                      preload="metadata"
+                      style={s.videoEl}
+                    />
+                    {(v.caption || v.taken_at || v.location) && (
+                      <div style={s.galleryMeta}>
+                        {v.caption && <p style={s.galleryCaption}>{v.caption}</p>}
+                        {(v.taken_at || v.location) && (
+                          <p style={s.gallerySubMeta}>
+                            {[v.taken_at, v.location].filter(Boolean).join(" · ")}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* メッセージ */}
           {memorial.message && (
             <section style={s.section}>
@@ -245,6 +275,9 @@ const s: Record<string, React.CSSProperties> = {
   heroLine: { width: 48, height: 2, background: "rgba(255,255,255,0.3)" },
 
   container: { maxWidth: 760, margin: "0 auto", padding: "3.5rem 2rem 2rem" },
+  videoGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1.25rem" },
+  videoCard: { borderRadius: "var(--radius-md)", overflow: "hidden", background: "var(--white)", boxShadow: "var(--shadow-sm)" },
+  videoEl: { width: "100%", display: "block", maxHeight: 260, background: "#000", objectFit: "contain" as const },
   section: { marginBottom: "3.5rem" },
 
   bodyText: { fontSize: "1rem", lineHeight: 2.1, whiteSpace: "pre-wrap" as const, color: "var(--gray-700)" },
