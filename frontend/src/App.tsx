@@ -14,6 +14,7 @@ import AccountSettingsPage from "./pages/AccountSettingsPage";
 import WillSimulatorPage from "./pages/WillSimulatorPage";
 import DigitalKeyPage from "./pages/DigitalKeyPage";
 import ReminderSettingsPage from "./pages/ReminderSettingsPage";
+import UnlockPage from "./pages/UnlockPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,6 +31,7 @@ export default function App() {
 
       {/* 公開 */}
       <Route path="/m/:slug" element={<PublicMemorialPage />} />
+      <Route path="/unlock/:personId" element={<UnlockPage />} />
 
       {/* 墓誌管理 */}
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />

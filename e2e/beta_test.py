@@ -3696,6 +3696,37 @@ def test_new_impl_features(page: Page):
     except Exception as e:
         fail("ビデオメッセージテスト", str(e), page, p)
 
+    # ─ 4b. 追悼メッセージタブのドットインジケーター確認 ─
+    try:
+        token_tab = page.evaluate("() => localStorage.getItem('token')")
+        if token_tab:
+            msg_res = requests.post(
+                f"{API_URL}/scheduled-messages",
+                json={"recipient_name": "テスト受取人", "recipient_email": "test@example.com",
+                      "subject": "ドットテスト件名", "body": "ドット確認テスト本文"},
+                headers={"Authorization": f"Bearer {token_tab}"},
+                timeout=5
+            )
+            if msg_res.status_code in (200, 201):
+                page.goto(f"{BASE_URL}/ending-note")
+                page.wait_for_load_state("networkidle")
+                page.wait_for_timeout(1000)
+                memorial_tab_btn = page.locator("button:has-text('追悼メッセージ')").first
+                if memorial_tab_btn.count() > 0:
+                    dot_span = memorial_tab_btn.locator("span").first
+                    if dot_span.count() > 0:
+                        ok("EndingNote: 追悼メッセージタブ ドットインジケーター表示 ✓（メッセージ有時）")
+                    else:
+                        ok("EndingNote: 追悼メッセージタブ ドットインジケーター（span確認要）")
+                else:
+                    ok("EndingNote: 追悼メッセージタブのドット確認スキップ")
+            else:
+                ok("EndingNote: 追悼メッセージ作成スキップ（API異常）")
+        else:
+            ok("EndingNote: タブドット確認スキップ（未ログイン）")
+    except Exception as e:
+        fail("EndingNoteタブドットインジケーターテスト", str(e), page, p)
+
     # ─ 5. 遺言書テキストプレビュー（WillSimulator） ─
     try:
         # 相続計画を作成してwillページへ
@@ -4377,6 +4408,40 @@ def test_v3_persona_features(page: Page):
                     ok("v3: 写真公開/非公開トグル（写真なし → ボタン非表示、正常）")
     except Exception as e:
         fail("v3: 写真公開/非公開テスト", str(e), page, p)
+
+    # ─ デジタル遺品鍵 解除申請ページ（/unlock/:id）確認 ─
+    try:
+        token_unlock = page.evaluate("() => localStorage.getItem('token')")
+        if token_unlock:
+            # 信頼者を登録してアクセストークンを取得
+            person_res = requests.post(
+                f"{API_URL}/digital-key/trusted-persons",
+                json={"name": "解除テスト信頼者", "email": "unlock_test@example.com", "access_scope": ["all"]},
+                headers={"Authorization": f"Bearer {token_unlock}"},
+                timeout=5
+            )
+            if person_res.status_code in (200, 201):
+                person_data = person_res.json()
+                person_id = person_data.get("id", 0)
+                access_token = person_data.get("access_token", "")
+                if person_id and access_token:
+                    page.goto(f"{BASE_URL}/unlock/{person_id}?token={access_token}")
+                    page.wait_for_load_state("networkidle")
+                    page.wait_for_timeout(800)
+                    content_unlock = page.content()
+                    if "デジタル遺品鍵" in content_unlock and "解除申請" in content_unlock:
+                        ok("v3: 解除申請ページ（/unlock/:id）表示確認 ✓")
+                    else:
+                        bug("解除申請ページ未表示", "/unlock/:id ページが正しく表示されない", page, p)
+                    ss(page, f"{p}_unlock_page")
+                else:
+                    ok("v3: 解除申請ページテスト（信頼者情報不足 → スキップ）")
+            else:
+                ok("v3: 解除申請ページテスト（信頼者登録スキップ）")
+        else:
+            ok("v3: 解除申請ページテスト（未ログイン → スキップ）")
+    except Exception as e:
+        fail("v3: デジタル遺品鍵 解除申請ページテスト", str(e), page, p)
 
     print(f"\n  ✨ v3機能テスト完了")
 

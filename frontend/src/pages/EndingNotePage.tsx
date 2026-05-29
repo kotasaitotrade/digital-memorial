@@ -28,7 +28,7 @@ interface VideoMessage {
 
 const GREEN = "#1a5c38";
 
-function tabHasContent(tab: Tab, draft: Partial<EndingNote>, note: EndingNote | null): boolean {
+function tabHasContent(tab: Tab, draft: Partial<EndingNote>, note: EndingNote | null, scheduledMessages: ScheduledMessage[], videoMessages: VideoMessage[]): boolean {
   if (!note) return false;
   switch (tab) {
     case "医療・介護": return !!(draft.life_prolonging || draft.cpr || draft.organ_donation || draft.care_location || draft.medications || draft.medical_notes);
@@ -39,8 +39,8 @@ function tabHasContent(tab: Tab, draft: Partial<EndingNote>, note: EndingNote | 
     case "ペット": return (note.pets?.length ?? 0) > 0;
     case "お気に入り": return !!(draft.favorite_music || draft.favorite_movies || draft.favorite_foods);
     case "家族へのメッセージ": return !!(draft.family_message);
-    case "追悼メッセージ": return false;
-    case "ビデオメッセージ": return false;
+    case "追悼メッセージ": return scheduledMessages.length > 0;
+    case "ビデオメッセージ": return videoMessages.length > 0;
     default: return false;
   }
 }
@@ -129,7 +129,7 @@ export default function EndingNotePage() {
         {/* タブ（画面のみ） */}
         <div style={s.tabBar} className="no-print">
           {TABS.map((tab) => {
-            const done = tabHasContent(tab, draft, note);
+            const done = tabHasContent(tab, draft, note, scheduledMessages, videoMessages);
             return (
               <button
                 key={tab}
