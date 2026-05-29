@@ -94,7 +94,9 @@ def view_memorial_public(slug: str, password: str = None, db: Session = Depends(
             raise HTTPException(status_code=403, detail="Password required")
     db.add(MemorialView(memorial_id=memorial.id))
     db.commit()
-    return memorial
+    d = MemorialPublic.model_validate(memorial).model_dump()
+    d["media"] = [m for m in d["media"] if m.get("media_is_public", True)]
+    return d
 
 
 @router.get("/memorials/{memorial_id}/view-count")
@@ -141,7 +143,7 @@ def update_media(memorial_id: int, media_id: int, body: dict = Body(...), db: Se
     media = db.query(MemorialMedia).filter(MemorialMedia.id == media_id, MemorialMedia.memorial_id == memorial_id).first()
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
-    for field in ("caption", "album_name", "taken_at", "location", "episode"):
+    for field in ("caption", "album_name", "taken_at", "location", "episode", "media_is_public"):
         if field in body:
             setattr(media, field, body[field])
     db.commit()

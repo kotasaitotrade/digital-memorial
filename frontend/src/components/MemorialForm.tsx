@@ -37,8 +37,8 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
   const [captions, setCaptions] = useState<Record<number, string>>(
     Object.fromEntries((initial?.media ?? []).map((m) => [m.id, m.caption ?? ""]))
   );
-  const [albumMeta, setAlbumMeta] = useState<Record<number, { album_name: string; taken_at: string; location: string; episode: string; }>>(
-    Object.fromEntries((initial?.media ?? []).map((m) => [m.id, { album_name: m.album_name ?? "", taken_at: m.taken_at ?? "", location: m.location ?? "", episode: m.episode ?? "" }]))
+  const [albumMeta, setAlbumMeta] = useState<Record<number, { album_name: string; taken_at: string; location: string; episode: string; media_is_public: boolean; }>>(
+    Object.fromEntries((initial?.media ?? []).map((m) => [m.id, { album_name: m.album_name ?? "", taken_at: m.taken_at ?? "", location: m.location ?? "", episode: m.episode ?? "", media_is_public: m.media_is_public !== false }]))
   );
   const [expandedMedia, setExpandedMedia] = useState<Record<number, boolean>>({});
   const [uploading, setUploading] = useState(false);
@@ -84,7 +84,7 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
         const newMedia = res.data;
       setMediaList((prev) => [...prev, newMedia]);
       setCaptions((prev) => ({ ...prev, [newMedia.id]: newMedia.caption ?? "" }));
-      setAlbumMeta((prev) => ({ ...prev, [newMedia.id]: { album_name: "", taken_at: "", location: "", episode: "" } }));
+      setAlbumMeta((prev) => ({ ...prev, [newMedia.id]: { album_name: "", taken_at: "", location: "", episode: "", media_is_public: true } }));
       }
     } catch {
       setError("写真のアップロードに失敗しました");
@@ -106,7 +106,11 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
     const meta = albumMeta[mediaId] ?? {};
     await api.patch(`/memorials/${savedId}/media/${mediaId}`, {
       caption: captions[mediaId] ?? "",
-      ...meta,
+      album_name: meta.album_name,
+      taken_at: meta.taken_at,
+      location: meta.location,
+      episode: meta.episode,
+      media_is_public: meta.media_is_public ?? true,
     });
   };
 
@@ -203,6 +207,17 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
                           value={albumMeta[m.id]?.episode ?? ""}
                           onChange={(e) => setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], episode: e.target.value } }))}
                           onBlur={() => handleMediaMetaBlur(m.id)} rows={2} />
+                        <button
+                          type="button"
+                          style={{ ...s.metaPublicBtn, ...(albumMeta[m.id]?.media_is_public !== false ? s.metaPublicBtnOn : s.metaPublicBtnOff) }}
+                          onClick={() => {
+                            const next = !(albumMeta[m.id]?.media_is_public !== false);
+                            setAlbumMeta((prev) => ({ ...prev, [m.id]: { ...prev[m.id], media_is_public: next } }));
+                            api.patch(`/memorials/${savedId}/media/${m.id}`, { media_is_public: next });
+                          }}
+                        >
+                          {albumMeta[m.id]?.media_is_public !== false ? "🌐 公開中" : "🔒 非公開"}
+                        </button>
                       </div>
                     )}
                   </div>
@@ -301,6 +316,9 @@ const s: Record<string, React.CSSProperties> = {
   metaExpand: { padding: "0.4rem", background: "#f8f7f4", borderTop: "1px solid var(--sand-300)", display: "flex", flexDirection: "column" as const, gap: "0.3rem" },
   metaInput: { width: "100%", padding: "0.25rem 0.4rem", fontSize: "0.7rem", border: "1px solid var(--sand-300)", borderRadius: "4px", background: "#fff", outline: "none", boxSizing: "border-box" as const },
   metaTextarea: { width: "100%", padding: "0.25rem 0.4rem", fontSize: "0.7rem", border: "1px solid var(--sand-300)", borderRadius: "4px", background: "#fff", outline: "none", resize: "none" as const, boxSizing: "border-box" as const },
+  metaPublicBtn: { width: "100%", padding: "0.25rem 0.4rem", fontSize: "0.7rem", border: "1px solid var(--sand-300)", borderRadius: "4px", cursor: "pointer", fontWeight: 500, transition: "all 0.15s" },
+  metaPublicBtnOn: { background: "#f0faf3", color: "var(--green-800)", borderColor: "var(--green-400)" },
+  metaPublicBtnOff: { background: "#f3f4f6", color: "var(--gray-600)", borderColor: "var(--gray-300)" },
 
   toggleRow: { display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" },
   toggle: { width: 44, height: 24, borderRadius: 12, position: "relative", transition: "background var(--transition)", cursor: "pointer", flexShrink: 0 },

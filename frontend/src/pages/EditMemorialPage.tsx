@@ -11,7 +11,7 @@ export default function EditMemorialPage() {
   const [memorial, setMemorial] = useState<Memorial | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const publicUrl = memorial ? `${FRONTEND_ORIGIN}/m/${memorial.id}` : null;
+  const publicUrl = memorial ? `${FRONTEND_ORIGIN}/m/${memorial.slug}` : null;
 
   const handleCopyUrl = () => {
     if (!publicUrl) return;

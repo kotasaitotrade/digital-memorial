@@ -13,6 +13,7 @@ class MemorialMediaResponse(BaseModel):
     location: Optional[str]
     episode: Optional[str]
     order: int
+    media_is_public: Optional[bool] = True
 
     class Config:
         from_attributes = True
