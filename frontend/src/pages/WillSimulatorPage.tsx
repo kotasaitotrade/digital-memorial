@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../lib/api";
+import { autoCheck } from "../lib/autoCheck";
 import { useAuth } from "../hooks/useAuth";
 import type { EstatePlan, InheritanceCalculation, HeirResult } from "../types";
 
@@ -66,6 +67,7 @@ export default function WillSimulatorPage() {
       await api.put(`/estate-plans/${planId}/will`, { allocations, memo });
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
+      autoCheck("will_considered");
     } finally {
       setSaving(false);
     }
@@ -102,6 +104,7 @@ export default function WillSimulatorPage() {
             <span style={s.headerLogo}>自筆遺言書シミュレーター</span>
           </div>
           <div style={s.headerRight}>
+            <Link to="/shukatsu" style={s.homeLink} className="no-print">終活ノートへ →</Link>
             <span style={s.headerUser}>{user?.name}</span>
             <button style={s.logoutBtn} onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
           </div>
@@ -362,6 +365,7 @@ const s: Record<string, React.CSSProperties> = {
   headerInner: { maxWidth: 960, margin: "0 auto", padding: "0 1.5rem", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" },
   headerLeft: { display: "flex", alignItems: "center", gap: "1rem" },
   backLink: { fontSize: "0.85rem", color: "#6b7280", textDecoration: "none" },
+  homeLink: { fontSize: "0.82rem", color: GREEN, textDecoration: "none", fontWeight: 600 },
   headerLogo: { fontSize: "1.05rem", fontWeight: 700, color: GREEN },
   headerRight: { display: "flex", alignItems: "center", gap: "0.75rem" },
   headerUser: { fontSize: "0.9rem", color: "#374151" },

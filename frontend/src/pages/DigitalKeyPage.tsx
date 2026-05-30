@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { autoCheck } from "../lib/autoCheck";
 import { useAuth } from "../hooks/useAuth";
 
 const GREEN = "#1a5c38";
@@ -91,6 +92,7 @@ export default function DigitalKeyPage() {
       ...(days !== undefined ? { deadman_interval_days: days } : {}),
     });
     setKey(r.data);
+    if (enabled) autoCheck("digital_key_set");
   };
 
   const copyToken = (person: TrustedPerson) => {
@@ -107,8 +109,8 @@ export default function DigitalKeyPage() {
     <div style={{ minHeight: "100vh", background: "#f5f5f0" }}>
       {/* ヘッダー */}
       <header style={{ background: GREEN, padding: "0 1.5rem", height: "3.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <Link to="/shukatsu" style={{ color: "white", textDecoration: "none", fontWeight: 700, fontSize: "1.1rem" }}>
-          ← Digital Memorial
+        <Link to="/shukatsu" style={{ color: "white", textDecoration: "none", fontWeight: 700, fontSize: "1rem" }}>
+          ← 終活ノートへ戻る
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <span style={{ color: "rgba(255,255,255,0.85)", fontSize: "0.85rem" }}>{user?.name}</span>

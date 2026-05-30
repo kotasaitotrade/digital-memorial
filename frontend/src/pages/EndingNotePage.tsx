@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../lib/api";
+import { autoCheck } from "../lib/autoCheck";
 import { useAuth } from "../hooks/useAuth";
 import type { EndingNote, BequestItem, DigitalAssetItem, SubscriptionItem, EmergencyContact, PetItem } from "../types";
 
@@ -77,6 +78,11 @@ export default function EndingNotePage() {
     setNote(r.data);
     setSaving(false);
     setLastSavedAt(new Date());
+    if ("medical_prolonging" in partial || "medical_no_prolonging" in partial) autoCheck("medical_prolonging_set");
+    if ("doctor_name" in partial || "prescription_memo" in partial) autoCheck("medical_doctor_recorded");
+    if ("organ_donation" in partial) autoCheck("medical_organ_set");
+    if ("funeral_style" in partial || "funeral_scale" in partial) autoCheck("funeral_style_set");
+    if ("family_message" in partial && partial.family_message) autoCheck("family_message_written");
   };
 
   const savedLabel = (() => {
@@ -428,6 +434,7 @@ function BequestSection({ items, onRefresh }: { items: BequestItem[]; onRefresh:
     if (!form.item_name || !form.recipient) return;
     await api.post("/ending-note/bequest-items", form);
     setForm({ item_name: "", recipient: "", notes: "" });
+    autoCheck("bequest_listed");
     onRefresh();
   };
   const del = async (id: number) => { await api.delete(`/ending-note/bequest-items/${id}`); onRefresh(); };
@@ -467,12 +474,14 @@ function DigitalSection({ items, subs, onRefresh }: { items: DigitalAssetItem[];
     if (!daForm.service_name) return;
     await api.post("/ending-note/digital-assets", daForm);
     setDaForm({ service_name: "", account: "", after_death_instruction: "", notes: "" });
+    autoCheck("digital_sns_set");
     onRefresh();
   };
   const addSub = async () => {
     if (!subForm.service_name) return;
     await api.post("/ending-note/subscriptions", { ...subForm, monthly_fee: subForm.monthly_fee ? Number(subForm.monthly_fee) : null });
     setSubForm({ service_name: "", monthly_fee: "", cancellation_method: "", notes: "" });
+    autoCheck("digital_subscriptions");
     onRefresh();
   };
 
@@ -526,6 +535,7 @@ function ContactSection({ items, onRefresh }: { items: EmergencyContact[]; onRef
     if (!form.name) return;
     await api.post("/ending-note/emergency-contacts", form);
     setForm({ name: "", relationship: "", phone: "", email: "", notes: "", priority: 0 });
+    autoCheck("contacts_listed");
     onRefresh();
   };
 
@@ -566,6 +576,7 @@ function PetSection({ items, onRefresh }: { items: PetItem[]; onRefresh: () => v
     if (!form.name) return;
     await api.post("/ending-note/pets", form);
     setForm(PET_EMPTY);
+    autoCheck("pet_caretaker_set");
     onRefresh();
   };
 

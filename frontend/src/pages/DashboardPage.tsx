@@ -33,10 +33,8 @@ export default function DashboardPage() {
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem(ONBOARDING_KEY));
   const [memorials, setMemorials] = useState<Memorial[]>([]);
   const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
-  const [todoItems, setTodoItems] = useState<ChecklistItem[]>([]);
   const [allChecklistItems, setAllChecklistItems] = useState<ChecklistItem[]>([]);
   const [estatePlanCount, setEstatePlanCount] = useState(0);
-  const [showPriorityOnly, setShowPriorityOnly] = useState(false);
 
   const isSimple = user?.simple_mode ?? false;
 
@@ -51,7 +49,6 @@ export default function DashboardPage() {
       const data = r.data;
       const all = Array.isArray(data) ? data : (data.items ?? []);
       setAllChecklistItems(all);
-      setTodoItems(all.filter((i: ChecklistItem) => !i.is_completed));
     });
     api.get("/estate-plans").then((r) => setEstatePlanCount(r.data.length)).catch(() => {});
   }, []);
@@ -62,8 +59,6 @@ export default function DashboardPage() {
     setMemorials((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const priorityTodos = todoItems.filter((i) => i.stars >= 4);
-  const displayTodos = showPriorityOnly ? priorityTodos : todoItems.slice(0, 5);
   const checklistTotal = allChecklistItems.length;
   const checklistDone = allChecklistItems.filter((i) => i.is_completed).length;
   const completionPct = checklistTotal > 0 ? Math.round((checklistDone / checklistTotal) * 100) : 0;
@@ -144,19 +139,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 次のおすすめアクション（最優先の未完了タスク） */}
-        {!isSimple && todoItems.length > 0 && completionPct < 100 && (() => {
-          const top = todoItems[0];
-          return (
-            <Link to={top.link} style={s.nextActionCard}>
-              <div style={s.nextActionLeft}>
-                <span style={s.nextActionBadge}>次のおすすめアクション</span>
-                <div style={s.nextActionLabel}>{top.label}</div>
-              </div>
-              <span style={s.nextActionArrow}>→</span>
-            </Link>
-          );
-        })()}
 
         {/* かんたんモード時のクイックアクション（田中幸子・藤田美香 要望） */}
         {isSimple && (
@@ -181,57 +163,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 未完了タスク（佐藤健一・藤田美香 要望） */}
-        {todoItems.length > 0 && (
-          <div style={s.todoCard}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-              <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--gray-800)" }}>
-                未完了タスク
-                <HelpTip text="終活の準備で残っている項目です。クリックしてページへ移動できます。" />
-                <span style={{ marginLeft: "0.5rem", fontSize: "0.78rem", color: "var(--gray-500)" }}>（{todoItems.length}件）</span>
-              </div>
-              <button
-                onClick={() => setShowPriorityOnly(!showPriorityOnly)}
-                style={{
-                  padding: "0.25rem 0.7rem", fontSize: "0.75rem", cursor: "pointer",
-                  background: showPriorityOnly ? "var(--green-800)" : "var(--white)",
-                  color: showPriorityOnly ? "#fff" : "var(--gray-700)",
-                  border: "1.5px solid var(--gray-300)", borderRadius: 20,
-                }}
-              >
-                {showPriorityOnly ? "✓ 重要のみ表示中" : "重要のみ表示"}
-              </button>
-            </div>
-            {displayTodos.length === 0 ? (
-              <div style={{ fontSize: "0.85rem", color: "var(--gray-500)" }}>重要な未完了タスクはありません</div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                {displayTodos.map((item) => (
-                  <Link
-                    key={item.task_key}
-                    to={item.link}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "0.6rem",
-                      padding: "0.5rem 0.75rem", borderRadius: 6, textDecoration: "none",
-                      background: "var(--sand-100)", color: "var(--gray-700)", fontSize: "0.85rem",
-                    }}
-                  >
-                    <span style={{ fontSize: "0.65rem", fontWeight: 700, padding: "2px 6px", borderRadius: 4, background: item.stars >= 5 ? "#fee2e2" : item.stars >= 4 ? "#fef3c7" : "#f3f4f6", color: item.stars >= 5 ? "#dc2626" : item.stars >= 4 ? "#92400e" : "#6b7280" }}>
-                      {item.priority}
-                    </span>
-                    {item.label}
-                    <span style={{ marginLeft: "auto", fontSize: "0.8rem", color: "var(--gray-400)" }}>→</span>
-                  </Link>
-                ))}
-                {!showPriorityOnly && todoItems.length > 5 && (
-                  <Link to="/shukatsu" style={{ fontSize: "0.8rem", color: "var(--green-700)", textDecoration: "none", padding: "0.3rem 0.75rem" }}>
-                    すべて見る（{todoItems.length}件）→
-                  </Link>
-                )}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* 墓誌一覧（かんたんモード時は非表示オプション） */}
         <div style={s.titleRow}>
@@ -277,7 +208,9 @@ function MemorialCard({ memorial: m, onQR, onDelete }: { memorial: Memorial; onQ
           <img src={m.media[0].file_path} alt={m.name} style={s.cardThumb} />
         ) : (
           <div style={s.cardThumbFallback}>
-            <span style={s.cardThumbInitial}>{m.name[0]}</span>
+            <span style={s.cardThumbInitial}>
+              {(m.name.split(/[\s　]/)[1] ?? m.name).slice(0, 3)}
+            </span>
           </div>
         )}
         <div style={{ ...s.publicBadge, ...(m.is_public ? s.publicBadgeOpen : s.publicBadgeLocked) }}>
@@ -343,7 +276,7 @@ const s: Record<string, React.CSSProperties> = {
   cardThumbWrap: { position: "relative", height: 180, background: "var(--sand-200)", overflow: "hidden" },
   cardThumb: { width: "100%", height: "100%", objectFit: "cover" },
   cardThumbFallback: { width: "100%", height: "100%", background: "linear-gradient(135deg, var(--green-900), var(--green-700))", display: "flex", alignItems: "center", justifyContent: "center" },
-  cardThumbInitial: { fontFamily: "var(--font-serif)", fontSize: "4rem", color: "rgba(255,255,255,0.6)", fontWeight: 300 },
+  cardThumbInitial: { fontFamily: "var(--font-serif)", fontSize: "2.2rem", color: "rgba(255,255,255,0.75)", fontWeight: 300, letterSpacing: "0.05em" },
   publicBadge: { position: "absolute", top: 10, right: 10, padding: "0.2rem 0.6rem", borderRadius: 20, fontSize: "0.72rem", fontWeight: 500 },
   publicBadgeOpen: { background: "rgba(45,106,79,0.9)", color: "#fff" },
   publicBadgeLocked: { background: "rgba(0,0,0,0.55)", color: "#fff" },
