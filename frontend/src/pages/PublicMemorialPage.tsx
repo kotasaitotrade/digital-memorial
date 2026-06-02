@@ -237,7 +237,7 @@ export default function PublicMemorialPage() {
       {lightbox && (
         <div style={s.lightboxOverlay} onClick={() => setLightbox(null)}>
           <img src={lightbox} alt="" style={s.lightboxImg} />
-          <button style={s.lightboxClose} onClick={() => setLightbox(null)}>✕</button>
+          <button style={s.lightboxClose} onClick={() => setLightbox(null)} aria-label="閉じる">✕</button>
         </div>
       )}
     </>

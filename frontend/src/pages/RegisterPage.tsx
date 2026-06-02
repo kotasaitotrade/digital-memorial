@@ -48,16 +48,16 @@ export default function RegisterPage() {
 
           <form onSubmit={handleSubmit} style={s.form}>
             <div style={s.field}>
-              <label style={s.label}>お名前</label>
-              <input style={s.input} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="山田 花子" required />
+              <label style={s.label} htmlFor="reg-name">お名前</label>
+              <input id="reg-name" style={s.input} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="山田 花子" required autoComplete="name" />
             </div>
             <div style={s.field}>
-              <label style={s.label}>メールアドレス</label>
-              <input style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required />
+              <label style={s.label} htmlFor="reg-email">メールアドレス</label>
+              <input id="reg-email" style={s.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your@email.com" required autoComplete="email" />
             </div>
             <div style={s.field}>
-              <label style={s.label}>パスワード</label>
-              <input style={s.input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8文字以上" required minLength={8} />
+              <label style={s.label} htmlFor="reg-password">パスワード（8文字以上）</label>
+              <input id="reg-password" style={s.input} type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="8文字以上" required minLength={8} autoComplete="new-password" />
             </div>
 
             {error && (

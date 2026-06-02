@@ -54,25 +54,29 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} style={s.form}>
             <div style={s.field}>
-              <label style={s.label}>メールアドレス</label>
+              <label style={s.label} htmlFor="login-email">メールアドレス</label>
               <input
+                id="login-email"
                 style={s.input}
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 required
+                autoComplete="email"
               />
             </div>
             <div style={s.field}>
-              <label style={s.label}>パスワード</label>
+              <label style={s.label} htmlFor="login-password">パスワード</label>
               <input
+                id="login-password"
                 style={s.input}
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                autoComplete="current-password"
               />
             </div>
 

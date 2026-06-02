@@ -124,7 +124,9 @@ export default function EndingNotePage() {
             <span style={s.headerLogo}>エンディングノート</span>
           </div>
           <div style={s.headerRight}>
-            {savedLabel && <span style={saving ? s.savingLabel : s.savedLabel}>{savedLabel}</span>}
+            <span style={saving ? s.savingLabel : (savedLabel ? s.savedLabel : s.autoSaveBadge)}>
+              {savedLabel || "自動保存"}
+            </span>
             <span style={s.headerUser}>{user?.name}</span>
             <button style={{ ...s.logoutBtn, background: "#0891b2", color: "#fff", border: "none" }} className="no-print" onClick={() => window.print()}>🖨 PDF出力</button>
             <button style={s.logoutBtn} className="no-print" onClick={() => { logout(); navigate("/login"); }}>ログアウト</button>
@@ -820,6 +822,7 @@ const s: Record<string, React.CSSProperties> = {
   headerRight: { display: "flex", alignItems: "center", gap: "0.75rem" },
   savingLabel: { fontSize: "0.78rem", color: "#9ca3af" },
   savedLabel:  { fontSize: "0.78rem", color: "#6ee7b7" },
+  autoSaveBadge: { fontSize: "0.72rem", color: "#9ca3af", border: "1px solid #e5e7eb", borderRadius: 4, padding: "0.15rem 0.5rem" },
   headerUser: { fontSize: "0.9rem", color: "#374151" },
   logoutBtn: { fontSize: "0.8rem", padding: "0.3rem 0.8rem", border: "1px solid #d1d5db", borderRadius: 6, background: "#fff", cursor: "pointer" },
   main: { maxWidth: 900, margin: "0 auto", padding: "2rem 1.5rem" },

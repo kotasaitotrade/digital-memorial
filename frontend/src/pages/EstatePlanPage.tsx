@@ -97,7 +97,7 @@ export default function EstatePlanListPage() {
                       autoFocus
                     />
                     <button style={s.primaryBtn} onClick={() => saveEdit(plan.id)}>保存</button>
-                    <button style={s.ghostBtn} onClick={() => setEditingId(null)}>✕</button>
+                    <button style={s.ghostBtn} onClick={() => setEditingId(null)} aria-label="キャンセル">✕</button>
                   </div>
                 ) : (
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
@@ -595,7 +595,7 @@ function MemberRow({ m, idx, onUpdate, onRemove, showAdopted, showHalfBlood, par
           {parentOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
       )}
-      <button style={s.removeBtn} onClick={() => onRemove(idx)}>✕</button>
+      <button style={s.removeBtn} onClick={() => onRemove(idx)} aria-label="削除">✕</button>
       {/* 個人へのメッセージ（佐藤健一 要望） */}
       <input
         style={{ ...s.input, flex: "0 0 100%", marginTop: "0.35rem", fontSize: "0.82rem" }}
@@ -631,7 +631,7 @@ function AssetRow({ a, idx, onUpdate, onRemove, isDebt }: {
           みなし相続財産
         </label>
       )}
-      <button style={s.removeBtn} onClick={() => onRemove(idx)}>✕</button>
+      <button style={s.removeBtn} onClick={() => onRemove(idx)} aria-label="削除">✕</button>
       {/* 不動産・農地専用（鈴木太郎 要望） */}
       {(a.asset_type === "real_estate" || a.asset_type === "farmland") && (
         <div style={{ flex: "0 0 100%", display: "flex", gap: "0.4rem", flexWrap: "wrap", marginTop: "0.35rem" }}>

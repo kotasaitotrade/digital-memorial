@@ -39,7 +39,7 @@ export default function OnboardingModal({ onClose }: Props) {
       <div style={s.modal} onClick={(e) => e.stopPropagation()}>
         <div style={s.header}>
           <span style={s.logoText}>Digital Memorial へようこそ</span>
-          <button style={s.closeBtn} onClick={onClose}>✕</button>
+          <button style={s.closeBtn} onClick={onClose} aria-label="閉じる">✕</button>
         </div>
 
         <div style={s.stepIndicator}>

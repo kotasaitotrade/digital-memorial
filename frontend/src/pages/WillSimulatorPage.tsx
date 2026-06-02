@@ -248,6 +248,11 @@ export default function WillSimulatorPage() {
             🖨 遺言書テンプレートを印刷
           </button>
           <Link to={`/estate/${planId}/result`} style={{ ...s.primaryBtn, background: "#64748b" }}>← 計算結果に戻る</Link>
+          {saved && (
+            <Link to="/shukatsu" style={{ ...s.primaryBtn, background: GREEN }}>
+              終活ノートへ戻る →
+            </Link>
+          )}
         </div>
 
         {/* 遺言書テキストプレビュー */}

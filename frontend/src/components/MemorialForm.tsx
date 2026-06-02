@@ -174,6 +174,7 @@ export default function MemorialForm({ initial, memorialId, onSave }: Props) {
                       style={s.mediaDeleteBtn}
                       onClick={() => handleDeleteMedia(m.id)}
                       title="削除"
+                      aria-label="削除"
                     >✕</button>
                     <button
                       type="button"

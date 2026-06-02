@@ -53,6 +53,14 @@ export default function App() {
       <Route path="/settings/reminders" element={<PrivateRoute><ReminderSettingsPage /></PrivateRoute>} />
 
       <Route path="/" element={<Navigate to="/dashboard" />} />
+      <Route path="*" element={
+        <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: "1rem", background: "#f5f5f0" }}>
+          <p style={{ fontSize: "3rem" }}>🕊️</p>
+          <h1 style={{ fontSize: "1.3rem", fontWeight: 700 }}>ページが見つかりません</h1>
+          <p style={{ color: "#888", fontSize: "0.9rem" }}>URLをご確認ください</p>
+          <a href="/dashboard" style={{ color: "#1a5c38", fontWeight: 600, fontSize: "0.9rem" }}>ダッシュボードへ戻る</a>
+        </div>
+      } />
     </Routes>
   );
 }
