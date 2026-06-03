@@ -24,7 +24,7 @@ EXPOSE 7860
 
 ENV DATABASE_URL=sqlite:///./memorial.db \
     SECRET_KEY=hf-demo-secret-key-change-me \
-    BASE_URL=https://mystic-oracle-digital-memorial.hf.space \
+    BASE_URL=https://kotasaitotrade-digital-memorial.hf.space \
     CORS_ORIGINS=*
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "7860"]
