@@ -23,8 +23,9 @@ services:
         value: https://digital-memorial.onrender.com
 
   # ── フロントエンド (React Static Site) ────────────────────
-  - type: static
+  - type: web
     name: digital-memorial
+    runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
