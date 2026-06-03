@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     base_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    upload_dir: str = "uploads"
 
     # SMTP設定（未設定時はコンソールログのみ・開発モード）
     smtp_host: str = ""

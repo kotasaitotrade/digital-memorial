@@ -286,7 +286,7 @@ def upload_funeral_photo(
     current_user: User = Depends(get_current_user),
 ):
     note = _get_or_create_note(db, current_user.id)
-    upload_dir = f"uploads/funeral_photos/{current_user.id}"
+    upload_dir = os.path.join(settings.upload_dir, f"funeral_photos/{current_user.id}")
     os.makedirs(upload_dir, exist_ok=True)
     safe_name = f"{uuid.uuid4().hex}_{file.filename}"
     disk_path = os.path.join(upload_dir, safe_name)
@@ -779,7 +779,7 @@ def delete_scheduled_message(
 #  ビデオメッセージ
 # ═══════════════════════════════════════════════════════════════
 
-VIDEO_DIR = os.path.join(os.path.dirname(__file__), "../../../../uploads/videos")
+VIDEO_DIR = os.path.join(settings.upload_dir, "videos")
 os.makedirs(VIDEO_DIR, exist_ok=True)
 
 

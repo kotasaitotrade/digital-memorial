@@ -114,7 +114,8 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
     if not memorial:
         raise HTTPException(status_code=404, detail="Memorial not found")
 
-    upload_dir = f"uploads/media/{memorial_id}"
+    from ..config import settings as _s
+    upload_dir = os.path.join(_s.upload_dir, f"media/{memorial_id}")
     os.makedirs(upload_dir, exist_ok=True)
 
     import uuid
@@ -123,8 +124,6 @@ def upload_media(memorial_id: int, file: UploadFile = File(...), caption: str = 
     with open(disk_path, "wb") as f:
         shutil.copyfileobj(file.file, f)
 
-    # フルURLで保存（クロスオリジン・同一オリジン両対応）
-    from ..config import settings as _s
     url_path = f"{_s.base_url}/uploads/media/{memorial_id}/{safe_name}"
 
     media_type = "image" if file.content_type.startswith("image") else "video"

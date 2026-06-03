@@ -6,11 +6,17 @@ services:
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        value: sqlite:///./memorial.db
+        value: sqlite:////data/memorial.db
+      - key: UPLOAD_DIR
+        value: /data/uploads
       - key: BASE_URL
         value: https://digital-memorial-api.onrender.com
       - key: CORS_ORIGINS
