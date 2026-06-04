@@ -286,13 +286,8 @@ def upload_funeral_photo(
     current_user: User = Depends(get_current_user),
 ):
     note = _get_or_create_note(db, current_user.id)
-    upload_dir = os.path.join(settings.upload_dir, f"funeral_photos/{current_user.id}")
-    os.makedirs(upload_dir, exist_ok=True)
-    safe_name = f"{uuid.uuid4().hex}_{file.filename}"
-    disk_path = os.path.join(upload_dir, safe_name)
-    with open(disk_path, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    url_path = f"{settings.base_url}/uploads/funeral_photos/{current_user.id}/{safe_name}"
+    from ..storage import save_upload
+    url_path = save_upload(file.file, file.filename, f"funeral_photos/{current_user.id}", file.content_type or "image/jpeg")
     note.funeral_photo_path = url_path
     db.commit()
     db.refresh(note)
@@ -800,14 +795,18 @@ def upload_video_message(
         raise HTTPException(status_code=400, detail="動画ファイルのみアップロードできます")
     ext = os.path.splitext(file.filename or "")[1] or ".mp4"
     filename = f"{uuid.uuid4()}{ext}"
+    # 一旦ローカルに保存してサイズ・長さを取得してからR2へ
     dest = os.path.join(VIDEO_DIR, filename)
+    os.makedirs(VIDEO_DIR, exist_ok=True)
     with open(dest, "wb") as f:
         shutil.copyfileobj(file.file, f)
     size = os.path.getsize(dest)
     duration_seconds = _extract_video_duration(dest)
+    from ..storage import save_upload_path
+    file_url = save_upload_path(dest, f"videos/{filename}", file.content_type or "video/mp4")
     video = VideoMessage(
         user_id=current_user.id, title=title, description=description or None,
-        file_path=f"/api/video-messages/{filename}", file_size=size,
+        file_path=file_url, file_size=size,
         duration_seconds=duration_seconds,
     )
     db.add(video)

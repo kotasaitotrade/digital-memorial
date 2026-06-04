@@ -10,6 +10,13 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
     upload_dir: str = "uploads"
 
+    # Cloudflare R2（未設定時はローカル保存）
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    r2_public_url: str = ""
+
     # SMTP設定（未設定時はコンソールログのみ・開発モード）
     smtp_host: str = ""
     smtp_port: int = 587
