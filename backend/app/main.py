@@ -10,13 +10,18 @@ from .models import activity_log  # noqa: F401 — ensure ActivityLog table is c
 from .config import settings
 from .scheduler import start_scheduler, stop_scheduler
 
-Base.metadata.create_all(bind=engine)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Drive から DB をダウンロード（初回・再起動時のデータ復元）
+    from .drive_storage import download_db, upload_db
+    db_path = settings.database_url.replace("sqlite:///", "").replace("./", "")
+    download_db(db_path)
+    # DB が変わった可能性があるのでテーブルを再作成
+    Base.metadata.create_all(bind=engine)
     start_scheduler()
     yield
+    # シャットダウン時に Drive へ最終バックアップ
+    upload_db(db_path)
     stop_scheduler()
 
 

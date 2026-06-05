@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     r2_bucket_name: str = ""
     r2_public_url: str = ""
 
+    # Google Drive（未設定時はローカル保存）
+    # GOOGLE_DRIVE_TOKEN_JSON: config/KOTASAITO_drive_token.json の内容をそのままセット
+    google_drive_token_json: str = ""
+    google_drive_db_folder_id: str = ""       # memorial.db を置くフォルダID
+    google_drive_uploads_folder_id: str = ""  # 写真・動画を置くフォルダID
+
     # SMTP設定（未設定時はコンソールログのみ・開発モード）
     smtp_host: str = ""
     smtp_port: int = 587

@@ -134,6 +134,14 @@ def send_trusted_person_annual_check() -> None:
         db.close()
 
 
+def backup_db_to_drive() -> None:
+    """5分ごとに SQLite DB を Google Drive にバックアップ"""
+    from .config import settings
+    from .drive_storage import upload_db
+    db_path = settings.database_url.replace("sqlite:///", "").replace("./", "")
+    upload_db(db_path)
+
+
 def start_scheduler() -> None:
     global _scheduler
     if _scheduler and _scheduler.running:
@@ -145,8 +153,10 @@ def start_scheduler() -> None:
     _scheduler.add_job(send_annual_reminders, CronTrigger(hour=9, minute=0), id="annual_reminder", replace_existing=True)
     # 信頼者年次確認：毎日午前9時（内部で1/1判定）
     _scheduler.add_job(send_trusted_person_annual_check, CronTrigger(hour=9, minute=0), id="trusted_check", replace_existing=True)
+    # Drive DB バックアップ：5分ごと
+    _scheduler.add_job(backup_db_to_drive, CronTrigger(minute="*/5"), id="drive_db_backup", replace_existing=True)
     _scheduler.start()
-    logger.info("Scheduler started (deadman_check, annual_reminder, trusted_check)")
+    logger.info("Scheduler started (deadman_check, annual_reminder, trusted_check, drive_db_backup)")
 
 
 def stop_scheduler() -> None:
