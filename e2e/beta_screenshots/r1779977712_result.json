@@ -1,0 +1,79 @@
+{
+  "round": "1779977712",
+  "timestamp": "2026-05-28T23:21:50.787968",
+  "pass": 272,
+  "fail": 6,
+  "bugs": 4,
+  "issues": [
+    {
+      "persona": "yamada",
+      "step": "ペット追加",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='ペットの名前']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_1.png"
+    },
+    {
+      "persona": "suzuki",
+      "step": "葬儀設定",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"textarea[placeholder='会場・花・参列者への要望など']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_2.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "チェックインボタンなし",
+      "severity": "BUG",
+      "desc": "デッドマンスイッチにチェックインボタンがない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_bug_1.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "v3: ペット詳細テスト",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='ペットの名前']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_3.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "v3: 農地・保険フィールドテスト",
+      "severity": "FAIL",
+      "desc": "Page.click: Timeout 5000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('＋ 農地・田畑を追加')\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_4.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "TOTPセットアップAPI失敗",
+      "severity": "BUG",
+      "desc": "HTTP 404: {\"detail\":\"Not Found\"}",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_bug_2.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "活動ログAPI失敗",
+      "severity": "BUG",
+      "desc": "HTTP 404",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_bug_3.png"
+    },
+    {
+      "persona": "v3feat",
+      "step": "CSVエクスポートAPI失敗",
+      "severity": "BUG",
+      "desc": "HTTP 404",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_bug_4.png"
+    },
+    {
+      "persona": "adv",
+      "step": "ペット削除テスト",
+      "severity": "FAIL",
+      "desc": "Page.wait_for_selector: Timeout 6000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='ペットの名前']\") to be ",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_5.png"
+    },
+    {
+      "persona": "law",
+      "step": "直系尊属テスト",
+      "severity": "FAIL",
+      "desc": "Timeout 8000ms exceeded.\n=========================== logs ===========================\nwaiting for navigation to \"http://",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r1779977712_fail_6.png"
+    }
+  ]
+}

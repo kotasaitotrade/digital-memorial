@@ -1,0 +1,30 @@
+{
+  "round": "13",
+  "timestamp": "2026-05-28T01:30:16.626602",
+  "pass": 93,
+  "fail": 2,
+  "bugs": 1,
+  "issues": [
+    {
+      "persona": "deep",
+      "step": "削除失敗",
+      "severity": "BUG",
+      "desc": "削除ボタンをクリックしたが計画数が変わらない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r13_bug_1.png"
+    },
+    {
+      "persona": "deep",
+      "step": "全タブ保存テスト",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='例：〇〇クリニック・田中先生']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r13_fail_1.png"
+    },
+    {
+      "persona": "deep",
+      "step": "デジタル資産削除テスト",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='例：Facebook、楽天銀行など']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r13_fail_2.png"
+    }
+  ]
+}

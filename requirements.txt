@@ -1,0 +1,9 @@
+streamlit>=1.40.0
+sqlalchemy==2.0.35
+pillow==10.4.0
+qrcode[pil]==7.4.2
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+pydantic-settings==2.5.2
+python-jose[cryptography]==3.3.0
+pydantic[email]==2.9.2

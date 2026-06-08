@@ -1,0 +1,16 @@
+{
+  "round": "14",
+  "timestamp": "2026-05-28T01:34:57.230331",
+  "pass": 96,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "deep",
+      "step": "デジタル資産削除テスト",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='例：@username']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r14_fail_1.png"
+    }
+  ]
+}

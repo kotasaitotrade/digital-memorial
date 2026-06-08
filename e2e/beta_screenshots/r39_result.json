@@ -1,0 +1,16 @@
+{
+  "round": "39",
+  "timestamp": "2026-05-28T09:56:14.739088",
+  "pass": 173,
+  "fail": 1,
+  "bugs": 0,
+  "issues": [
+    {
+      "persona": "iso",
+      "step": "公開墓誌アクセステスト",
+      "severity": "FAIL",
+      "desc": "Page.click: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text('ログアウト')\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r39_fail_1.png"
+    }
+  ]
+}

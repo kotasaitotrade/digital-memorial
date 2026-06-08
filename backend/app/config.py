@@ -1,0 +1,39 @@
+from pydantic_settings import BaseSettings
+
+
+class Settings(BaseSettings):
+    database_url: str = "sqlite:///./memorial.db"
+    secret_key: str = "dev-secret-key-change-in-production"
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    base_url: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,http://localhost:3000"
+    upload_dir: str = "uploads"
+
+    # Cloudflare R2（未設定時はローカル保存）
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = ""
+    r2_public_url: str = ""
+
+    # Google Drive（未設定時はローカル保存）
+    # GOOGLE_DRIVE_TOKEN_JSON: config/KOTASAITO_drive_token.json の内容をそのままセット
+    google_drive_token_json: str = ""
+    google_drive_db_folder_id: str = ""       # memorial.db を置くフォルダID
+    google_drive_uploads_folder_id: str = ""  # 写真・動画を置くフォルダID
+
+    # SMTP設定（未設定時はコンソールログのみ・開発モード）
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@digital-memorial.example.com"
+    smtp_use_tls: bool = True
+    smtp_use_ssl: bool = False
+
+    class Config:
+        env_file = ".env"
+
+
+settings = Settings()

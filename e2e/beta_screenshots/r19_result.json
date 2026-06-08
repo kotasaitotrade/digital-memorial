@@ -1,0 +1,30 @@
+{
+  "round": "19",
+  "timestamp": "2026-05-28T01:58:34.892698",
+  "pass": 104,
+  "fail": 1,
+  "bugs": 2,
+  "issues": [
+    {
+      "persona": "adv",
+      "step": "代襲相続結果",
+      "severity": "BUG",
+      "desc": "孫（代襲）が相続計算結果に表示されない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r19_bug_1.png"
+    },
+    {
+      "persona": "adv",
+      "step": "墓誌編集フォームなし",
+      "severity": "BUG",
+      "desc": "編集ページに略歴フィールドが見つからない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r19_bug_2.png"
+    },
+    {
+      "persona": "adv",
+      "step": "EndingNote削除テスト",
+      "severity": "FAIL",
+      "desc": "Page.fill: Timeout 12000ms exceeded.\nCall log:\n  - waiting for locator(\"input[placeholder='例：犬・猫・うさぎなど']\")\n",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r19_fail_1.png"
+    }
+  ]
+}

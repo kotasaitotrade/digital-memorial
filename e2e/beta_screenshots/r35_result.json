@@ -1,0 +1,16 @@
+{
+  "round": "35",
+  "timestamp": "2026-05-28T03:16:20.054362",
+  "pass": 162,
+  "fail": 0,
+  "bugs": 1,
+  "issues": [
+    {
+      "persona": "media",
+      "step": "写真追加ボタンなし",
+      "severity": "BUG",
+      "desc": "メモリアル編集ページに写真追加ボタンが表示されない",
+      "ss": "/Users/user01/digital-memorial/e2e/beta_screenshots/r35_bug_1.png"
+    }
+  ]
+}
