@@ -10,6 +10,20 @@ from .models import activity_log  # noqa: F401 — ensure ActivityLog table is c
 from .config import settings
 from .scheduler import start_scheduler, stop_scheduler
 
+def _run_migrations():
+    """SQLite ALTER TABLE で既存テーブルに不足カラムを追加する。"""
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        # hakajimai_plans の追加カラム
+        result = conn.execute(text("PRAGMA table_info(hakajimai_plans)"))
+        existing = {row[1] for row in result.fetchall()}
+        if "sect" not in existing:
+            conn.execute(text("ALTER TABLE hakajimai_plans ADD COLUMN sect VARCHAR DEFAULT ''"))
+        if "grave_info" not in existing:
+            conn.execute(text("ALTER TABLE hakajimai_plans ADD COLUMN grave_info JSON DEFAULT '{}'"))
+        conn.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Drive から DB をダウンロード（初回・再起動時のデータ復元）
@@ -18,6 +32,8 @@ async def lifespan(app: FastAPI):
     download_db(db_path)
     # DB が変わった可能性があるのでテーブルを再作成
     Base.metadata.create_all(bind=engine)
+    # 既存テーブルへの不足カラム追加（create_all は新規テーブルのみ作成するため）
+    _run_migrations()
     start_scheduler()
     yield
     # シャットダウン時に Drive へ最終バックアップ

@@ -141,6 +141,7 @@ export default function HakajimaiPage() {
     const items = plan.checklist_items.map((it) =>
       it.key === key ? { ...it, is_done: !it.is_done } : it
     );
+    setPlan({ ...plan, checklist_items: items });
     save({ checklist_items: items });
   };
 

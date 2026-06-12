@@ -93,6 +93,16 @@ export default function DashboardPage() {
           <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>→</span>
         </Link>
 
+        {/* 墓じまい計画バナー */}
+        <Link to="/hakajimai" style={{ ...s.shukatsuBanner, background: "linear-gradient(135deg, #1a3a28 0%, #2d6a4f 100%)" }}>
+          <span style={{ fontSize: "1.3rem" }}>⛩️</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>墓じまい計画</div>
+            {!isSimple && <div style={{ fontSize: "0.78rem", opacity: 0.85 }}>供養方法の選択・手続きチェックリスト・費用シミュレーション</div>}
+          </div>
+          <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>→</span>
+        </Link>
+
         {/* クイックスタッツ */}
         {!isSimple && (
           <div style={s.statsRow}>
