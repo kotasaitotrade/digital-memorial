@@ -6,3 +6,4 @@ from .shukatsu import (
     ChecklistCompletion,
 )
 from .activity_log import ActivityLog
+from .hakajimai import HakajimaiPlan  # noqa: F401 — ensure table is created

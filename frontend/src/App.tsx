@@ -15,6 +15,7 @@ import WillSimulatorPage from "./pages/WillSimulatorPage";
 import DigitalKeyPage from "./pages/DigitalKeyPage";
 import ReminderSettingsPage from "./pages/ReminderSettingsPage";
 import UnlockPage from "./pages/UnlockPage";
+import HakajimaiPage from "./pages/HakajimaiPage";
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/estate/:planId/result" element={<PrivateRoute><EstateResultPage /></PrivateRoute>} />
       <Route path="/estate/:planId/will" element={<PrivateRoute><WillSimulatorPage /></PrivateRoute>} />
       <Route path="/ending-note" element={<PrivateRoute><EndingNotePage /></PrivateRoute>} />
+      <Route path="/hakajimai" element={<PrivateRoute><HakajimaiPage /></PrivateRoute>} />
 
       <Route path="/account" element={<PrivateRoute><AccountSettingsPage /></PrivateRoute>} />
       <Route path="/digital-key" element={<PrivateRoute><DigitalKeyPage /></PrivateRoute>} />

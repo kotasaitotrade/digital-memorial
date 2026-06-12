@@ -105,6 +105,10 @@ export default function ShukatsuPage() {
             <div style={s.quickIcon}>📋</div>
             <div style={s.quickLabel}>エンディングノート</div>
           </Link>
+          <Link to="/hakajimai" style={s.quickCard}>
+            <div style={s.quickIcon}>⛩️</div>
+            <div style={s.quickLabel}>墓じまい計画</div>
+          </Link>
           <Link to="/dashboard" style={s.quickCard}>
             <div style={s.quickIcon}>🕊️</div>
             <div style={s.quickLabel}>墓誌の管理</div>

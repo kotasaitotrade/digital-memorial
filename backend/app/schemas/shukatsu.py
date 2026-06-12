@@ -243,7 +243,7 @@ class TrustedPersonResponse(BaseModel):
 class DigitalKeyUpdate(BaseModel):
     unlock_condition: Optional[str] = None
     notes: Optional[str] = None
-    # デッドマンスイッチ（山田花子 要望）
+    is_unlocked: Optional[bool] = None
     deadman_enabled: Optional[bool] = None
     deadman_interval_days: Optional[int] = None
 
