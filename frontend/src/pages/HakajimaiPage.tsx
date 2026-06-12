@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../lib/api";
 import { useAuth } from "../hooks/useAuth";
@@ -112,6 +112,7 @@ export default function HakajimaiPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const saveIdRef = useRef(0);
 
   useEffect(() => {
     api.get("/hakajimai").then((r) => setPlan(r.data));
@@ -120,6 +121,7 @@ export default function HakajimaiPage() {
   const save = useCallback(async (patch: Partial<Plan>) => {
     if (!plan) return;
     setSaving(true);
+    const id = ++saveIdRef.current;
     const updated = { ...plan, ...patch };
     const r = await api.put("/hakajimai", {
       kuyou_method:      updated.kuyou_method,
@@ -130,10 +132,12 @@ export default function HakajimaiPage() {
       sect:              updated.sect,
       grave_info:        updated.grave_info,
     });
-    setPlan(r.data);
-    setSaving(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+    if (saveIdRef.current === id) {
+      setPlan(r.data);
+      setSaving(false);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
   }, [plan]);
 
   const toggleCheck = (key: string) => {
@@ -147,8 +151,9 @@ export default function HakajimaiPage() {
 
   const updateCost = (key: string, amount: number) => {
     if (!plan) return;
+    const safeAmount = Math.max(0, Number.isNaN(amount) ? 0 : amount);
     const items = plan.cost_items.map((it) =>
-      it.key === key ? { ...it, amount } : it
+      it.key === key ? { ...it, amount: safeAmount } : it
     );
     setPlan({ ...plan, cost_items: items });
   };
@@ -215,11 +220,19 @@ export default function HakajimaiPage() {
             <p style={s.sectionDesc}>希望する供養方法を選んでください。</p>
             <div style={s.methodGrid}>
               {KUYOU_OPTIONS.map((opt) => (
-                <button key={opt.value} onClick={() => save({ kuyou_method: opt.value })}
+                <button key={opt.value}
+                  onClick={() => {
+                    const next = plan.kuyou_method === opt.value ? "" : opt.value;
+                    setPlan({ ...plan, kuyou_method: next });
+                    save({ kuyou_method: next });
+                  }}
                   style={{ ...s.methodCard, ...(plan.kuyou_method === opt.value ? s.methodCardActive : {}) }}>
                   <span style={{ fontSize: "2rem" }}>{opt.icon}</span>
                   <span style={s.methodLabel}>{opt.value}</span>
                   <span style={s.methodDesc}>{opt.desc}</span>
+                  {plan.kuyou_method === opt.value && (
+                    <span style={{ fontSize: "0.68rem", color: "#1a5c38", marginTop: "0.15rem" }}>✓ 選択中（もう一度押すと解除）</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -286,6 +299,7 @@ export default function HakajimaiPage() {
                   placeholder="その他、引き継いでほしい情報を自由に" />
               </div>
             </div>
+            <p style={{ fontSize: "0.8rem", color: "#9ca3af", marginTop: "0.75rem" }}>各入力欄からフォーカスを外すと自動保存されます</p>
           </div>
         )}
 
@@ -344,6 +358,7 @@ export default function HakajimaiPage() {
                 <div style={{ fontWeight: 700, fontSize: "1.1rem", color: "#1a5c38" }}>あなたの目安: {totalCost.toLocaleString()} 円</div>
               </div>
             </div>
+            <p style={{ fontSize: "0.8rem", color: "#9ca3af", marginTop: "0.5rem" }}>金額を変更して入力欄からフォーカスを外すと自動保存されます</p>
           </div>
         )}
 
@@ -423,7 +438,7 @@ const s = {
   costLabel: { fontWeight: 600, color: "#1a3a28", fontSize: "0.9rem" },
   costNote:  { color: "#9ca3af", fontSize: "0.75rem", marginTop: "0.1rem" },
   costRange: { color: "#6b7280", fontSize: "0.75rem", marginTop: "0.15rem" },
-  costInput: { width: 110, padding: "0.35rem 0.5rem", border: "1px solid #d1d5db", borderRadius: 6, fontSize: "0.9rem", textAlign: "right" as const },
+  costInput: { width: "clamp(80px, 30vw, 130px)", padding: "0.35rem 0.5rem", border: "1px solid #d1d5db", borderRadius: 6, fontSize: "0.9rem", textAlign: "right" as const },
   totalRow:  { padding: "1rem", marginTop: "0.75rem", background: "#f0f9f4", border: "1px solid #a7d7b9", borderRadius: 8 },
   tplCard:   { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, marginBottom: "1rem", overflow: "hidden" },
   tplHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1rem", background: "#f9fafb", borderBottom: "1px solid #e5e7eb" },
