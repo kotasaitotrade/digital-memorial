@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [qrTarget, setQrTarget] = useState<Memorial | null>(null);
   const [allChecklistItems, setAllChecklistItems] = useState<ChecklistItem[]>([]);
   const [estatePlanCount, setEstatePlanCount] = useState(0);
+  const [hakajimaiPlan, setHakajimaiPlan] = useState<{ kuyou_method: string; checklist_items: { is_done: boolean }[] } | null>(null);
 
   const isSimple = user?.simple_mode ?? false;
 
@@ -51,6 +52,7 @@ export default function DashboardPage() {
       setAllChecklistItems(all);
     });
     api.get("/estate-plans").then((r) => setEstatePlanCount(r.data.length)).catch(() => {});
+    api.get("/hakajimai").then((r) => setHakajimaiPlan(r.data)).catch(() => {});
   }, []);
 
   const handleDelete = async (id: number) => {
@@ -96,9 +98,16 @@ export default function DashboardPage() {
         {/* 墓じまい計画バナー */}
         <Link to="/hakajimai" style={{ ...s.shukatsuBanner, background: "linear-gradient(135deg, #1a3a28 0%, #2d6a4f 100%)" }}>
           <span style={{ fontSize: "1.3rem" }}>⛩️</span>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>墓じまい計画</div>
-            {!isSimple && <div style={{ fontSize: "0.78rem", opacity: 0.85 }}>供養方法の選択・手続きチェックリスト・費用シミュレーション</div>}
+            {hakajimaiPlan ? (
+              <div style={{ fontSize: "0.78rem", opacity: 0.9, marginTop: "0.2rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" as const }}>
+                <span>{hakajimaiPlan.kuyou_method ? `供養方法: ${hakajimaiPlan.kuyou_method}` : "供養方法: 未設定"}</span>
+                <span>手続き: {hakajimaiPlan.checklist_items.filter((i) => i.is_done).length}/{hakajimaiPlan.checklist_items.length} 完了</span>
+              </div>
+            ) : (
+              !isSimple && <div style={{ fontSize: "0.78rem", opacity: 0.85 }}>供養方法の選択・手続きチェックリスト・費用シミュレーション</div>
+            )}
           </div>
           <span style={{ marginLeft: "auto", fontSize: "1.1rem" }}>→</span>
         </Link>

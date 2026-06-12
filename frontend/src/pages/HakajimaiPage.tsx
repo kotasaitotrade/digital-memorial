@@ -18,6 +18,8 @@ type Plan = {
   grave_info: GraveInfo;
 };
 
+const WELCOME_KEY = "hakajimai-welcome-shown";
+
 const KUYOU_OPTIONS = [
   { value: "永代供養墓", icon: "🏛️", desc: "寺院・霊園が永代にわたって供養" },
   { value: "合祀墓",     icon: "🤝", desc: "他の方と一緒に納骨（費用が安い）" },
@@ -112,7 +114,13 @@ export default function HakajimaiPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved]   = useState(false);
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem(WELCOME_KEY));
   const saveIdRef = useRef(0);
+
+  const dismissWelcome = () => {
+    localStorage.setItem(WELCOME_KEY, "1");
+    setShowWelcome(false);
+  };
 
   useEffect(() => {
     api.get("/hakajimai").then((r) => setPlan(r.data));
@@ -188,6 +196,38 @@ export default function HakajimaiPage() {
 
   return (
     <div style={s.page}>
+      {/* ── ウェルカムモーダル（初回のみ） ── */}
+      {showWelcome && (
+        <div style={s.overlay}>
+          <div style={s.modal}>
+            <div style={{ textAlign: "center", marginBottom: "1.25rem" }}>
+              <span style={{ fontSize: "2.5rem" }}>⛩️</span>
+              <h2 style={{ margin: "0.5rem 0 0.25rem", color: "#1a3a28", fontSize: "1.25rem" }}>墓じまい計画へようこそ</h2>
+              <p style={{ color: "#6b7280", fontSize: "0.88rem", margin: 0 }}>お墓の今後について、6つのステップで整理できます</p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: "0.6rem", marginBottom: "1.5rem" }}>
+              {[
+                { icon: "🏛️", tab: "供養方法",    desc: "永代供養墓・散骨など希望の供養方法を選ぶ" },
+                { icon: "🪦", tab: "お墓の情報",  desc: "現在のお墓・石材店・お寺の情報を記録する" },
+                { icon: "✅", tab: "手続き",      desc: "行政・寺院への手続きをチェックリストで管理" },
+                { icon: "💴", tab: "費用",        desc: "墓じまいにかかる費用を事前にシミュレーション" },
+                { icon: "📄", tab: "テンプレート", desc: "お寺への連絡文などをコピーして使える" },
+                { icon: "💌", tab: "家族へ",      desc: "家族へのメッセージ・希望を残しておく" },
+              ].map(({ icon, tab, desc }) => (
+                <div key={tab} style={{ display: "flex", gap: "0.75rem", alignItems: "flex-start" }}>
+                  <span style={{ fontSize: "1.2rem", flexShrink: 0, marginTop: "0.1rem" }}>{icon}</span>
+                  <div>
+                    <span style={{ fontWeight: 700, color: "#1a3a28", fontSize: "0.88rem" }}>{tab}</span>
+                    <span style={{ color: "#6b7280", fontSize: "0.82rem" }}>　{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button onClick={dismissWelcome} style={s.welcomeBtn}>はじめる →</button>
+          </div>
+        </div>
+      )}
+
       <div style={s.header}>
         <button onClick={() => navigate("/dashboard")} style={s.back}>← ダッシュボード</button>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -446,4 +486,7 @@ const s = {
   copyBtn:   { background: "#1a5c38", color: "#fff", border: "none", borderRadius: 6, padding: "0.3rem 0.75rem", cursor: "pointer", fontSize: "0.82rem", fontWeight: 600 },
   copyBtnDone: { background: "#16a34a" },
   tplBody:   { padding: "1rem", fontSize: "0.85rem", color: "#374151", whiteSpace: "pre-wrap" as const, lineHeight: 1.7, margin: 0, fontFamily: "inherit" },
+  overlay:   { position: "fixed" as const, inset: 0, background: "rgba(0,0,0,0.55)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "1rem" },
+  modal:     { background: "#fff", borderRadius: 16, padding: "1.75rem 1.5rem", maxWidth: 440, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.25)" },
+  welcomeBtn: { width: "100%", padding: "0.75rem", background: "#1a5c38", color: "#fff", border: "none", borderRadius: 10, fontSize: "1rem", fontWeight: 700, cursor: "pointer" },
 };
