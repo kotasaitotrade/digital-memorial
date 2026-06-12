@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 import os
 from .database import engine, Base
-from .routers import auth_router, memorial_router, shukatsu_router
+from .routers import auth_router, memorial_router, shukatsu_router, hakajimai_router
 from .models import activity_log  # noqa: F401 — ensure ActivityLog table is created
 from .config import settings
 from .scheduler import start_scheduler, stop_scheduler
@@ -42,6 +42,7 @@ app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads"
 app.include_router(auth_router, prefix="/api")
 app.include_router(memorial_router, prefix="/api")
 app.include_router(shukatsu_router, prefix="/api")
+app.include_router(hakajimai_router, prefix="/api")
 
 
 @app.get("/")

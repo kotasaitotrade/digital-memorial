@@ -151,6 +151,7 @@ export default function DashboardPage() {
               {[
                 { to: "/ending-note", label: "エンディングノート", icon: "📝" },
                 { to: "/estate", label: "相続計画", icon: "🏠" },
+                { to: "/hakajimai", label: "墓じまい計画", icon: "⛩️" },
                 { to: "/digital-key", label: "デジタル遺品", icon: "🔑" },
                 { to: "/account", label: "設定", icon: "⚙️" },
               ].map(({ to, label, icon }) => (

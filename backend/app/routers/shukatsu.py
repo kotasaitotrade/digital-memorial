@@ -538,6 +538,10 @@ def update_digital_key(
         key.unlock_condition = data.unlock_condition
     if data.notes is not None:
         key.notes = data.notes
+    if data.is_unlocked is not None:
+        key.is_unlocked = data.is_unlocked
+        if not data.is_unlocked:
+            key.unlocked_at = None
     if data.deadman_enabled is not None:
         key.deadman_enabled = data.deadman_enabled
     if data.deadman_interval_days is not None:
